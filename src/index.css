@@ -1,0 +1,169 @@
+@import "tailwindcss";
+
+/* ── Design Tokens ──────────────────────────────────────── */
+:root {
+  --color-gold: #C5A059;
+  --color-gold-light: #D4B06A;
+  --color-gold-dark: #A8863E;
+  --color-bg: #0A0A0A;
+  --color-surface: #141414;
+  --color-card: #1A1A1A;
+  --color-card-hover: #222222;
+  --color-silver: #A0AEC0;
+  --color-bronze: #C4956A;
+}
+
+/* ── Dropdown / Modal Entrance ───────────────────────────── */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Tab Section Transition ──────────────────────────────── */
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tab-animate {
+  animation: tabFadeIn 0.45s ease-out both;
+}
+
+/* 
+   Tailwind v4 includes its own preflight/reset.
+   Do NOT add `* { margin: 0 }` — it kills `mx-auto`.
+*/
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--color-bg);
+  color: #FFFFFF;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* ── Gold Glow Pulse (Streak Flame) ────────────────────── */
+@keyframes goldPulse {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 4px var(--color-gold)) drop-shadow(0 0 8px rgba(197, 160, 89, 0.4));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 8px var(--color-gold)) drop-shadow(0 0 18px rgba(197, 160, 89, 0.6));
+  }
+}
+
+.animate-gold-pulse {
+  animation: goldPulse 2s ease-in-out infinite;
+}
+
+/* ── Subtle Floating Animation ────────────────────────── */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ── Shimmer for Gold Heading ─────────────────────────── */
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.text-gold-shimmer {
+  background: linear-gradient(90deg,
+      var(--color-gold-dark) 0%,
+      var(--color-gold-light) 25%,
+      #F0D78C 50%,
+      var(--color-gold-light) 75%,
+      var(--color-gold-dark) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 4s linear infinite;
+}
+
+/* ── Video Glow ───────────────────────────────────────── */
+.video-glow {
+  box-shadow:
+    0 0 20px rgba(197, 160, 89, 0.15),
+    0 0 60px rgba(197, 160, 89, 0.05),
+    0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* ── Leaderboard First Place Row Glow ─────────────────── */
+.first-place-glow {
+  box-shadow:
+    inset 0 0 30px rgba(197, 160, 89, 0.06),
+    0 0 15px rgba(197, 160, 89, 0.08);
+}
+
+/* ── Gold-Themed Scrollbar ──────────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #121212;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #8B7340;
+  border-radius: 9999px;
+  border: 2px solid #121212;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C5A059;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #8B7340 #121212;
+}
