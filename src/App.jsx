@@ -32,6 +32,7 @@ import {
     LogOut,
     Users,
     UserCircle,
+    Terminal,
 } from 'lucide-react'
 
 /* ═══════════════════════════════════════════════════════════
@@ -45,6 +46,7 @@ const trainingCategories = [
     {
         id: 'aerospace',
         title: 'AEROSPACE ENGINEERING',
+        icon: Rocket,
         courses: [
             {
                 id: 'aero',
@@ -138,6 +140,7 @@ const trainingCategories = [
     {
         id: 'software',
         title: 'SOFTWARE & SYSTEMS',
+        icon: Terminal,
         courses: [
             {
                 id: 'control',
@@ -179,6 +182,7 @@ const trainingCategories = [
     {
         id: 'physics',
         title: 'APPLIED PHYSICS',
+        icon: Atom,
         courses: [
             {
                 id: 'thermal',
@@ -641,6 +645,7 @@ function JourneyTab() {
 
 function CategoryAccordion({ category, onSelectCourse }) {
     const [isOpen, setIsOpen] = useState(false)
+    const Icon = category.icon
 
     return (
         <div className="rounded-xl overflow-hidden border border-neutral-800/60 transition-colors duration-300">
@@ -650,12 +655,14 @@ function CategoryAccordion({ category, onSelectCourse }) {
                 className="w-full flex items-center justify-between px-6 py-5 bg-neutral-900 cursor-pointer
                            transition-all duration-300 hover:bg-neutral-800/80"
             >
-                <div className="flex items-center gap-3">
-                    <BookOpen size={18} className="text-yellow-600" />
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-yellow-600/10 border border-yellow-600/30 text-yellow-500">
+                        <Icon size={20} />
+                    </div>
                     <span className="text-sm sm:text-base font-black uppercase tracking-widest text-white">
                         {category.title}
                     </span>
-                    <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider ml-2">
+                    <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider ml-1">
                         {category.courses.length} courses
                     </span>
                 </div>
