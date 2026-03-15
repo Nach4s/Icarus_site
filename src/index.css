@@ -103,6 +103,21 @@ body {
   animation: float 3s ease-in-out infinite;
 }
 
+/* ── Preloader Bar Fill ──────────────────────────────────── */
+@keyframes preloaderBar {
+  0% {
+    width: 0%;
+  }
+
+  80% {
+    width: 90%;
+  }
+
+  100% {
+    width: 100%;
+  }
+}
+
 /* ── Shimmer for Gold Heading ─────────────────────────── */
 @keyframes shimmer {
   0% {

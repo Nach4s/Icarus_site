@@ -1,0 +1,147 @@
+// ═══════════════════════════════════════════════════════════════════════
+// ICARUS — Prisma Schema
+// Aerospace Engineering Education & Competition Platform
+// ═══════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────
+
+/// Platform roles — STUDENT is the default for every new registration.
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+// ─── User ────────────────────────────────────────────────────────────
+
+/// A registered user on the ICARUS platform.
+/// Tracks authentication data, gamification stats (XP, streak), and
+/// an optional team membership.
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  name          String
+  role          Role      @default(STUDENT)
+
+  // ── Gamification ──────────────────────────────────────────────────
+  xp            Int       @default(0)       /// Lifetime experience points
+  currentStreak Int       @default(0)       /// Consecutive-day login streak
+  lastLoginDate DateTime?                   /// Last calendar-date login (for streak calc)
+
+  // ── Team relation (optional) ──────────────────────────────────────
+  team          Team?     @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  teamId        String?
+
+  // ── Learning progress ─────────────────────────────────────────────
+  progress      UserProgress[]
+
+  // ── Timestamps ────────────────────────────────────────────────────
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([teamId])
+}
+
+// ─── Team ────────────────────────────────────────────────────────────
+
+/// A competition team. Members join via a unique 6-character invite code.
+/// `totalScore` is the cached sum of all members' XP.
+model Team {
+  id         String   @id @default(uuid())
+  name       String
+  inviteCode String   @unique @db.Char(6)   /// 6-char alphanumeric join code
+  totalScore Int      @default(0)           /// Cached aggregate of members' XP
+
+  members    User[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ─── Course ──────────────────────────────────────────────────────────
+
+/// Top-level educational unit (e.g. "Introduction to Aerodynamics").
+model Course {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  order       Int      @default(0)          /// Display ordering within the catalog
+
+  modules     Module[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── Module ──────────────────────────────────────────────────────────
+
+/// A chapter/section inside a Course.
+model Module {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  order       Int      @default(0)          /// Display ordering within the course
+
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId     String
+
+  lessons     Lesson[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([courseId])
+}
+
+// ─── Lesson ──────────────────────────────────────────────────────────
+
+/// An individual lesson / learning unit inside a Module.
+model Lesson {
+  id        String   @id @default(uuid())
+  title     String
+  content   String?  @db.Text              /// Rich-text / markdown body
+  xpReward  Int      @default(10)          /// XP awarded on first completion
+  order     Int      @default(0)           /// Display ordering within the module
+
+  module    Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleId  String
+
+  progress  UserProgress[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([moduleId])
+}
+
+// ─── UserProgress ────────────────────────────────────────────────────
+
+/// Junction table: tracks whether a User has completed a specific Lesson.
+/// The composite unique constraint prevents double-awarding XP.
+model UserProgress {
+  id          String    @id @default(uuid())
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+
+  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId    String
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([userId, lessonId])            /// One progress record per user-lesson pair
+  @@index([userId])
+  @@index([lessonId])
+}

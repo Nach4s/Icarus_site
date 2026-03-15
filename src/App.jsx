@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
+import { useAuth } from './AuthContext.jsx'
+import { api } from './api.js'
 import {
     Rocket,
     Flame,
@@ -33,14 +35,15 @@ import {
     Users,
     UserCircle,
     Terminal,
+    Menu,
 } from 'lucide-react'
 
 /* ═══════════════════════════════════════════════════════════
    ICARUS DASHBOARD — Aerospace Innovation Platform
    ═══════════════════════════════════════════════════════════ */
 
-// ── Mock Data ───────────────────────────────────────────
-const userData = { name: 'Alex Novak', email: 'engineer@icarus.com', score: 2_450, streak: 5 }
+// ── Fallback data (used when not authenticated) ─────────
+const guestData = { name: 'Guest', email: '', score: 0, streak: 0 }
 
 const trainingCategories = [
     {
@@ -288,6 +291,7 @@ function RankBadge({ rank }) {
 
 function ProfileDropdown({ isOpen, onClose }) {
     const ref = useRef(null)
+    const { user, logout } = useAuth()
 
     useEffect(() => {
         function handleClick(e) {
@@ -315,8 +319,8 @@ function ProfileDropdown({ isOpen, onClose }) {
             {/* User info */}
             <div className="px-4 py-3 border-b border-neutral-800">
                 <p className="text-xs text-neutral-500">Signed in as</p>
-                <p className="text-sm font-semibold text-white truncate">{userData.name}</p>
-                <p className="text-xs text-neutral-400 truncate">{userData.email}</p>
+                <p className="text-sm font-semibold text-white truncate">{user?.name ?? 'Guest'}</p>
+                <p className="text-xs text-neutral-400 truncate">{user?.email ?? ''}</p>
             </div>
 
             {/* Menu items */}
@@ -338,8 +342,11 @@ function ProfileDropdown({ isOpen, onClose }) {
 
             {/* Sign out */}
             <div className="border-t border-neutral-800 py-1">
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400/80 cursor-pointer
-                                   transition-colors duration-200 hover:bg-neutral-900 hover:text-red-400">
+                <button
+                    onClick={() => { logout(); onClose(); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400/80 cursor-pointer
+                                   transition-colors duration-200 hover:bg-neutral-900 hover:text-red-400"
+                >
                     <LogOut size={15} />
                     Sign Out
                 </button>
@@ -349,12 +356,49 @@ function ProfileDropdown({ isOpen, onClose }) {
 }
 
 
-/* ── Competition Modal ───────────────────────────────────── */
+/* ── Competition Modal (Auth-first flow) ─────────────────── */
 
 function CompetitionModal({ isOpen, onClose }) {
-    const [mode, setMode] = useState('create')
+    const { isAuthenticated, user, login, register } = useAuth()
+
+    // Phase determines which view the user sees
+    // 'login' | 'register' — unauthenticated
+    // 'create' | 'join'    — authenticated
+    const [phase, setPhase] = useState('login')
+
+    // ── Form state ──────────────────────────────────────────
+    const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
+    const [name, setName] = useState('')
     const [teamName, setTeamName] = useState('')
     const [inviteCode, setInviteCode] = useState('')
+
+    // ── UX state ────────────────────────────────────────────
+    const [error, setError] = useState('')
+    const [loading, setLoading] = useState(false)
+    const [successMsg, setSuccessMsg] = useState('')
+
+    // When auth state changes, auto-advance to team phase
+    useEffect(() => {
+        if (isAuthenticated && (phase === 'login' || phase === 'register')) {
+            setPhase('create')
+            setError('')
+        }
+    }, [isAuthenticated, phase])
+
+    // Reset state when modal opens/closes
+    useEffect(() => {
+        if (isOpen) {
+            setPhase(isAuthenticated ? 'create' : 'login')
+            setEmail('')
+            setPassword('')
+            setName('')
+            setTeamName('')
+            setInviteCode('')
+            setError('')
+            setSuccessMsg('')
+        }
+    }, [isOpen, isAuthenticated])
 
     if (!isOpen) return null
 
@@ -362,6 +406,72 @@ function CompetitionModal({ isOpen, onClose }) {
         bg-neutral-950 border border-neutral-700
         focus:border-yellow-600 focus:ring-1 focus:ring-yellow-600 focus:outline-none
         transition-all duration-300`
+
+    // ── Auth handlers ───────────────────────────────────────
+    async function handleLogin(e) {
+        e.preventDefault()
+        setError('')
+        setLoading(true)
+        try {
+            await login(email, password)
+        } catch (err) {
+            setError(err.message || 'Login failed. Check your credentials.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    async function handleRegister(e) {
+        e.preventDefault()
+        setError('')
+        if (!name.trim()) { setError('Name is required.'); return }
+        if (!email.trim()) { setError('Email is required.'); return }
+        if (password.length < 6) { setError('Password must be at least 6 characters.'); return }
+        setLoading(true)
+        try {
+            await register(email, password, name)
+        } catch (err) {
+            setError(err.message || 'Registration failed.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // ── Team handlers ───────────────────────────────────────
+    async function handleCreateTeam(e) {
+        e.preventDefault()
+        setError('')
+        if (!teamName.trim()) { setError('Team name is required.'); return }
+        setLoading(true)
+        try {
+            const data = await api.post('/teams/create', { name: teamName })
+            setSuccessMsg(`Team created! Invite code: ${data.team.inviteCode}`)
+            setTeamName('')
+        } catch (err) {
+            setError(err.message || 'Failed to create team.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    async function handleJoinTeam(e) {
+        e.preventDefault()
+        setError('')
+        if (!inviteCode.trim()) { setError('Invite code is required.'); return }
+        setLoading(true)
+        try {
+            const data = await api.post('/teams/join', { inviteCode, userId: user.id })
+            setSuccessMsg(data.message || 'Successfully joined the team!')
+            setInviteCode('')
+        } catch (err) {
+            setError(err.message || 'Failed to join team.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // ── Determine which tabs to show ────────────────────────
+    const isAuthPhase = phase === 'login' || phase === 'register'
 
     return (
         <div
@@ -384,37 +494,171 @@ function CompetitionModal({ isOpen, onClose }) {
 
                 {/* Title */}
                 <h2 className="text-2xl font-black uppercase tracking-widest text-white mb-1 text-center">
-                    REGISTER FOR ICARUS
+                    {isAuthPhase ? 'ACCESS ICARUS' : 'JOIN COMPETITION'}
                 </h2>
                 <p className="text-xs text-neutral-500 text-center mb-6 tracking-wider uppercase">
-                    Join the aerospace competition
+                    {isAuthPhase ? 'Authenticate to continue' : `Welcome back, ${user?.name}`}
                 </p>
 
                 {/* Mode Toggle */}
                 <div className="flex rounded-xl bg-neutral-950 border border-neutral-800 p-1 mb-6">
-                    <button
-                        onClick={() => setMode('create')}
-                        className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
-                            ${mode === 'create'
-                                ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
-                                : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
-                    >
-                        Create Team
-                    </button>
-                    <button
-                        onClick={() => setMode('join')}
-                        className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
-                            ${mode === 'join'
-                                ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
-                                : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
-                    >
-                        Join With Code
-                    </button>
+                    {isAuthPhase ? (
+                        <>
+                            <button
+                                onClick={() => { setPhase('login'); setError(''); setSuccessMsg(''); }}
+                                className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
+                                    ${phase === 'login'
+                                        ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
+                                        : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
+                            >
+                                Sign In
+                            </button>
+                            <button
+                                onClick={() => { setPhase('register'); setError(''); setSuccessMsg(''); }}
+                                className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
+                                    ${phase === 'register'
+                                        ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
+                                        : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
+                            >
+                                Register
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <button
+                                onClick={() => { setPhase('create'); setError(''); setSuccessMsg(''); }}
+                                className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
+                                    ${phase === 'create'
+                                        ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
+                                        : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
+                            >
+                                Create Team
+                            </button>
+                            <button
+                                onClick={() => { setPhase('join'); setError(''); setSuccessMsg(''); }}
+                                className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
+                                    ${phase === 'join'
+                                        ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
+                                        : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
+                            >
+                                Join With Code
+                            </button>
+                        </>
+                    )}
                 </div>
 
-                {/* Form */}
-                {mode === 'create' ? (
-                    <div className="space-y-4">
+                {/* ── Error / Success messages ── */}
+                {error && (
+                    <div className="mb-4 px-4 py-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold tracking-wide">
+                        {error}
+                    </div>
+                )}
+                {successMsg && (
+                    <div className="mb-4 px-4 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold tracking-wide">
+                        {successMsg}
+                    </div>
+                )}
+
+                {/* ═════════ PHASE: LOGIN ═════════ */}
+                {phase === 'login' && (
+                    <form onSubmit={handleLogin} className="space-y-4">
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Email</label>
+                            <input
+                                type="email"
+                                placeholder="you@example.com"
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                                className={inputClass}
+                                required
+                                autoComplete="email"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Password</label>
+                            <input
+                                type="password"
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={e => setPassword(e.target.value)}
+                                className={inputClass}
+                                required
+                                autoComplete="current-password"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="mt-2 w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
+                                       bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
+                                       shadow-lg shadow-yellow-600/20
+                                       transition-all duration-300 ease-out
+                                       hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
+                                       active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        >
+                            {loading ? 'AUTHENTICATING...' : 'SIGN IN'}
+                        </button>
+                    </form>
+                )}
+
+                {/* ═════════ PHASE: REGISTER ═════════ */}
+                {phase === 'register' && (
+                    <form onSubmit={handleRegister} className="space-y-4">
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Full Name</label>
+                            <input
+                                type="text"
+                                placeholder="Alex Novak"
+                                value={name}
+                                onChange={e => setName(e.target.value)}
+                                className={inputClass}
+                                required
+                                autoComplete="name"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Email</label>
+                            <input
+                                type="email"
+                                placeholder="you@example.com"
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                                className={inputClass}
+                                required
+                                autoComplete="email"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Password</label>
+                            <input
+                                type="password"
+                                placeholder="Min. 6 characters"
+                                value={password}
+                                onChange={e => setPassword(e.target.value)}
+                                className={inputClass}
+                                required
+                                minLength={6}
+                                autoComplete="new-password"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="mt-2 w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
+                                       bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
+                                       shadow-lg shadow-yellow-600/20
+                                       transition-all duration-300 ease-out
+                                       hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
+                                       active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        >
+                            {loading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
+                        </button>
+                    </form>
+                )}
+
+                {/* ═════════ PHASE: CREATE TEAM ═════════ */}
+                {phase === 'create' && (
+                    <form onSubmit={handleCreateTeam} className="space-y-4">
                         <div>
                             <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Team Name</label>
                             <input
@@ -423,43 +667,56 @@ function CompetitionModal({ isOpen, onClose }) {
                                 value={teamName}
                                 onChange={e => setTeamName(e.target.value)}
                                 className={inputClass}
+                                required
                             />
                         </div>
-                        <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Callsign</label>
-                            <input
-                                type="text"
-                                placeholder="Choose a 3-5 letter callsign"
-                                className={inputClass}
-                            />
-                        </div>
-                    </div>
-                ) : (
-                    <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Invite Code</label>
-                        <input
-                            type="text"
-                            placeholder="Enter 6-digit Invite Code"
-                            maxLength={6}
-                            value={inviteCode}
-                            onChange={e => setInviteCode(e.target.value.toUpperCase())}
-                            className={`${inputClass} text-center text-lg tracking-[0.5em] font-mono`}
-                        />
-                    </div>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="mt-2 w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
+                                       bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
+                                       shadow-lg shadow-yellow-600/20
+                                       transition-all duration-300 ease-out
+                                       hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
+                                       active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        >
+                            {loading ? 'CREATING...' : 'INITIALIZE SEQUENCE'}
+                        </button>
+                    </form>
                 )}
 
-                {/* Submit */}
-                <button className="mt-6 w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
-                                   bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
-                                   shadow-lg shadow-yellow-600/20
-                                   transition-all duration-300 ease-out
-                                   hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
-                                   active:scale-100">
-                    {mode === 'create' ? 'INITIALIZE SEQUENCE' : 'JOIN SQUADRON'}
-                </button>
+                {/* ═════════ PHASE: JOIN TEAM ═════════ */}
+                {phase === 'join' && (
+                    <form onSubmit={handleJoinTeam} className="space-y-4">
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Invite Code</label>
+                            <input
+                                type="text"
+                                placeholder="Enter 6-digit Invite Code"
+                                maxLength={6}
+                                value={inviteCode}
+                                onChange={e => setInviteCode(e.target.value.toUpperCase())}
+                                className={`${inputClass} text-center text-lg tracking-[0.5em] font-mono`}
+                                required
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="mt-2 w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
+                                       bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
+                                       shadow-lg shadow-yellow-600/20
+                                       transition-all duration-300 ease-out
+                                       hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
+                                       active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        >
+                            {loading ? 'JOINING...' : 'JOIN SQUADRON'}
+                        </button>
+                    </form>
+                )}
 
                 <p className="text-[10px] text-neutral-600 text-center mt-4 tracking-wide">
-                    By registering you agree to the ICARUS competition protocol
+                    By continuing you agree to the ICARUS competition protocol
                 </p>
             </div>
         </div>
@@ -469,22 +726,36 @@ function CompetitionModal({ isOpen, onClose }) {
 
 /* ── Header ──────────────────────────────────────────────── */
 
-function Header({ onOpenModal }) {
+function Header({ onOpenModal, activeTab, setActiveTab }) {
+    const { user, isAuthenticated } = useAuth()
+    const currentUser = isAuthenticated ? user : guestData
     const [isProfileOpen, setIsProfileOpen] = useState(false)
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+    const mobileMenuRef = useRef(null)
+
+    useEffect(() => {
+        function handleClick(e) {
+            if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
+                setIsMobileMenuOpen(false)
+            }
+        }
+        if (isMobileMenuOpen) document.addEventListener('mousedown', handleClick)
+        return () => document.removeEventListener('mousedown', handleClick)
+    }, [isMobileMenuOpen])
 
     return (
         <header className="sticky top-0 z-50 backdrop-blur-2xl bg-neutral-950/80 border-b border-neutral-800/50">
-            <div className="max-w-7xl mx-auto w-full px-6">
-                <div className="flex items-center justify-between h-20">
+            <div className="max-w-7xl mx-auto w-full px-4 md:px-6">
+                <div className="flex items-center justify-between h-16 md:h-20">
                     {/* Logo + Motto */}
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2.5 group cursor-pointer">
                             <img
                                 src="/logo_white.png"
                                 alt="ICARUS"
-                                className="h-9 w-auto transition-transform duration-500 group-hover:scale-110"
+                                className="h-7 md:h-9 w-auto transition-transform duration-500 group-hover:scale-110"
                             />
-                            <span className="text-2xl font-black uppercase tracking-[0.2em] text-white">
+                            <span className="text-lg md:text-2xl font-black uppercase tracking-[0.2em] text-white">
                                 ICARUS
                             </span>
                         </div>
@@ -495,7 +766,7 @@ function Header({ onOpenModal }) {
                     </div>
 
                     {/* Right side */}
-                    <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
                         {/* JOIN CTA */}
                         <button
                             onClick={onOpenModal}
@@ -510,32 +781,109 @@ function Header({ onOpenModal }) {
                             Join Competition
                         </button>
 
-                        {/* Streak */}
-                        <div className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-yellow-600/10 border border-yellow-600/25">
-                            <Flame size={18} className="text-yellow-600 animate-gold-pulse" />
-                            <span className="text-sm font-bold text-yellow-600 tracking-wide">
-                                {userData.streak} days
-                            </span>
-                        </div>
-                        {/* Score */}
-                        <div className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-full bg-neutral-800/60 border border-neutral-700/50">
-                            <Star size={15} className="text-yellow-600" />
-                            <span className="text-sm font-semibold text-white tabular-nums">
-                                {userData.score.toLocaleString()}
-                            </span>
-                        </div>
-                        {/* Avatar + Dropdown */}
-                        <div className="relative">
-                            <button
-                                onClick={() => setIsProfileOpen(!isProfileOpen)}
-                                className="relative cursor-pointer group"
-                            >
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-lg shadow-yellow-600/15">
-                                    <User size={19} className="text-black" />
+                        {isAuthenticated ? (
+                            <>
+                                {/* Streak */}
+                                <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full bg-yellow-600/10 border border-yellow-600/25">
+                                    <Flame size={16} className="text-yellow-600 animate-gold-pulse sm:w-[18px] sm:h-[18px]" />
+                                    <span className="text-xs sm:text-sm font-bold text-yellow-600 tracking-wide">
+                                        {currentUser.currentStreak ?? 0}d
+                                    </span>
                                 </div>
-                                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-neutral-950" />
+                                {/* Score */}
+                                <div className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-full bg-neutral-800/60 border border-neutral-700/50">
+                                    <Star size={15} className="text-yellow-600" />
+                                    <span className="text-sm font-semibold text-white tabular-nums">
+                                        {(currentUser.xp ?? 0).toLocaleString()}
+                                    </span>
+                                </div>
+                                {/* Avatar + Dropdown */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setIsProfileOpen(!isProfileOpen)}
+                                        className="relative cursor-pointer group"
+                                    >
+                                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-lg shadow-yellow-600/15">
+                                            <User size={17} className="text-black md:w-[19px] md:h-[19px]" />
+                                        </div>
+                                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-neutral-950" />
+                                    </button>
+                                    <ProfileDropdown isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+                                </div>
+                            </>
+                        ) : (
+                            /* Guest: show Sign In button */
+                            <button
+                                onClick={onOpenModal}
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer
+                                           border border-neutral-700 text-neutral-300
+                                           transition-all duration-300
+                                           hover:border-yellow-600/50 hover:text-white hover:bg-neutral-800/60"
+                            >
+                                <User size={14} />
+                                Sign In
                             </button>
-                            <ProfileDropdown isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+                        )}
+
+                        {/* ── Hamburger Menu (mobile only) ── */}
+                        <div className="relative md:hidden" ref={mobileMenuRef}>
+                            <button
+                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                className="p-2 rounded-lg transition-colors duration-200 hover:bg-neutral-800 cursor-pointer"
+                                aria-label="Open navigation"
+                            >
+                                {isMobileMenuOpen
+                                    ? <X size={22} className="text-white" />
+                                    : <Menu size={22} className="text-white" />
+                                }
+                            </button>
+
+                            {/* Mobile slide-down menu */}
+                            {isMobileMenuOpen && (
+                                <div
+                                    className="absolute right-0 mt-2 w-56 bg-neutral-950 border border-neutral-800 rounded-xl shadow-2xl shadow-black/60 z-[60] overflow-hidden"
+                                    style={{ animation: 'fadeSlideIn 0.2s ease-out' }}
+                                >
+                                    {TABS.map(tab => {
+                                        const Icon = tab.icon
+                                        const isActive = activeTab === tab.id
+                                        return (
+                                            <button
+                                                key={tab.id}
+                                                onClick={() => {
+                                                    setActiveTab(tab.id)
+                                                    setIsMobileMenuOpen(false)
+                                                }}
+                                                className={`w-full flex items-center gap-3 px-5 py-3.5 text-xs font-bold uppercase tracking-[0.15em]
+                                                           transition-all duration-200 cursor-pointer
+                                                           ${isActive
+                                                        ? 'bg-yellow-600/10 text-yellow-600 border-l-2 border-yellow-600'
+                                                        : 'text-neutral-400 hover:bg-neutral-900 hover:text-white border-l-2 border-transparent'
+                                                    }`}
+                                            >
+                                                <Icon size={15} />
+                                                {tab.label}
+                                            </button>
+                                        )
+                                    })}
+
+                                    {/* Join CTA in mobile menu */}
+                                    <div className="border-t border-neutral-800 p-3">
+                                        <button
+                                            onClick={() => {
+                                                onOpenModal()
+                                                setIsMobileMenuOpen(false)
+                                            }}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer
+                                                       bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
+                                                       transition-all duration-300 hover:scale-[1.02]"
+                                        >
+                                            <Rocket size={14} />
+                                            Join Competition
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -545,11 +893,11 @@ function Header({ onOpenModal }) {
 }
 
 
-/* ── Tab Navigation ──────────────────────────────────────── */
+/* ── Tab Navigation (hidden on mobile — accessible via hamburger) ── */
 
 function TabNav({ activeTab, setActiveTab }) {
     return (
-        <nav className="border-b border-neutral-800/50 bg-neutral-950/50 backdrop-blur-lg">
+        <nav className="hidden md:block border-b border-neutral-800/50 bg-neutral-950/50 backdrop-blur-lg">
             <div className="max-w-7xl mx-auto w-full px-6">
                 <div className="flex items-center justify-center gap-1">
                     {TABS.map(tab => {
@@ -559,13 +907,12 @@ function TabNav({ activeTab, setActiveTab }) {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`relative flex items-center gap-2.5 px-6 py-4 text-xs sm:text-[13px] font-bold uppercase tracking-[0.15em]
+                                className={`relative flex items-center gap-2.5 px-6 py-4 text-[13px] font-bold uppercase tracking-[0.15em]
                            transition-all duration-300 ease-out cursor-pointer
                            ${isActive ? 'text-yellow-600' : 'text-neutral-500 hover:text-neutral-300'}`}
                             >
                                 <Icon size={16} />
-                                <span className="hidden sm:inline">{tab.label}</span>
-                                <span className="sm:hidden">{tab.label.split(' ').pop()}</span>
+                                {tab.label}
                                 {isActive && (
                                     <div className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-yellow-600" />
                                 )}
@@ -583,7 +930,7 @@ function TabNav({ activeTab, setActiveTab }) {
 
 function JourneyTab() {
     return (
-        <div className="max-w-7xl mx-auto w-full px-6 py-16 sm:py-24">
+        <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-10 sm:py-16 md:py-24">
             {/* Cinematic Title */}
             <div className="text-center mb-14 sm:mb-20">
                 <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.4em] text-neutral-500 mb-4">
@@ -849,7 +1196,7 @@ function TrainingTab() {
     const [selectedCourse, setSelectedCourse] = useState(null)
 
     return (
-        <div className="max-w-7xl mx-auto w-full px-6 py-14 sm:py-20">
+        <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-10 sm:py-14 md:py-20">
             <div key={selectedCourse ? selectedCourse.id : 'catalog'} className="tab-animate">
                 {selectedCourse
                     ? <KhanCourseDetail course={selectedCourse} onBack={() => setSelectedCourse(null)} />
@@ -863,63 +1210,54 @@ function TrainingTab() {
 
 /* ── Tab 3: GLOBAL RANKING (Podium + Card List) ─────────── */
 
-function PodiumBlock({ entry, height, theme }) {
+/* Desktop-only: tall vertical podium column */
+function PodiumColumn({ entry, height, theme }) {
     const themes = {
         gold: {
             bg: 'bg-gradient-to-t from-yellow-700 via-yellow-600 to-yellow-400',
             text: 'text-black',
             shadow: 'shadow-[0_0_50px_rgba(202,138,4,0.35)]',
             label: '1ST',
-            nameSize: 'text-base sm:text-lg',
+            nameSize: 'text-lg',
         },
         silver: {
             bg: 'bg-gradient-to-t from-neutral-500 via-neutral-400 to-neutral-300',
             text: 'text-black',
             shadow: 'shadow-[0_0_30px_rgba(163,163,163,0.25)]',
             label: '2ND',
-            nameSize: 'text-sm sm:text-base',
+            nameSize: 'text-base',
         },
         bronze: {
             bg: 'bg-gradient-to-t from-orange-900 via-orange-700 to-orange-600',
             text: 'text-white',
             shadow: 'shadow-[0_0_30px_rgba(194,65,12,0.25)]',
             label: '3RD',
-            nameSize: 'text-sm sm:text-base',
+            nameSize: 'text-base',
         },
     }
     const t = themes[theme]
 
     return (
         <div className="flex flex-col items-center" style={{ width: theme === 'gold' ? '30%' : '25%', maxWidth: theme === 'gold' ? 220 : 200 }}>
-            {/* Crown for 1st */}
             {theme === 'gold' && (
                 <div className="mb-3 animate-float">
                     <Crown size={32} className="text-yellow-400 drop-shadow-lg" />
                 </div>
             )}
-
-            {/* Podium box */}
             <div
-                className={`w-full rounded-t-2xl ${t.bg} ${t.text} ${t.shadow} p-4 sm:p-6 text-center
+                className={`w-full rounded-t-2xl ${t.bg} ${t.text} ${t.shadow} p-6 text-center
                            transition-all duration-500 hover:scale-[1.03]`}
                 style={{ minHeight: height }}
             >
-                {/* Rank label */}
-                <p className={`text-2xl sm:text-3xl font-black tracking-wider mb-2 ${theme === 'bronze' ? 'opacity-90' : 'opacity-80'}`}>
+                <p className={`text-3xl font-black tracking-wider mb-2 ${theme === 'bronze' ? 'opacity-90' : 'opacity-80'}`}>
                     {t.label}
                 </p>
-
-                {/* Team name */}
                 <h3 className={`${t.nameSize} font-black uppercase tracking-widest leading-tight mb-3`}>
                     {entry.team}
                 </h3>
-
-                {/* Score */}
-                <p className={`text-xl sm:text-2xl font-black tabular-nums mb-3 ${theme === 'bronze' ? '' : 'opacity-90'}`}>
+                <p className={`text-2xl font-black tabular-nums mb-3 ${theme === 'bronze' ? '' : 'opacity-90'}`}>
                     {entry.score.toLocaleString()}
                 </p>
-
-                {/* Stats row */}
                 <div className={`flex items-center justify-center gap-3 text-xs font-semibold ${theme === 'bronze' ? 'text-white/70' : 'opacity-60'}`}>
                     {entry.streak > 0 && (
                         <span className="flex items-center gap-1">
@@ -937,6 +1275,65 @@ function PodiumBlock({ entry, height, theme }) {
     )
 }
 
+/* Mobile-only: compact gradient bar for top-3 entries */
+function PodiumBar({ entry, theme }) {
+    const themes = {
+        gold: {
+            bg: 'bg-gradient-to-r from-yellow-700 via-yellow-600 to-yellow-500',
+            text: 'text-black',
+            shadow: 'shadow-lg shadow-yellow-600/25',
+            label: '1ST',
+            icon: <Crown size={18} className="shrink-0" />,
+        },
+        silver: {
+            bg: 'bg-gradient-to-r from-neutral-500 via-neutral-400 to-neutral-350',
+            text: 'text-black',
+            shadow: 'shadow-lg shadow-neutral-400/20',
+            label: '2ND',
+            icon: <Medal size={18} className="shrink-0" />,
+        },
+        bronze: {
+            bg: 'bg-gradient-to-r from-orange-800 via-orange-700 to-orange-600',
+            text: 'text-white',
+            shadow: 'shadow-lg shadow-orange-700/20',
+            label: '3RD',
+            icon: <Award size={18} className="shrink-0" />,
+        },
+    }
+    const t = themes[theme]
+
+    return (
+        <div
+            className={`flex items-center justify-between w-full px-4 py-3.5 rounded-xl
+                        ${t.bg} ${t.text} ${t.shadow}
+                        transition-all duration-300 hover:scale-[1.02]`}
+        >
+            {/* Left: rank + icon + team name */}
+            <div className="flex items-center gap-3 min-w-0">
+                {t.icon}
+                <span className="text-xs font-black uppercase tracking-wider opacity-70 shrink-0">
+                    {t.label}
+                </span>
+                <span className="text-sm font-bold uppercase tracking-wide truncate">
+                    {entry.team}
+                </span>
+            </div>
+            {/* Right: score + streak */}
+            <div className="flex items-center gap-3 shrink-0 ml-3">
+                {entry.streak > 0 && (
+                    <span className="flex items-center gap-1 text-xs font-semibold opacity-70">
+                        <Flame size={13} />
+                        {entry.streak}d
+                    </span>
+                )}
+                <span className="text-base font-black tabular-nums">
+                    {entry.score.toLocaleString()}
+                </span>
+            </div>
+        </div>
+    )
+}
+
 function RankingTab({ onOpenModal }) {
     const top3 = leaderboard.filter(e => e.rank <= 3)
     const rest = leaderboard.filter(e => e.rank > 3)
@@ -945,13 +1342,13 @@ function RankingTab({ onOpenModal }) {
     const third = top3.find(e => e.rank === 3)
 
     return (
-        <div className="max-w-7xl mx-auto w-full px-6 py-14 sm:py-20">
+        <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-10 sm:py-14 md:py-20">
             {/* Header */}
-            <div className="text-center mb-10 sm:mb-14">
+            <div className="text-center mb-8 sm:mb-10 md:mb-14">
                 <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.35em] text-yellow-600 mb-2">
                     Competition
                 </p>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-widest text-white">
+                <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black uppercase tracking-widest text-white">
                     TEAM RANKINGS
                 </h2>
                 <div className="flex items-center justify-center gap-2 text-neutral-500 mt-3">
@@ -960,14 +1357,18 @@ function RankingTab({ onOpenModal }) {
                 </div>
             </div>
 
-            {/* ── Part A: The Podium ── */}
-            <div className="flex justify-center items-end gap-3 sm:gap-6 md:gap-8 mb-14 mt-8">
-                {/* 2nd Place — Silver (left) */}
-                {second && <PodiumBlock entry={second} height="180px" theme="silver" />}
-                {/* 1st Place — Gold (center, tallest) */}
-                {first && <PodiumBlock entry={first} height="240px" theme="gold" />}
-                {/* 3rd Place — Bronze (right, shortest) */}
-                {third && <PodiumBlock entry={third} height="150px" theme="bronze" />}
+            {/* ── Part A — Mobile: Premium compact list ── */}
+            <div className="flex flex-col gap-3 w-full mt-6 mb-10 md:hidden max-w-lg mx-auto">
+                {first && <PodiumBar entry={first} theme="gold" />}
+                {second && <PodiumBar entry={second} theme="silver" />}
+                {third && <PodiumBar entry={third} theme="bronze" />}
+            </div>
+
+            {/* ── Part A — Desktop: Classic 3D podium ── */}
+            <div className="hidden md:flex justify-center items-end gap-8 mt-8 mb-14">
+                {second && <PodiumColumn entry={second} height="180px" theme="silver" />}
+                {first && <PodiumColumn entry={first} height="240px" theme="gold" />}
+                {third && <PodiumColumn entry={third} height="150px" theme="bronze" />}
             </div>
 
             {/* ── Part B: Card List (Ranks 4+) ── */}
@@ -1052,33 +1453,80 @@ function Footer() {
 }
 
 
+/* ── Cinematic Preloader ─────────────────────────────────── */
+
+function Preloader({ isVisible }) {
+    return (
+        <div
+            className={`fixed inset-0 z-[1000] bg-neutral-950 flex flex-col items-center justify-center
+                        transition-opacity duration-1000 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        >
+            {/* Glow ring behind the icon */}
+            <div className="relative mb-6">
+                <div className="absolute inset-0 w-24 h-24 rounded-full bg-yellow-600/20 blur-xl animate-pulse" />
+                <Rocket
+                    size={64}
+                    className="relative text-yellow-600 animate-pulse drop-shadow-[0_0_25px_rgba(202,138,4,0.6)]"
+                />
+            </div>
+            <p className="text-[11px] sm:text-sm font-bold uppercase tracking-[0.45em] text-neutral-400 mb-2">
+                INITIALIZING ICARUS...
+            </p>
+            {/* Subtle loading bar */}
+            <div className="w-40 h-[2px] bg-neutral-800 rounded-full overflow-hidden mt-3">
+                <div
+                    className="h-full bg-gradient-to-r from-yellow-700 to-yellow-500 rounded-full"
+                    style={{ animation: 'preloaderBar 2s ease-in-out forwards' }}
+                />
+            </div>
+        </div>
+    )
+}
+
+
 /* ── Main App ────────────────────────────────────────────── */
 
 export default function App() {
     const [activeTab, setActiveTab] = useState('journey')
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
+
+    useEffect(() => {
+        const timer = setTimeout(() => setIsLoading(false), 2500)
+        return () => clearTimeout(timer)
+    }, [])
 
     return (
-        <div
-            className="min-h-screen w-full text-white bg-neutral-950 flex flex-col"
-            style={{
-                backgroundImage: "linear-gradient(to bottom, rgba(18,18,18,0.85), rgba(18,18,18,1)), url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2048&auto=format&fit=crop')",
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundAttachment: 'fixed',
-            }}
-        >
-            <Header onOpenModal={() => setIsModalOpen(true)} />
-            <TabNav activeTab={activeTab} setActiveTab={setActiveTab} />
-            <main className="flex-1">
-                <div key={activeTab} className="tab-animate">
-                    {activeTab === 'journey' && <JourneyTab />}
-                    {activeTab === 'training' && <TrainingTab />}
-                    {activeTab === 'ranking' && <RankingTab onOpenModal={() => setIsModalOpen(true)} />}
-                </div>
-            </main>
-            <Footer />
-            <CompetitionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-        </div>
+        <>
+            {/* ── Cinematic Preloader Overlay ── */}
+            <Preloader isVisible={isLoading} />
+
+            {/* ── Main Shell ── */}
+            <div
+                className="min-h-screen w-full text-white bg-neutral-950 flex flex-col"
+                style={{
+                    backgroundImage: "linear-gradient(to bottom, rgba(18,18,18,0.85), rgba(18,18,18,1)), url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2048&auto=format&fit=crop')",
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundAttachment: 'fixed',
+                }}
+            >
+                <Header
+                    onOpenModal={() => setIsModalOpen(true)}
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                />
+                <TabNav activeTab={activeTab} setActiveTab={setActiveTab} />
+                <main className="flex-1">
+                    <div key={activeTab} className="tab-animate">
+                        {activeTab === 'journey' && <JourneyTab />}
+                        {activeTab === 'training' && <TrainingTab />}
+                        {activeTab === 'ranking' && <RankingTab onOpenModal={() => setIsModalOpen(true)} />}
+                    </div>
+                </main>
+                <Footer />
+                <CompetitionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            </div>
+        </>
     )
 }
