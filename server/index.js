@@ -10,8 +10,9 @@ const jwt = require("jsonwebtoken");
 const { PrismaClient } = require("@prisma/client");
 const multer = require("multer");
 const { createClient } = require("@supabase/supabase-js");
-const { sendVerificationEmail } = require("./utils/email");
+const { sendVerificationEmail, sendPasswordResetEmail } = require("./utils/email");
 const redis = require("./utils/redis");
+const crypto = require("crypto");
 
 // ─── Initialisation ──────────────────────────────────────────────────
 
@@ -90,6 +91,18 @@ function authMiddleware(req, res, next) {
   } catch {
     return res.status(401).json({ error: "Invalid or expired token." });
   }
+}
+
+/**
+ * Admin-only middleware.
+ * Must be chained AFTER authMiddleware.
+ * Returns 403 if the authenticated user is not ADMIN.
+ */
+function adminMiddleware(req, res, next) {
+  if (req.role !== "ADMIN") {
+    return res.status(403).json({ error: "Admin access required." });
+  }
+  next();
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -184,7 +197,8 @@ app.post(
         email: pendingUser.email,
         name: pendingUser.name,
         passwordHash: pendingUser.passwordHash,
-      }
+      },
+      include: { team: true }
     });
 
     // ── Remove pending user from Redis ────────────────────────────
@@ -227,7 +241,10 @@ app.post(
     }
 
     // ── Find user ─────────────────────────────────────────────────
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ 
+      where: { email },
+      include: { team: true }
+    });
     if (!user) {
       return res.status(401).json({ error: "Invalid credentials." });
     }
@@ -252,6 +269,79 @@ app.post(
       user: safeUser,
       token,
     });
+  })
+);
+
+/**
+ * POST /api/auth/forgot-password
+ * ──────────────────────────────
+ * Generates a reset token and sends a mock email.
+ */
+app.post(
+  "/api/auth/forgot-password",
+  asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Email is required." });
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      // Return 200 even if not found to prevent email gathering, 
+      // but for Icarus we can be explicit to make UX easier.
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour
+
+    await prisma.user.update({
+      where: { email },
+      data: { resetToken, resetTokenExpiry }
+    });
+
+    // Dispatch the actual email
+    await sendPasswordResetEmail(email, resetToken, user.name);
+
+    res.json({ message: "Password reset link sent to your email." });
+  })
+);
+
+/**
+ * POST /api/auth/reset-password
+ * ─────────────────────────────
+ * Resets the user's password using the token.
+ */
+app.post(
+  "/api/auth/reset-password",
+  asyncHandler(async (req, res) => {
+    const { token, newPassword } = req.body;
+    
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: "Token and new password are required." });
+    }
+
+    const user = await prisma.user.findFirst({
+      where: { 
+        resetToken: token,
+        resetTokenExpiry: { gt: new Date() }
+      }
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: "Invalid or expired reset token." });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        resetToken: null,
+        resetTokenExpiry: null
+      }
+    });
+
+    res.json({ message: "Password successfully reset." });
   })
 );
 
@@ -465,8 +555,9 @@ app.post(
 /**
  * POST /api/competition/register
  * ──────────────────────────────
- * Flag a team as officially registered for the competition.
+ * Flag a team as officially registered for the active competition.
  * Only the Captain can perform this action.
+ * Requires an active (isSelectionActive: true) competition to exist.
  */
 app.post(
   "/api/competition/register",
@@ -489,15 +580,156 @@ app.post(
       return res.status(400).json({ error: "Team is already registered." });
     }
 
+    // ── Find an active competition ─────────────────────────────────
+    const now = new Date();
+    const activeCompetition = await prisma.competition.findFirst({
+      where: {
+        isSelectionActive: true,
+        regStart: { lte: now },
+        regEnd:   { gte: now },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!activeCompetition) {
+      return res.status(400).json({ error: "No active competition is currently open for registration." });
+    }
+
     const updatedTeam = await prisma.team.update({
       where: { id: user.teamId },
-      data: { isRegisteredForCompetition: true },
+      data: {
+        isRegisteredForCompetition: true,
+        competitionId: activeCompetition.id,
+      },
     });
 
     return res.json({
       message: "Your team is successfully registered!",
       team: updatedTeam,
     });
+  })
+);
+
+// ═══════════════════════════════════════════════════════════════════════
+//  ADMIN ROUTES — Protected: ADMIN role only
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * POST /api/admin/competitions
+ * ─────────────────────────────
+ * Create a new competition tournament.
+ *
+ * Body: { title: string, regStart: ISO string, regEnd: ISO string }
+ */
+app.post(
+  "/api/admin/competitions",
+  authMiddleware,
+  adminMiddleware,
+  asyncHandler(async (req, res) => {
+    const { title, regStart, regEnd } = req.body;
+
+    if (!title || !regStart || !regEnd) {
+      return res.status(400).json({ error: "Fields 'title', 'regStart', and 'regEnd' are required." });
+    }
+
+    const start = new Date(regStart);
+    const end   = new Date(regEnd);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ error: "Invalid date format for 'regStart' or 'regEnd'." });
+    }
+
+    if (end <= start) {
+      return res.status(400).json({ error: "'regEnd' must be after 'regStart'." });
+    }
+
+    const competition = await prisma.competition.create({
+      data: { title, regStart: start, regEnd: end },
+    });
+
+    return res.status(201).json({ message: "Competition created.", competition });
+  })
+);
+
+/**
+ * GET /api/admin/competitions
+ * ────────────────────────────
+ * List all competitions (newest first) with team count.
+ */
+app.get(
+  "/api/admin/competitions",
+  authMiddleware,
+  adminMiddleware,
+  asyncHandler(async (req, res) => {
+    const competitions = await prisma.competition.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        _count: { select: { teams: true } },
+      },
+    });
+
+    return res.json({ competitions });
+  })
+);
+
+/**
+ * PATCH /api/admin/competitions/:id/stop
+ * ────────────────────────────────────────
+ * Manually close registration for a competition.
+ */
+app.patch(
+  "/api/admin/competitions/:id/stop",
+  authMiddleware,
+  adminMiddleware,
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const competition = await prisma.competition.findUnique({ where: { id } });
+    if (!competition) {
+      return res.status(404).json({ error: "Competition not found." });
+    }
+
+    const updated = await prisma.competition.update({
+      where: { id },
+      data: { isSelectionActive: false },
+    });
+
+    return res.json({ message: "Competition selection stopped.", competition: updated });
+  })
+);
+
+/**
+ * GET /api/admin/competitions/:id/teams
+ * ──────────────────────────────────────
+ * Fetch all teams registered for a specific competition.
+ */
+app.get(
+  "/api/admin/competitions/:id/teams",
+  authMiddleware,
+  adminMiddleware,
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const competition = await prisma.competition.findUnique({ where: { id } });
+    if (!competition) {
+      return res.status(404).json({ error: "Competition not found." });
+    }
+
+    const teams = await prisma.team.findMany({
+      where: { competitionId: id },
+      include: {
+        members: {
+          select: { id: true, name: true, email: true, avatarUrl: true, xp: true },
+          orderBy: { xp: "desc" },
+        },
+        captain: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+      orderBy: { totalScore: "desc" },
+    });
+
+    return res.json({ competition, teams });
   })
 );
 
@@ -813,8 +1045,35 @@ app.get(
 );
 
 // ═══════════════════════════════════════════════════════════════════════
+//  PUBLIC COMPETITION ROUTES
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/competitions/active
+ * ─────────────────────────────
+ * Public endpoint — returns the currently active (open) competition,
+ * or null if none exists. Used by the frontend JOIN button.
+ */
+app.get(
+  "/api/competitions/active",
+  asyncHandler(async (req, res) => {
+    const now = new Date();
+    const competition = await prisma.competition.findFirst({
+      where: {
+        isSelectionActive: true,
+        regStart: { lte: now },
+        regEnd:   { gte: now },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    return res.json({ competition: competition ?? null });
+  })
+);
+
+// ═══════════════════════════════════════════════════════════════════════
 //  HEALTH CHECK
 // ═══════════════════════════════════════════════════════════════════════
+
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });

@@ -73,6 +73,12 @@ export const api = {
         }),
 
     delete: (endpoint) => apiFetch(endpoint, { method: 'DELETE' }),
+
+    patch: (endpoint, body) =>
+        apiFetch(endpoint, {
+            method: 'PATCH',
+            body: body instanceof FormData ? body : JSON.stringify(body),
+        }),
 }
 
 export const getLeaderboard = () => apiFetch('/leaderboard');

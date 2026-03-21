@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from './AuthContext.jsx'
 import { api } from './api.js'
+import AdminPage from './AdminPage.jsx'
+import ResetPasswordPage from './ResetPasswordPage.jsx'
 import {
     Rocket,
     Flame,
@@ -18,6 +20,7 @@ import {
     Target,
     Zap,
     Shield,
+    ShieldCheck,
     Crown,
     Medal,
     Compass,
@@ -303,28 +306,29 @@ function ProfileDropdown({ isOpen, onClose, onNavigate }) {
         { icon: UserCircle, label: 'Your Profile', id: 'profile' },
         { icon: Users, label: 'Team Dashboard', id: 'team' },
         { icon: Settings, label: 'Settings', id: 'settings' },
+        ...(user?.role === 'ADMIN' ? [{ icon: ShieldCheck, label: 'Admin Panel', id: 'admin' }] : []),
     ]
 
     return (
         <div
             ref={ref}
-            className="absolute right-0 mt-2 w-64 bg-neutral-950 border border-neutral-800 rounded-xl shadow-2xl shadow-black/60 z-[60]
+            className="absolute right-0 mt-2 w-72 bg-neutral-950 border border-neutral-800 rounded-xl shadow-2xl shadow-black/60 z-[60]
                        animate-in fade-in slide-in-from-top-2"
             style={{ animation: 'fadeSlideIn 0.2s ease-out' }}
         >
             {/* User info */}
-            <div className="px-4 py-3 border-b border-neutral-800 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center overflow-hidden border border-neutral-700 shrink-0 shadow-inner">
+            <div className="px-5 py-4 border-b border-neutral-800 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center overflow-hidden border border-neutral-700 shrink-0 shadow-inner">
                     {user?.avatarUrl ? (
                         <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
-                        <User size={18} className="text-neutral-500" />
+                        <User size={24} className="text-neutral-500" />
                     )}
                 </div>
                 <div className="flex-1 min-w-0">
-                    <p className="text-[10px] text-neutral-500 font-semibold uppercase tracking-wider mb-0.5">Signed in as</p>
-                    <p className="text-sm font-bold text-white truncate">{user?.name ?? 'Guest'}</p>
-                    <p className="text-xs text-neutral-400 truncate">{user?.email ?? ''}</p>
+                    <p className="text-xs text-neutral-500 font-bold uppercase tracking-wider mb-1">Signed in as</p>
+                    <p className="text-base font-black text-white truncate">{user?.name ?? 'Guest'}</p>
+                    <p className="text-sm text-neutral-400 truncate">{user?.email ?? ''}</p>
                 </div>
             </div>
 
@@ -339,10 +343,10 @@ function ProfileDropdown({ isOpen, onClose, onNavigate }) {
                                 onNavigate(item.id)
                                 onClose()
                             }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-300 cursor-pointer
+                            className="w-full flex items-center gap-4 px-5 py-3 text-base text-neutral-300 font-medium cursor-pointer
                                        transition-colors duration-200 hover:bg-neutral-900 hover:text-white"
                         >
-                            <Icon size={15} className="text-neutral-500" />
+                            <Icon size={18} className="text-neutral-500" />
                             {item.label}
                         </button>
                     )
@@ -353,10 +357,10 @@ function ProfileDropdown({ isOpen, onClose, onNavigate }) {
             <div className="border-t border-neutral-800 py-1">
                 <button
                     onClick={() => { logout(); onClose(); }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400/80 cursor-pointer
+                    className="w-full flex items-center gap-4 px-5 py-3 text-base font-bold uppercase tracking-wider text-red-400/80 cursor-pointer
                                    transition-colors duration-200 hover:bg-neutral-900 hover:text-red-400"
                 >
-                    <LogOut size={15} />
+                    <LogOut size={18} />
                     Sign Out
                 </button>
             </div>
@@ -388,17 +392,27 @@ function CompetitionModal({ isOpen, onClose }) {
     const [loading, setLoading] = useState(false)
     const [successMsg, setSuccessMsg] = useState('')
 
-    // When auth state changes, auto-advance to team phase
+    // When auth state changes, auto-advance to team phase (or close if already in a team)
     useEffect(() => {
         if (isAuthenticated && (phase === 'login' || phase === 'register' || phase === 'verify')) {
-            setPhase('create')
+            if (user?.teamId) {
+                // Already in a team — no need to show team creation, just close
+                onClose()
+            } else {
+                setPhase('create')
+            }
             setError('')
         }
-    }, [isAuthenticated, phase])
+    }, [isAuthenticated, user, phase, onClose])
 
     // Reset state when modal opens/closes
     useEffect(() => {
         if (isOpen) {
+            // If user opens this modal while already authenticated with a team, close it immediately
+            if (isAuthenticated && user?.teamId) {
+                onClose()
+                return
+            }
             setPhase(isAuthenticated ? 'create' : 'login')
             setEmail('')
             setPassword('')
@@ -409,7 +423,7 @@ function CompetitionModal({ isOpen, onClose }) {
             setError('')
             setSuccessMsg('')
         }
-    }, [isOpen, isAuthenticated])
+    }, [isOpen, isAuthenticated, user, onClose])
 
     if (!isOpen) return null
 
@@ -470,6 +484,22 @@ function CompetitionModal({ isOpen, onClose }) {
         }
     }
 
+    async function handleForgot(e) {
+        e.preventDefault()
+        setError('')
+        if (!email.trim()) { setError('Email is required.'); return }
+        setLoading(true)
+        try {
+            const data = await api.post('/auth/forgot-password', { email })
+            setSuccessMsg(data.message || 'Check your email for reset link.')
+            setTimeout(() => setPhase('login'), 3000)
+        } catch (err) {
+            setError(err.message || 'Failed to send reset link.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
     // ── Team handlers ───────────────────────────────────────
     async function handleCreateTeam(e) {
         e.preventDefault()
@@ -506,7 +536,7 @@ function CompetitionModal({ isOpen, onClose }) {
     }
 
     // ── Determine which tabs to show ────────────────────────
-    const isAuthPhase = phase === 'login' || phase === 'register' || phase === 'verify'
+    const isAuthPhase = phase === 'login' || phase === 'register' || phase === 'verify' || phase === 'forgot'
 
     return (
         <div
@@ -536,7 +566,7 @@ function CompetitionModal({ isOpen, onClose }) {
                 </p>
 
                 {/* Mode Toggle */}
-                {!(!isAuthPhase && user?.teamId) && phase !== 'verify' && (
+                {!(!isAuthPhase && user?.teamId) && phase !== 'verify' && phase !== 'forgot' && (
                     <div className="flex rounded-xl bg-neutral-950 border border-neutral-800 p-1 mb-6">
                     {isAuthPhase ? (
                         <>
@@ -677,6 +707,58 @@ function CompetitionModal({ isOpen, onClose }) {
                                        active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
                             {loading ? 'AUTHENTICATING...' : 'SIGN IN'}
+                        </button>
+                        <div className="text-center mt-2">
+                            <button
+                                type="button"
+                                onClick={() => { setPhase('forgot'); setError(''); setSuccessMsg(''); }}
+                                className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 hover:text-white transition-colors cursor-pointer"
+                            >
+                                Forgot Password?
+                            </button>
+                        </div>
+                    </form>
+                )}
+
+                {/* ═════════ PHASE: FORGOT PASSWORD ═════════ */}
+                {phase === 'forgot' && (
+                    <form onSubmit={handleForgot} className="space-y-4">
+                        <div className="text-center mb-6">
+                            <Shield size={32} className="text-yellow-600 mx-auto mb-3" />
+                            <p className="text-sm text-neutral-400">
+                                Enter your email address and we'll send you a link to securely reset your password.
+                            </p>
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Email</label>
+                            <input
+                                type="email"
+                                placeholder="you@example.com"
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                                className={inputClass}
+                                required
+                                autoComplete="email"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="mt-2 w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
+                                       bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
+                                       shadow-lg shadow-yellow-600/20
+                                       transition-all duration-300 ease-out
+                                       hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
+                                       active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        >
+                            {loading ? 'SENDING LINK...' : 'SEND RESET LINK'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => { setPhase('login'); setError(''); setSuccessMsg(''); }}
+                            className="mt-3 w-full py-2 text-xs font-bold uppercase tracking-wider text-neutral-500 hover:text-white transition-colors cursor-pointer"
+                        >
+                            BACK TO SIGN IN
                         </button>
                     </form>
                 )}
@@ -827,73 +909,73 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
     return (
         <header className="sticky top-0 z-50 backdrop-blur-2xl bg-neutral-950/80 border-b border-neutral-800/50">
             <div className="max-w-7xl mx-auto w-full px-4 md:px-6">
-                <div className="flex items-center justify-between h-16 md:h-20">
+                <div className="flex items-center justify-between h-16 md:h-24">
                     {/* Logo + Motto */}
                     <div className="flex items-center gap-4">
                         <div 
-                            className="flex items-center gap-2.5 group cursor-pointer"
+                            className="flex items-center gap-3 group cursor-pointer"
                             onClick={() => onNavigatePage('home')}
                         >
                             <img
                                 src="/logo_white.png"
                                 alt="ICARUS"
-                                className="h-7 md:h-9 w-auto transition-transform duration-500 group-hover:scale-110"
+                                className="h-8 md:h-11 w-auto transition-transform duration-500 group-hover:scale-110"
                             />
-                            <span className="text-lg md:text-2xl font-black uppercase tracking-[0.2em] text-white">
+                            <span className="text-xl md:text-3xl font-black uppercase tracking-[0.2em] text-white">
                                 ICARUS
                             </span>
                         </div>
-                        <div className="hidden md:block h-6 w-px bg-neutral-700" />
-                        <span className="hidden md:block text-[11px] italic text-neutral-500 tracking-wide">
+                        <div className="hidden md:block h-8 w-px bg-neutral-700" />
+                        <span className="hidden md:block text-xs md:text-sm italic text-neutral-500 tracking-wide">
                             to be is to innovate
                         </span>
                     </div>
 
                     {/* Right side */}
-                    <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+                    <div className="flex items-center gap-3 md:gap-5">
                         {isAuthenticated ? (
                             <>
                                 {/* JOIN CTA */}
                                 <button
                                     onClick={onJoinClick}
-                                    className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer
+                                    className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wider cursor-pointer
                                                bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
                                                shadow-md shadow-yellow-600/15
                                                transition-all duration-300
                                                hover:scale-105 hover:shadow-lg hover:shadow-yellow-600/25
                                                active:scale-100"
                                 >
-                                    {isRegistered ? <CheckCircle2 size={14} /> : <Rocket size={14} />}
+                                    {isRegistered ? <CheckCircle2 size={16} /> : <Rocket size={16} />}
                                     {isRegistered ? "Registered" : "Join Competition"}
                                 </button>
                                 {/* Streak */}
-                                <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full bg-yellow-600/10 border border-yellow-600/25">
-                                    <Flame size={16} className="text-yellow-600 animate-gold-pulse sm:w-[18px] sm:h-[18px]" />
-                                    <span className="text-xs sm:text-sm font-bold text-yellow-600 tracking-wide">
+                                <div className="flex items-center gap-2 sm:gap-2.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full bg-yellow-600/10 border border-yellow-600/25">
+                                    <Flame size={18} className="text-yellow-600 animate-gold-pulse sm:w-[20px] sm:h-[20px]" />
+                                    <span className="text-sm sm:text-base font-bold text-yellow-600 tracking-wide">
                                         {currentUser.currentStreak ?? 0}d
                                     </span>
                                 </div>
                                 {/* Score */}
-                                <div className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-full bg-neutral-800/60 border border-neutral-700/50">
-                                    <Star size={15} className="text-yellow-600" />
-                                    <span className="text-sm font-semibold text-white tabular-nums">
+                                <div className="hidden sm:flex items-center gap-2.5 px-4.5 py-2.5 rounded-full bg-neutral-800/60 border border-neutral-700/50">
+                                    <Star size={18} className="text-yellow-600" />
+                                    <span className="text-base font-semibold text-white tabular-nums">
                                         {(currentUser.xp ?? 0).toLocaleString()}
                                     </span>
                                 </div>
                                 {/* Avatar + Dropdown */}
-                                <div className="relative">
+                                <div className="relative ml-1">
                                     <button
                                         onClick={() => setIsProfileOpen(!isProfileOpen)}
                                         className="relative cursor-pointer group"
                                     >
-                                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-lg shadow-yellow-600/15 overflow-hidden">
+                                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-lg shadow-yellow-600/15 overflow-hidden">
                                             {currentUser?.avatarUrl ? (
                                                 <img src={currentUser.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                                             ) : (
-                                                <User size={17} className="text-black md:w-[19px] md:h-[19px]" />
+                                                <User size={20} className="text-black md:w-[22px] md:h-[22px]" />
                                             )}
                                         </div>
-                                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-neutral-950" />
+                                        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-neutral-950" />
                                     </button>
                                     <ProfileDropdown 
                                         isOpen={isProfileOpen} 
@@ -1000,14 +1082,14 @@ function TabNav({ activeTab, setActiveTab }) {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`relative flex items-center gap-2.5 px-6 py-4 text-[13px] font-bold uppercase tracking-[0.15em]
+                                className={`relative flex items-center gap-3 px-8 py-5 text-sm md:text-base font-bold uppercase tracking-[0.15em]
                            transition-all duration-300 ease-out cursor-pointer
                            ${isActive ? 'text-yellow-600' : 'text-neutral-500 hover:text-neutral-300'}`}
                             >
-                                <Icon size={16} />
+                                <Icon size={18} />
                                 {tab.label}
                                 {isActive && (
-                                    <div className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-yellow-600" />
+                                    <div className="absolute bottom-0 left-4 right-4 h-[3px] rounded-full bg-yellow-600" />
                                 )}
                             </button>
                         )
@@ -1584,44 +1666,247 @@ function RankingTab({ onJoinClick, isRegistered }) {
     )
 }
 
-function RegistrationConfirmModal({ isOpen, onClose, onConfirm, isLoading }) {
-    if (!isOpen) return null;
+function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
+    const { user } = useAuth()
+    const [phase, setPhase] = useState('loading') // 'loading' | 'no_competition' | 'no_team' | 'not_captain' | 'ready' | 'success' | 'error'
+    const [competition, setCompetition] = useState(null)
+    const [registering, setRegistering] = useState(false)
+    const [errMsg, setErrMsg] = useState('')
+
+    useEffect(() => {
+        if (!isOpen) return
+        setPhase('loading')
+        setErrMsg('')
+        setCompetition(null)
+
+        async function check() {
+            try {
+                // 1. Check if user has a team
+                if (!user?.teamId) { setPhase('no_team'); return }
+
+                // 2. Check for active competition
+                const data = await api.get('/competitions/active')
+                if (!data.competition) { setPhase('no_competition'); return }
+                setCompetition(data.competition)
+
+                // 3. Check captain
+                if (user.id !== user.team?.captainId) { setPhase('not_captain'); return }
+
+                setPhase('ready')
+            } catch {
+                setPhase('no_competition')
+            }
+        }
+        check()
+    }, [isOpen, user])
+
+    async function handleRegister() {
+        setRegistering(true)
+        try {
+            await api.post('/competition/register')
+            setPhase('success')
+            onRegistered()
+        } catch (err) {
+            setErrMsg(err.message || 'Registration failed.')
+            setPhase('error')
+        } finally {
+            setRegistering(false)
+        }
+    }
+
+    if (!isOpen) return null
+
+    // ── content per phase ─────────────────────────────────────────
+    function Content() {
+        if (phase === 'loading') return (
+            <div className="flex flex-col items-center gap-4 py-6">
+                <Loader2 size={36} className="text-yellow-600 animate-spin" />
+                <p className="text-sm text-neutral-400 uppercase tracking-widest">Checking status…</p>
+            </div>
+        )
+
+        if (phase === 'no_competition') return (
+            <>
+                <div className="w-20 h-20 rounded-full bg-neutral-800 border border-neutral-700
+                                flex items-center justify-center mx-auto mb-7
+                                shadow-[0_0_40px_rgba(0,0,0,0.4)]">
+                    <Clock size={36} className="text-neutral-500" />
+                </div>
+                <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
+                    No Active Competition
+                </h3>
+                <p className="text-neutral-400 leading-relaxed mb-8 max-w-xs mx-auto">
+                    There are no open competitions at the moment. Check back later — the next mission will be announced soon.
+                </p>
+                <button onClick={onClose}
+                    className="px-10 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest
+                               bg-neutral-800 border border-neutral-700 text-white
+                               hover:bg-neutral-700 transition cursor-pointer">
+                    Understood
+                </button>
+            </>
+        )
+
+        if (phase === 'no_team') return (
+            <>
+                <div className="w-20 h-20 rounded-full bg-neutral-800 border border-neutral-700
+                                flex items-center justify-center mx-auto mb-7">
+                    <Users size={36} className="text-neutral-500" />
+                </div>
+                <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
+                    Join a Team First
+                </h3>
+                <p className="text-neutral-400 leading-relaxed mb-8 max-w-xs mx-auto">
+                    You need to be part of a team before you can enter a competition. Create or join one through Team Dashboard.
+                </p>
+                <button onClick={onClose}
+                    className="px-10 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest
+                               bg-neutral-800 border border-neutral-700 text-white
+                               hover:bg-neutral-700 transition cursor-pointer">
+                    Got it
+                </button>
+            </>
+        )
+
+        if (phase === 'not_captain') return (
+            <>
+                <div className="w-20 h-20 rounded-full bg-yellow-600/10 border border-yellow-600/25
+                                flex items-center justify-center mx-auto mb-7
+                                shadow-[0_0_30px_rgba(202,138,4,0.1)]">
+                    <Crown size={36} className="text-yellow-600" />
+                </div>
+                <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
+                    Captain Only
+                </h3>
+                <p className="text-neutral-400 leading-relaxed mb-3 max-w-sm mx-auto">
+                    Only the <span className="text-yellow-500 font-bold">Team Captain</span> can officially register the team for a competition.
+                </p>
+                {competition && (
+                    <div className="mb-8 px-5 py-3 rounded-xl bg-neutral-800/60 border border-neutral-700 text-sm text-neutral-300">
+                        <p className="font-bold text-white mb-1">{competition.title}</p>
+                        <p className="text-xs text-neutral-500">
+                            Closes: {new Date(competition.regEnd).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}
+                        </p>
+                    </div>
+                )}
+                <p className="text-xs text-neutral-600 mb-6">Ask your captain to click the Join Competition button.</p>
+                <button onClick={onClose}
+                    className="px-10 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest
+                               bg-neutral-800 border border-neutral-700 text-white
+                               hover:bg-neutral-700 transition cursor-pointer">
+                    Close
+                </button>
+            </>
+        )
+
+        if (phase === 'ready') return (
+            <>
+                <div className="w-20 h-20 rounded-full bg-yellow-600/10 border border-yellow-600/30
+                                flex items-center justify-center mx-auto mb-7
+                                shadow-[0_0_40px_rgba(202,138,4,0.15)]">
+                    <Trophy size={36} className="text-yellow-600" />
+                </div>
+                <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
+                    Register Your Team
+                </h3>
+                {competition && (
+                    <div className="mb-6 px-5 py-4 rounded-xl bg-neutral-800/60 border border-yellow-600/15 text-left">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-yellow-600/60 mb-1">Active Competition</p>
+                        <p className="font-black text-white text-base uppercase tracking-wide">{competition.title}</p>
+                        <p className="text-xs text-neutral-500 mt-2">
+                            Closes: {new Date(competition.regEnd).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}
+                        </p>
+                    </div>
+                )}
+                <p className="text-neutral-400 text-sm leading-relaxed mb-8 max-w-xs mx-auto">
+                    As the <span className="text-yellow-500 font-bold">Team Captain</span>, you are about to officially enter your team. Make sure all members are ready.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <button onClick={onClose} disabled={registering}
+                        className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest
+                                   bg-neutral-800 border border-neutral-700 text-white
+                                   hover:bg-neutral-700 transition cursor-pointer
+                                   disabled:opacity-50 disabled:cursor-not-allowed">
+                        Cancel
+                    </button>
+                    <button onClick={handleRegister} disabled={registering}
+                        className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest text-black
+                                   bg-gradient-to-r from-yellow-700 to-yellow-500
+                                   shadow-lg shadow-yellow-600/20
+                                   hover:scale-[1.02] transition cursor-pointer
+                                   disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                                   flex items-center justify-center gap-2">
+                        {registering
+                            ? <><Loader2 size={15} className="animate-spin" />Registering…</>
+                            : 'Confirm Registration'}
+                    </button>
+                </div>
+            </>
+        )
+
+        if (phase === 'success') return (
+            <>
+                <div className="w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/30
+                                flex items-center justify-center mx-auto mb-7
+                                shadow-[0_0_30px_rgba(16,185,129,0.1)]">
+                    <CheckCircle2 size={36} className="text-emerald-400" />
+                </div>
+                <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
+                    Team Registered!
+                </h3>
+                <p className="text-neutral-400 leading-relaxed mb-8 max-w-xs mx-auto">
+                    Your team has been officially entered into the competition. Keep pushing for the stars!
+                </p>
+                <button onClick={onClose}
+                    className="px-10 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest text-black
+                               bg-gradient-to-r from-yellow-700 to-yellow-500
+                               shadow-lg shadow-yellow-600/20
+                               hover:scale-[1.02] transition cursor-pointer">
+                    Continue
+                </button>
+            </>
+        )
+
+        if (phase === 'error') return (
+            <>
+                <div className="w-20 h-20 rounded-full bg-red-500/10 border border-red-500/30
+                                flex items-center justify-center mx-auto mb-7">
+                    <AlertTriangle size={36} className="text-red-400" />
+                </div>
+                <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
+                    Registration Failed
+                </h3>
+                <p className="text-red-400 text-sm leading-relaxed mb-8 max-w-xs mx-auto">{errMsg}</p>
+                <button onClick={onClose}
+                    className="px-10 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest
+                               bg-neutral-800 border border-neutral-700 text-white
+                               hover:bg-neutral-700 transition cursor-pointer">
+                    Close
+                </button>
+            </>
+        )
+
+        return null
+    }
+
     return createPortal(
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[150] px-4" onClick={onClose}>
-            <div 
-                className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-xl p-10 md:p-14 text-center shadow-2xl shadow-yellow-600/10"
+        <div
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[150] px-4"
+            onClick={onClose}
+        >
+            <div
+                className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md p-10 text-center
+                           shadow-2xl shadow-black/60 relative"
                 onClick={e => e.stopPropagation()}
                 style={{ animation: 'fadeSlideIn 0.2s ease-out' }}
             >
-                <div className="w-20 h-20 rounded-full bg-yellow-600/10 border border-yellow-600/30 text-yellow-600 flex items-center justify-center mx-auto mb-8">
-                    <Trophy size={36} />
-                </div>
-                <h3 className="text-2xl md:text-3xl font-black uppercase tracking-widest text-white mb-6 leading-snug">
-                    Register Team for Competition
-                </h3>
-                <p className="text-base md:text-lg text-neutral-400 mb-10 leading-relaxed max-w-lg mx-auto">
-                    Are you sure you want to register your team for the upcoming phase? Make sure all your members are ready.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-                    <button
-                        onClick={onClose}
-                        disabled={isLoading}
-                        className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest
-                                   bg-neutral-800 border border-neutral-700 text-white
-                                   hover:bg-neutral-700 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={onConfirm}
-                        disabled={isLoading}
-                        className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest text-black
-                                   bg-gradient-to-r from-yellow-700 to-yellow-500 shadow-lg shadow-yellow-600/20
-                                   hover:scale-[1.02] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                    >
-                        {isLoading ? 'Registering...' : 'Confirm Registration'}
-                    </button>
-                </div>
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 text-neutral-600 hover:text-white transition-colors cursor-pointer"
+                >
+                    <X size={18} />
+                </button>
+                <Content />
             </div>
         </div>,
         document.body
@@ -1735,7 +2020,7 @@ function ProfilePage({ onBack }) {
     const { user } = useAuth()
     
     return (
-        <div className="max-w-4xl mx-auto px-4 md:px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <PageHeader title="Your Profile" onBack={onBack} />
             
             <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 md:p-10 mb-8 backdrop-blur-sm">
@@ -1792,6 +2077,49 @@ function TeamDashboardPage({ onBack }) {
     const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
     const [leaving, setLeaving] = useState(false)
 
+    // Form states for creating / joining when no team
+    const [actionPhase, setActionPhase] = useState('choice') // 'choice' | 'create' | 'join'
+    const [teamName, setTeamName] = useState('')
+    const [inviteCode, setInviteCode] = useState('')
+    const [actionLoading, setActionLoading] = useState(false)
+    const [actionError, setActionError] = useState('')
+    const [actionSuccess, setActionSuccess] = useState('')
+
+    const inputClass = `w-full px-4 py-3 rounded-xl text-sm text-white placeholder-neutral-500
+        bg-neutral-950 border border-neutral-700
+        focus:border-yellow-600 focus:ring-1 focus:ring-yellow-600 focus:outline-none
+        transition-all duration-300`
+
+    const handleCreateTeam = async (e) => {
+        e.preventDefault()
+        setActionError('')
+        if (!teamName.trim()) { setActionError('Team name is required.'); return }
+        setActionLoading(true)
+        try {
+            const data = await api.post('/teams/create', { name: teamName })
+            if (data.user) updateUser(data.user)
+            window.location.reload() // Force reload to ensure fresh global state
+        } catch (err) {
+            setActionError(err.message || 'Failed to create team.')
+            setActionLoading(false)
+        }
+    }
+
+    const handleJoinTeam = async (e) => {
+        e.preventDefault()
+        setActionError('')
+        if (!inviteCode.trim()) { setActionError('Invite code is required.'); return }
+        setActionLoading(true)
+        try {
+            const data = await api.post('/teams/join', { inviteCode, userId: user.id })
+            if (data.user) updateUser(data.user)
+            window.location.reload() // Force reload to ensure fresh global state
+        } catch (err) {
+            setActionError(err.message || 'Failed to join team.')
+            setActionLoading(false)
+        }
+    }
+
     useEffect(() => {
         async function fetchTeam() {
             try {
@@ -1807,7 +2135,7 @@ function TeamDashboardPage({ onBack }) {
     }, [])
 
     return (
-        <div className="max-w-5xl mx-auto px-4 md:px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <PageHeader title="Team Dashboard" onBack={onBack} />
             
             {loading ? (
@@ -1816,11 +2144,81 @@ function TeamDashboardPage({ onBack }) {
                     <p className="text-neutral-500 font-mono tracking-widest uppercase text-xs">Loading team data...</p>
                 </div>
             ) : error || !team ? (
-                <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-10 text-center">
-                    <p className="text-red-400 mb-6">{error || "You have not joined a team yet."}</p>
-                    <button onClick={onBack} className="px-6 py-3 bg-neutral-900 border border-neutral-700 rounded-xl text-sm font-bold uppercase tracking-widest hover:bg-neutral-800 transition">
-                        Return to Dashboard
-                    </button>
+                <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-8 md:p-12 max-w-2xl mx-auto backdrop-blur-sm text-center">
+                    <div className="w-20 h-20 bg-neutral-900 border border-neutral-700 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-black/50">
+                        <Users size={32} className="text-neutral-500" />
+                    </div>
+                    
+                    <h2 className="text-2xl font-black uppercase tracking-widest text-white mb-2">JOIN A TEAM FIRST</h2>
+                    <p className="text-sm text-neutral-400 mb-8 max-w-md mx-auto leading-relaxed">
+                        You need to be part of a team before you can enter a competition. Create a new team or join an existing one.
+                    </p>
+
+                    {actionPhase === 'choice' && (
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                            <button
+                                onClick={() => { setActionPhase('create'); setActionError(''); }}
+                                className="px-6 py-3.5 rounded-xl text-xs font-bold uppercase tracking-widest cursor-pointer
+                                           bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
+                                           shadow-lg shadow-yellow-600/20 hover:scale-[1.02] transition-transform"
+                            >
+                                Create New Team
+                            </button>
+                            <button
+                                onClick={() => { setActionPhase('join'); setActionError(''); }}
+                                className="px-6 py-3.5 rounded-xl text-xs font-bold uppercase tracking-widest cursor-pointer
+                                           bg-neutral-800 border border-neutral-700 text-white
+                                           hover:bg-neutral-700 transition-colors"
+                            >
+                                Join With Code
+                            </button>
+                        </div>
+                    )}
+
+                    {actionPhase === 'create' && (
+                        <form onSubmit={handleCreateTeam} className="text-left max-w-sm mx-auto animate-in fade-in zoom-in-95 duration-300">
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Team Name</label>
+                            <input
+                                autoFocus
+                                type="text"
+                                placeholder="Enter Team Name"
+                                value={teamName}
+                                onChange={e => setTeamName(e.target.value)}
+                                className={inputClass}
+                                required
+                            />
+                            {actionError && <p className="text-red-400 text-xs mt-2 font-semibold">{actionError}</p>}
+                            <div className="flex gap-3 mt-4">
+                                <button type="button" onClick={() => setActionPhase('choice')} className="px-4 py-3 rounded-xl border border-neutral-800 text-neutral-400 text-xs font-bold uppercase hover:bg-neutral-800 transition">Back</button>
+                                <button type="submit" disabled={actionLoading} className="flex-1 py-3 rounded-xl bg-yellow-600 text-black text-xs font-bold uppercase tracking-wider hover:bg-yellow-500 transition disabled:opacity-50">
+                                    {actionLoading ? 'Creating...' : 'Create Team'}
+                                </button>
+                            </div>
+                        </form>
+                    )}
+
+                    {actionPhase === 'join' && (
+                        <form onSubmit={handleJoinTeam} className="text-left max-w-sm mx-auto animate-in fade-in zoom-in-95 duration-300">
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Invite Code</label>
+                            <input
+                                autoFocus
+                                type="text"
+                                placeholder="6-digit code"
+                                maxLength={6}
+                                value={inviteCode}
+                                onChange={e => setInviteCode(e.target.value.toUpperCase())}
+                                className={`${inputClass} font-mono tracking-widest uppercase text-center text-lg`}
+                                required
+                            />
+                            {actionError && <p className="text-red-400 text-xs mt-2 font-semibold">{actionError}</p>}
+                            <div className="flex gap-3 mt-4">
+                                <button type="button" onClick={() => setActionPhase('choice')} className="px-4 py-3 rounded-xl border border-neutral-800 text-neutral-400 text-xs font-bold uppercase hover:bg-neutral-800 transition">Back</button>
+                                <button type="submit" disabled={actionLoading} className="flex-1 py-3 rounded-xl bg-yellow-600 text-black text-xs font-bold uppercase tracking-wider hover:bg-yellow-500 transition disabled:opacity-50">
+                                    {actionLoading ? 'Joining...' : 'Join Team'}
+                                </button>
+                            </div>
+                        </form>
+                    )}
                 </div>
             ) : (
                 <>
@@ -2052,7 +2450,7 @@ function SettingsPage({ onBack }) {
     }
 
     return (
-        <div className="max-w-3xl mx-auto px-4 md:px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <PageHeader title="System Settings" onBack={onBack} />
             
             <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 md:p-10 mb-8 backdrop-blur-sm">
@@ -2209,19 +2607,16 @@ function SettingsPage({ onBack }) {
 export default function App() {
     const { user, isAuthenticated } = useAuth()
     const [activeTab, setActiveTab] = useState('journey')
-    const [activePage, setActivePage] = useState('home') // 'home', 'profile', 'team', 'settings'
+    const [activePage, setActivePage] = useState('home')
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
-    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
+    const [isJoinModalOpen, setIsJoinModalOpen] = useState(false)
     const [isRegistered, setIsRegistered] = useState(false)
-    const [isRegistering, setIsRegistering] = useState(false)
     const [isAlreadyRegisteredModalOpen, setIsAlreadyRegisteredModalOpen] = useState(false)
 
     // Synchronize global registration status on page load or user change
     useEffect(() => {
-        if (user?.team?.isRegisteredForCompetition) {
-            setIsRegistered(true)
-        }
+        setIsRegistered(!!user?.team?.isRegisteredForCompetition)
     }, [user])
 
     const handleGlobalJoinClick = () => {
@@ -2229,35 +2624,22 @@ export default function App() {
             setIsAlreadyRegisteredModalOpen(true)
             return
         }
-        if (!user?.teamId) {
-            alert("You must be in a team to join the competition.")
-            return
-        }
-        if (user.id !== user.team?.captainId) {
-            alert("Only the Team Captain can register the team for the competition.")
-            return
-        }
-        setIsConfirmModalOpen(true)
+        setIsJoinModalOpen(true)
     }
 
-    const confirmRegistration = async () => {
-        setIsRegistering(true)
-        try {
-            await api.post('/competition/register')
-            setIsConfirmModalOpen(false)
-            alert("Your team is successfully registered!")
-            setIsRegistered(true)
-        } catch (err) {
-            alert(err.message || "Failed to register team.")
-        } finally {
-            setIsRegistering(false)
-        }
+    const handleRegistered = () => {
+        setIsRegistered(true)
     }
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 2500)
         return () => clearTimeout(timer)
     }, [])
+
+    // ── Route intercept for Reset Password Page ──
+    if (window.location.pathname === '/reset-password') {
+        return <ResetPasswordPage />
+    }
 
     return (
         <>
@@ -2300,17 +2682,17 @@ export default function App() {
                         {activePage === 'profile' && <ProfilePage onBack={() => setActivePage('home')} />}
                         {activePage === 'team' && <TeamDashboardPage onBack={() => setActivePage('home')} />}
                         {activePage === 'settings' && <SettingsPage onBack={() => setActivePage('home')} />}
+                        {activePage === 'admin' && <AdminPage onBack={() => setActivePage('home')} />}
                     </main>
                 )}
                 
                 <CompetitionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-                <RegistrationConfirmModal 
-                    isOpen={isConfirmModalOpen} 
-                    onClose={() => setIsConfirmModalOpen(false)} 
-                    onConfirm={confirmRegistration} 
-                    isLoading={isRegistering}
+                <CompetitionJoinModal
+                    isOpen={isJoinModalOpen}
+                    onClose={() => setIsJoinModalOpen(false)}
+                    onRegistered={handleRegistered}
                 />
-                <AlreadyRegisteredModal 
+                <AlreadyRegisteredModal
                     isOpen={isAlreadyRegisteredModalOpen}
                     onClose={() => setIsAlreadyRegisteredModalOpen(false)}
                 />
