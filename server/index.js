@@ -13,6 +13,8 @@ const { createClient } = require("@supabase/supabase-js");
 const { sendVerificationEmail, sendPasswordResetEmail } = require("./utils/email");
 const redis = require("./utils/redis");
 const crypto = require("crypto");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 
 // ─── Initialisation ──────────────────────────────────────────────────
 
@@ -36,8 +38,32 @@ const upload = multer({
 
 // ─── Global Middleware ───────────────────────────────────────────────
 
+app.use(helmet());                // Set secure HTTP headers
 app.use(cors());                  // Allow cross-origin requests from the Vite frontend
-app.use(express.json());          // Parse incoming JSON bodies
+app.use(express.json({ limit: '1mb' }));  // Parse incoming JSON bodies, limit size
+
+// ─── Rate Limiters ───────────────────────────────────────────────────
+
+// Strict limiter for auth & sensitive routes: 10 requests per 15 minutes per IP
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts. Please try again after 15 minutes." },
+});
+
+// General API limiter: 200 requests per minute per IP
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests. Please slow down." },
+});
+
+app.use("/api", generalLimiter); // Apply general limit to all /api routes
+
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
@@ -67,6 +93,39 @@ function generateInviteCode() {
  */
 const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
+
+/**
+ * Input validation helper.
+ * Takes a rules object: { fieldName: { required, type, maxLength, regex } }
+ * Returns a middleware that validates req.body and returns 400 on failure.
+ */
+function validate(rules) {
+  return (req, res, next) => {
+    for (const [field, opts] of Object.entries(rules)) {
+      const value = req.body[field];
+
+      if (opts.required && (value === undefined || value === null || value === '')) {
+        return res.status(400).json({ error: `Field '${field}' is required.` });
+      }
+
+      if (value !== undefined && value !== null) {
+        if (opts.type && typeof value !== opts.type) {
+          return res.status(400).json({ error: `Field '${field}' must be a ${opts.type}.` });
+        }
+        if (opts.maxLength && typeof value === 'string' && value.length > opts.maxLength) {
+          return res.status(400).json({ error: `Field '${field}' must not exceed ${opts.maxLength} characters.` });
+        }
+        if (opts.minLength && typeof value === 'string' && value.length < opts.minLength) {
+          return res.status(400).json({ error: `Field '${field}' must be at least ${opts.minLength} characters.` });
+        }
+        if (opts.regex && !opts.regex.test(value)) {
+          return res.status(400).json({ error: opts.regexMessage || `Field '${field}' has an invalid format.` });
+        }
+      }
+    }
+    next();
+  };
+}
 
 /**
  * JWT authentication middleware.
@@ -119,6 +178,12 @@ function adminMiddleware(req, res, next) {
  */
 app.post(
   "/api/auth/register",
+  authLimiter,
+  validate({
+    email:    { required: true, type: 'string', maxLength: 254, regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, regexMessage: "Invalid email format." },
+    password: { required: true, type: 'string', minLength: 8, maxLength: 128 },
+    name:     { required: true, type: 'string', maxLength: 80 },
+  }),
   asyncHandler(async (req, res) => {
     const { email, password, name } = req.body;
 
@@ -172,6 +237,11 @@ app.post(
  */
 app.post(
   "/api/auth/verify-email",
+  authLimiter,
+  validate({
+    email: { required: true, type: 'string', maxLength: 254 },
+    code:  { required: true, type: 'string', minLength: 6, maxLength: 6 },
+  }),
   asyncHandler(async (req, res) => {
     const { email, code } = req.body;
 
@@ -231,6 +301,11 @@ app.post(
  */
 app.post(
   "/api/auth/login",
+  authLimiter,
+  validate({
+    email:    { required: true, type: 'string', maxLength: 254 },
+    password: { required: true, type: 'string', maxLength: 128 },
+  }),
   asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
@@ -279,6 +354,10 @@ app.post(
  */
 app.post(
   "/api/auth/forgot-password",
+  authLimiter,
+  validate({
+    email: { required: true, type: 'string', maxLength: 254, regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, regexMessage: "Invalid email format." },
+  }),
   asyncHandler(async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: "Email is required." });
@@ -869,36 +948,69 @@ app.post(
 
     // ── 2. New file upload logic ──
     const fileExt = req.file.originalname.split('.').pop();
-    const fileName = `${req.userId}-${Date.now()}.${fileExt}`;
+    const fileName = `${req.userId}_${Date.now()}.${fileExt}`;
+    const filePath = `avatars/${fileName}`;
 
-    const { data: uploadData, error: uploadError } = await supabase
-      .storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from("avatars")
-      .upload(fileName, req.file.buffer, {
+      .upload(filePath, req.file.buffer, {
         contentType: req.file.mimetype,
         upsert: true,
       });
 
     if (uploadError) {
-      console.error("Supabase upload error:", uploadError);
-      return res.status(500).json({ error: "Failed to upload image to storage." });
+      console.error("Supabase Storage upload error:", uploadError);
+      return res.status(500).json({ error: "Failed to upload to storage." });
     }
 
-    const { data: publicUrlData } = supabase
-      .storage
+    const { data: publicUrlData } = supabase.storage
       .from("avatars")
-      .getPublicUrl(fileName);
+      .getPublicUrl(filePath);
 
-    const avatarUrl = publicUrlData.publicUrl;
-
-    const user = await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: req.userId },
-      data: { avatarUrl },
+      data: { avatarUrl: publicUrlData.publicUrl },
       include: { team: true },
     });
 
-    const { passwordHash: _, ...safeUser } = user;
-    return res.json({ message: "Avatar updated successfully.", user: safeUser });
+    const { passwordHash: _, ...safeUser } = updatedUser;
+    return res.json({ message: "Avatar updated.", user: safeUser });
+  })
+);
+
+/**
+ * DELETE /api/user/avatar
+ * ──────────────────────
+ * Removes the user's avatar image from Supabase Storage and clears the avatarUrl.
+ */
+app.delete(
+  "/api/user/avatar",
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId }
+    });
+
+    if (user?.avatarUrl) {
+      const parts = user.avatarUrl.split('/avatars/');
+      if (parts.length > 1) {
+        const filePath = parts[1];
+        try {
+          await supabase.storage.from("avatars").remove([filePath]);
+        } catch (delErr) {
+          console.error("Cleanup failed for old avatar:", delErr);
+        }
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.userId },
+      data: { avatarUrl: null },
+      include: { team: true },
+    });
+
+    const { passwordHash: _, ...safeUser } = updatedUser;
+    return res.json({ message: "Avatar removed.", user: safeUser });
   })
 );
 
@@ -917,7 +1029,7 @@ app.get(
     });
 
     if (!user || !user.teamId) {
-      return res.status(404).json({ error: "You are not a member of any team." });
+      return res.json({ team: null });
     }
 
     const team = await prisma.team.findUnique({

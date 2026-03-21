@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from './AuthContext.jsx'
 import { api } from './api.js'
@@ -2023,26 +2023,28 @@ function ActivityHeatmap() {
     const [isExpanded, setIsExpanded] = useState(false);
 
     // Generate dummy data: 52 weeks * 7 days
-    const weeks = 52;
-    const daysPerWeek = 7;
-    
-    // Instead of completely random, make it look somewhat realistic
-    const grid = [];
-    for (let w = 0; w < weeks; w++) {
-        const week = [];
-        for (let d = 0; d < daysPerWeek; d++) {
-            let level = 0;
-            if (user?.role === 'ADMIN') {
-                // Random chance of activity, higher chance in later weeks
-                const chance = (w / weeks) * 0.4 + 0.05; 
-                if (Math.random() < chance) {
-                    level = Math.floor(Math.random() * 4) + 1; // 1 to 4
+    // Wrap in useMemo so it doesn't re-randomize on every re-render!
+    const grid = useMemo(() => {
+        const weeks = 52;
+        const daysPerWeek = 7;
+        const tempGrid = [];
+        for (let w = 0; w < weeks; w++) {
+            const week = [];
+            for (let d = 0; d < daysPerWeek; d++) {
+                let level = 0;
+                if (user?.role === 'ADMIN') {
+                    // Random chance of activity, higher chance in later weeks
+                    const chance = (w / weeks) * 0.4 + 0.05; 
+                    if (Math.random() < chance) {
+                        level = Math.floor(Math.random() * 4) + 1; // 1 to 4
+                    }
                 }
+                week.push(level);
             }
-            week.push(level);
+            tempGrid.push(week);
         }
-        grid.push(week);
-    }
+        return tempGrid;
+    }, [user?.role]);
 
     const getColor = (level) => {
         if (level === 0) return 'bg-neutral-800/40';
@@ -2240,8 +2242,12 @@ function TeamDashboardPage({ onBack }) {
             try {
                 const res = await api.get('/user/team')
                 setTeam(res.team)
+                setError('') // Clear any stale errors
             } catch (err) {
-                setError(err.message || 'Failed to load team data.')
+                // Ignore 404 errors as they just mean "no team yet"
+                if (err.status !== 404) {
+                    setError(err.message || 'Failed to load team data.')
+                }
             } finally {
                 setLoading(false)
             }
@@ -2564,6 +2570,31 @@ function SettingsPage({ onBack }) {
         }
     }
 
+    const handleRemovePhoto = async () => {
+        // If there is only a local preview (not yet saved), just clear it
+        if (avatarFile) {
+            setAvatarFile(null)
+            return
+        }
+
+        // If there is a saved avatar on the server, delete it
+        if (user?.avatarUrl) {
+            setSaving(true)
+            setStatus(null)
+            try {
+                const res = await api.delete('/user/avatar')
+                setStatus({ type: 'success', msg: 'Photo removed.' })
+                if (updateUser && res.user) {
+                    updateUser(res.user)
+                }
+            } catch (err) {
+                setStatus({ type: 'error', msg: err.message || 'Failed to remove photo.' })
+            } finally {
+                setSaving(false)
+            }
+        }
+    }
+
     return (
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <PageHeader title="System Settings" onBack={onBack} />
@@ -2611,9 +2642,21 @@ function SettingsPage({ onBack }) {
                                 <div className="bg-[#242424] text-neutral-300 text-[13px] font-semibold py-2 px-6 rounded mb-4 border border-neutral-800 hover:bg-[#2a2a2a] transition-colors shadow-sm w-full max-w-[240px]">
                                     Upload file
                                 </div>
-                                <p className="text-[13px] text-neutral-500 mb-2 font-medium">or <span className="text-neutral-400">Ctrl+V</span> to paste an image</p>
+                                 <p className="text-[13px] text-neutral-500 mb-2 font-medium">or <span className="text-neutral-400">Ctrl+V</span> to paste an image</p>
                                 <p className="text-[11px] text-neutral-600">Images wider than 256 pixels work best.</p>
                             </div>
+                            
+                            {/* Remove Photo Action */}
+                            {(avatarFile || user?.avatarUrl) && (
+                                <button
+                                    type="button"
+                                    onClick={handleRemovePhoto}
+                                    disabled={saving}
+                                    className="px-4 py-2 rounded-lg border border-red-500/20 text-red-500/60 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/40 transition-all cursor-pointer disabled:opacity-50 h-fit"
+                                >
+                                    Remove Photo
+                                </button>
+                            )}
                         </div>
                     </div>
                     
