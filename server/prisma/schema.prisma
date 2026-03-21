@@ -8,8 +8,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ─── Enums ───────────────────────────────────────────────────────────
@@ -30,7 +31,10 @@ model User {
   email         String    @unique
   passwordHash  String
   name          String
+  avatarUrl     String?   /// URL to the user's avatar image
   role          Role      @default(STUDENT)
+  isVerified    Boolean   @default(false)
+  verificationCode String?
 
   // ── Gamification ──────────────────────────────────────────────────
   xp            Int       @default(0)       /// Lifetime experience points
@@ -38,8 +42,11 @@ model User {
   lastLoginDate DateTime?                   /// Last calendar-date login (for streak calc)
 
   // ── Team relation (optional) ──────────────────────────────────────
-  team          Team?     @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  team          Team?     @relation("TeamMembers", fields: [teamId], references: [id], onDelete: SetNull)
   teamId        String?
+
+  // ── Captain relation (reverse — a user can captain at most one team)
+  captainedTeam Team?     @relation("TeamCaptain")
 
   // ── Learning progress ─────────────────────────────────────────────
   progress      UserProgress[]
@@ -61,7 +68,11 @@ model Team {
   inviteCode String   @unique @db.Char(6)   /// 6-char alphanumeric join code
   totalScore Int      @default(0)           /// Cached aggregate of members' XP
 
-  members    User[]
+  // ── Captain (the team leader) ──────────────────────────────────────
+  captainId  String?  @unique
+  captain    User?    @relation("TeamCaptain", fields: [captainId], references: [id], onDelete: SetNull)
+
+  members    User[]   @relation("TeamMembers")
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

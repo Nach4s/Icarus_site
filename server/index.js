@@ -8,6 +8,9 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { PrismaClient } = require("@prisma/client");
+const multer = require("multer");
+const { createClient } = require("@supabase/supabase-js");
+const { sendVerificationEmail } = require("./utils/email");
 
 // ─── Initialisation ──────────────────────────────────────────────────
 
@@ -18,12 +21,30 @@ const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || "icarus-dev-secret";
 const SALT_ROUNDS = 12;
 
+// ─── Supabase & Multer Configuration ─────────────────────────────────
+
+const SUPABASE_URL = process.env.SUPABASE_URL || "YOUR_SUPABASE_URL";
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "YOUR_SUPABASE_SERVICE_ROLE_KEY";
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit
+});
+
 // ─── Global Middleware ───────────────────────────────────────────────
 
 app.use(cors());                  // Allow cross-origin requests from the Vite frontend
 app.use(express.json());          // Parse incoming JSON bodies
 
 // ─── Helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Generate a 6-digit numeric OTP code.
+ */
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 /**
  * Generate a cryptographically-random 6-character alphanumeric invite code.
@@ -104,23 +125,86 @@ app.post(
 
     // ── Hash password & persist ───────────────────────────────────
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+    
+    // Generate OTP
+    const otpCode = generateOTP();
 
     const user = await prisma.user.create({
-      data: { email, passwordHash, name },
+      data: { 
+        email, 
+        passwordHash, 
+        name,
+        verificationCode: otpCode 
+      },
     });
 
-    // ── Issue JWT ─────────────────────────────────────────────────
+    // ── Send Verification Email ───────────────────────────────────
+    try {
+        await sendVerificationEmail(email, otpCode, name);
+    } catch (emailErr) {
+        console.error("Failed to send OTP email:", emailErr);
+        // Continue anyway; maybe they can resend later or we log the error
+    }
+
+    // ── Respond (Do not issue JWT yet) ────────────────────────────
+    return res.status(201).json({
+      message: "Registration successful. Please verify your email.",
+      requiresVerification: true,
+      email: user.email
+    });
+  })
+);
+
+/**
+ * POST /api/auth/verify-email
+ * ────────────────────────────
+ * Verifies the 6-digit OTP code sent during registration.
+ *
+ * Body: { email: string, code: string }
+ * Returns: user data + JWT token.
+ */
+app.post(
+  "/api/auth/verify-email",
+  asyncHandler(async (req, res) => {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({ error: "Email and verification code are required." });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ error: "User is already verified." });
+    }
+
+    if (user.verificationCode !== code) {
+      return res.status(400).json({ error: "Invalid verification code." });
+    }
+
+    // Code matches, mark as verified
+    const updatedUser = await prisma.user.update({
+      where: { email },
+      data: {
+        isVerified: true,
+        verificationCode: null
+      }
+    });
+
+    // Issue JWT
     const token = jwt.sign(
-      { userId: user.id, role: user.role },
+      { userId: updatedUser.id, role: updatedUser.role },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    // ── Respond (never expose passwordHash) ───────────────────────
-    const { passwordHash: _, ...safeUser } = user;
+    const { passwordHash: _, ...safeUser } = updatedUser;
 
-    return res.status(201).json({
-      message: "Registration successful.",
+    return res.json({
+      message: "Email verified successfully.",
       user: safeUser,
       token,
     });
@@ -156,6 +240,29 @@ app.post(
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       return res.status(401).json({ error: "Invalid credentials." });
+    }
+
+    // ── Check if verified ─────────────────────────────────────────
+    if (!user.isVerified) {
+      // Generate and save a fresh OTP so legacy accounts can verify, 
+      // or if they just lost the previous email.
+      const freshOtp = generateOTP();
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { verificationCode: freshOtp }
+      });
+
+      try {
+          await sendVerificationEmail(user.email, freshOtp, user.name);
+      } catch (err) {
+          console.error("Failed to send OTP on login:", err);
+      }
+
+      return res.status(403).json({ 
+          error: "Please verify your email first. A new code has been sent.", 
+          requiresVerification: true,
+          email: user.email
+      });
     }
 
     // ── Issue JWT ─────────────────────────────────────────────────
@@ -197,6 +304,12 @@ app.post(
       return res.status(400).json({ error: "Field 'name' is required." });
     }
 
+    // Check if user already has a team
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+    if (user.teamId) {
+      return res.status(400).json({ error: "You are already a member of a team." });
+    }
+
     // Generate a unique invite code (retry on unlikely collision)
     let inviteCode;
     let codeExists = true;
@@ -208,12 +321,27 @@ app.post(
     }
 
     const team = await prisma.team.create({
-      data: { name, inviteCode },
+      data: { 
+        name, 
+        inviteCode,
+        captainId: req.userId,
+        members: {
+            connect: { id: req.userId }
+        }
+      },
     });
+
+    const updatedUser = await prisma.user.findUnique({
+      where: { id: req.userId },
+      include: { team: true },
+    });
+    
+    const { passwordHash: _, ...safeUser } = updatedUser;
 
     return res.status(201).json({
       message: "Team created successfully.",
       team,
+      user: safeUser
     });
   })
 );
@@ -247,6 +375,12 @@ app.post(
       return res.status(404).json({ error: "Invalid invite code." });
     }
 
+    // ── Capacity check (max 6 members) ────────────────────────────
+    const memberCount = await prisma.user.count({ where: { teamId: team.id } });
+    if (memberCount >= 6) {
+      return res.status(400).json({ error: "Team is at maximum capacity (6 members)." });
+    }
+
     // ── Verify user exists ────────────────────────────────────────
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
@@ -273,6 +407,392 @@ app.post(
       message: `Successfully joined team "${team.name}".`,
       user: safeUser,
     });
+  })
+);
+
+/**
+ * POST /api/teams/leave
+ * ──────────────────────
+ * Leave your current team.
+ *
+ * Business rules:
+ *   1. Disconnect user from team.
+ *   2. If team has 0 remaining members → delete it.
+ *   3. If leaving user was the captain → promote highest-XP remaining member.
+ */
+app.post(
+  "/api/teams/leave",
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+
+    if (!user || !user.teamId) {
+      return res.status(400).json({ error: "You are not a member of any team." });
+    }
+
+    const teamId = user.teamId;
+
+    // ── Step 1: Disconnect user from team ─────────────────────────
+    await prisma.user.update({
+      where: { id: req.userId },
+      data: { teamId: null },
+    });
+
+    // ── Step 2: Count remaining members ───────────────────────────
+    const remaining = await prisma.user.findMany({
+      where: { teamId },
+      orderBy: { xp: "desc" },
+      select: { id: true, xp: true },
+    });
+
+    if (remaining.length === 0) {
+      // ── No members left → delete team entirely ──────────────────
+      await prisma.team.delete({ where: { id: teamId } });
+
+      const updatedUser = await prisma.user.findUnique({
+        where: { id: req.userId },
+        include: { team: true },
+      });
+      const { passwordHash: _, ...safeUser } = updatedUser;
+
+      return res.json({
+        message: "You left the team. The team has been disbanded (no members remaining).",
+        user: safeUser,
+      });
+    }
+
+    // ── Step 3: Captain succession ────────────────────────────────
+    const team = await prisma.team.findUnique({ where: { id: teamId } });
+    if (team.captainId === req.userId) {
+      // Promote the member with the highest XP
+      const newCaptain = remaining[0]; // already sorted by xp desc
+      await prisma.team.update({
+        where: { id: teamId },
+        data: { captainId: newCaptain.id },
+      });
+    }
+
+    const updatedUser = await prisma.user.findUnique({
+      where: { id: req.userId },
+      include: { team: true },
+    });
+    const { passwordHash: _, ...safeUser } = updatedUser;
+
+    return res.json({
+      message: "You have left the team.",
+      user: safeUser,
+    });
+  })
+);
+
+// ═══════════════════════════════════════════════════════════════════════
+//  USER PROFILE ROUTES
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/user/me
+ * ─────────────────
+ * Returns the authenticated user's full profile (including team).
+ */
+app.get(
+  "/api/user/me",
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      include: { team: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const { passwordHash: _, ...safeUser } = user;
+    return res.json({ user: safeUser });
+  })
+);
+
+/**
+ * PUT /api/user/me
+ * ─────────────────
+ * Update the authenticated user's profile (name, email).
+ *
+ * Body: { name?: string, email?: string }
+ */
+app.put(
+  "/api/user/me",
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const { name, email, avatarUrl } = req.body;
+    const data = {};
+
+    if (name) data.name = name;
+    if (avatarUrl !== undefined) data.avatarUrl = avatarUrl;
+    if (email) {
+      // Check for email collision
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing && existing.id !== req.userId) {
+        return res.status(409).json({ error: "Email is already in use." });
+      }
+      data.email = email;
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: "No fields to update." });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data,
+      include: { team: true },
+    });
+
+    const { passwordHash: _, ...safeUser } = user;
+    return res.json({ message: "Profile updated.", user: safeUser });
+  })
+);
+
+/**
+ * POST /api/user/avatar
+ * ──────────────────────
+ * Uploads an avatar image to Supabase Storage and updates the user profile.
+ */
+app.post(
+  "/api/user/avatar",
+  authMiddleware,
+  upload.single("avatar"),
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: "No image file provided." });
+    }
+
+    // ── 1. Fetch current user to get old avatar URL ──
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.userId }
+    });
+
+    if (currentUser?.avatarUrl) {
+      // Supabase public URL format: .../avatars/filename
+      const parts = currentUser.avatarUrl.split('/avatars/');
+      if (parts.length > 1) {
+        const oldPath = parts[1];
+        try {
+          // Attempt to remove the old file using the service role client
+          await supabase.storage.from("avatars").remove([oldPath]);
+          console.log(`Successfully deleted old avatar: ${oldPath}`);
+        } catch (delErr) {
+          // Do not fail the request if deletion fails (orphaned files can be cleaned up later)
+          console.error("Failed to delete old avatar from Supabase Storage:", delErr);
+        }
+      }
+    }
+
+    // ── 2. New file upload logic ──
+    const fileExt = req.file.originalname.split('.').pop();
+    const fileName = `${req.userId}-${Date.now()}.${fileExt}`;
+
+    const { data: uploadData, error: uploadError } = await supabase
+      .storage
+      .from("avatars")
+      .upload(fileName, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.error("Supabase upload error:", uploadError);
+      return res.status(500).json({ error: "Failed to upload image to storage." });
+    }
+
+    const { data: publicUrlData } = supabase
+      .storage
+      .from("avatars")
+      .getPublicUrl(fileName);
+
+    const avatarUrl = publicUrlData.publicUrl;
+
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: { avatarUrl },
+      include: { team: true },
+    });
+
+    const { passwordHash: _, ...safeUser } = user;
+    return res.json({ message: "Avatar updated successfully.", user: safeUser });
+  })
+);
+
+/**
+ * GET /api/user/team
+ * ───────────────────
+ * Returns the authenticated user's team with all members.
+ */
+app.get(
+  "/api/user/team",
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { teamId: true },
+    });
+
+    if (!user || !user.teamId) {
+      return res.status(404).json({ error: "You are not a member of any team." });
+    }
+
+    const team = await prisma.team.findUnique({
+      where: { id: user.teamId },
+      include: {
+        members: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+            xp: true,
+            currentStreak: true,
+            role: true,
+            createdAt: true,
+          },
+          orderBy: { xp: "desc" },
+        },
+      },
+    });
+
+    return res.json({ team });
+  })
+);
+
+/**
+ * DELETE /api/user/me
+ * ────────────────────
+ * Delete the authenticated user's account.
+ * Also handles team succession and auto-deletion if they were in a team.
+ */
+app.delete(
+  "/api/user/me",
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    // Handle team logic before deleting user
+    if (user.teamId) {
+      const teamId = user.teamId;
+
+      // Disconnect user from team first (so they aren't counted in remaining)
+      await prisma.user.update({
+        where: { id: req.userId },
+        data: { teamId: null },
+      });
+
+      const remaining = await prisma.user.findMany({
+        where: { teamId },
+        orderBy: { xp: "desc" },
+        select: { id: true, xp: true },
+      });
+
+      if (remaining.length === 0) {
+        await prisma.team.delete({ where: { id: teamId } });
+      } else {
+        const team = await prisma.team.findUnique({ where: { id: teamId } });
+        if (team.captainId === req.userId) {
+          const newCaptain = remaining[0];
+          await prisma.team.update({
+            where: { id: teamId },
+            data: { captainId: newCaptain.id },
+          });
+        }
+      }
+    }
+
+    // Now delete the user
+    await prisma.user.delete({ where: { id: req.userId } });
+
+    return res.json({ message: "Account deleted successfully." });
+  })
+);
+
+// ═══════════════════════════════════════════════════════════════════════
+//  LEADERBOARD ROUTES
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/leaderboard
+ * ────────────────────
+ * Get top 50 teams by totalScore.
+ * Maps data to { rank, team, score, streak, members }
+ */
+app.get(
+  "/api/leaderboard",
+  asyncHandler(async (req, res) => {
+    const teams = await prisma.team.findMany({
+      orderBy: { totalScore: "desc" },
+      take: 50,
+      include: {
+        members: {
+          select: { xp: true, currentStreak: true },
+        },
+      },
+    });
+
+    // Map to frontend structure
+    const leaderboard = teams.map((team, index) => {
+      // Current active streak of team could be the max streak among members
+      const activeStreak = team.members.reduce(
+        (max, member) => Math.max(max, member.currentStreak || 0),
+        0
+      );
+
+      return {
+        id: team.id,
+        rank: index + 1,
+        team: team.name,
+        score: team.totalScore,
+        streak: activeStreak,
+        members: team.members.length,
+      };
+    });
+
+    return res.json({ leaderboard });
+  })
+);
+
+/**
+ * GET /api/teams/:id
+ * ───────────────────
+ * Public endpoint to view a team's details (for Leaderboard Inspector).
+ */
+app.get(
+  "/api/teams/:id",
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const team = await prisma.team.findUnique({
+      where: { id },
+      include: {
+        members: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+            xp: true,
+            currentStreak: true,
+          },
+          orderBy: { xp: "desc" },
+          take: 6, // safety limit
+        },
+      },
+    });
+
+    if (!team) {
+      return res.status(404).json({ error: "Team not found." });
+    }
+
+    return res.json({ team });
   })
 );
 

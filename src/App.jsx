@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from './AuthContext.jsx'
 import { api } from './api.js'
 import {
@@ -36,6 +37,7 @@ import {
     UserCircle,
     Terminal,
     Menu,
+    Loader2,
 } from 'lucide-react'
 
 /* ═══════════════════════════════════════════════════════════
@@ -226,15 +228,7 @@ const trainingCategories = [
     },
 ]
 
-const leaderboard = [
-    { rank: 1, team: 'PHOENIX ASCENDANT', score: 12_840, streak: 14, members: 5 },
-    { rank: 2, team: 'NOVA ENGINEERING', score: 11_520, streak: 9, members: 4 },
-    { rank: 3, team: 'ORBIT BREAKERS', score: 10_990, streak: 7, members: 5 },
-    { rank: 4, team: 'STELLAR DYNAMICS', score: 9_870, streak: 5, members: 4 },
-    { rank: 5, team: 'AETHER COLLECTIVE', score: 8_450, streak: 3, members: 6 },
-    { rank: 6, team: 'TITAN AEROSPACE', score: 7_230, streak: 2, members: 4 },
-    { rank: 7, team: 'ECLIPSE SQUADRON', score: 6_100, streak: 0, members: 5 },
-]
+
 
 const TABS = [
     { id: 'journey', label: 'THE JOURNEY', icon: Compass },
@@ -289,7 +283,7 @@ function RankBadge({ rank }) {
 
 /* ── Profile Dropdown ─────────────────────────────────────── */
 
-function ProfileDropdown({ isOpen, onClose }) {
+function ProfileDropdown({ isOpen, onClose, onNavigate }) {
     const ref = useRef(null)
     const { user, logout } = useAuth()
 
@@ -304,9 +298,9 @@ function ProfileDropdown({ isOpen, onClose }) {
     if (!isOpen) return null
 
     const items = [
-        { icon: UserCircle, label: 'Your Profile' },
-        { icon: Users, label: 'Team Dashboard' },
-        { icon: Settings, label: 'Settings' },
+        { icon: UserCircle, label: 'Your Profile', id: 'profile' },
+        { icon: Users, label: 'Team Dashboard', id: 'team' },
+        { icon: Settings, label: 'Settings', id: 'settings' },
     ]
 
     return (
@@ -317,10 +311,19 @@ function ProfileDropdown({ isOpen, onClose }) {
             style={{ animation: 'fadeSlideIn 0.2s ease-out' }}
         >
             {/* User info */}
-            <div className="px-4 py-3 border-b border-neutral-800">
-                <p className="text-xs text-neutral-500">Signed in as</p>
-                <p className="text-sm font-semibold text-white truncate">{user?.name ?? 'Guest'}</p>
-                <p className="text-xs text-neutral-400 truncate">{user?.email ?? ''}</p>
+            <div className="px-4 py-3 border-b border-neutral-800 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center overflow-hidden border border-neutral-700 shrink-0 shadow-inner">
+                    {user?.avatarUrl ? (
+                        <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                        <User size={18} className="text-neutral-500" />
+                    )}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-neutral-500 font-semibold uppercase tracking-wider mb-0.5">Signed in as</p>
+                    <p className="text-sm font-bold text-white truncate">{user?.name ?? 'Guest'}</p>
+                    <p className="text-xs text-neutral-400 truncate">{user?.email ?? ''}</p>
+                </div>
             </div>
 
             {/* Menu items */}
@@ -329,7 +332,11 @@ function ProfileDropdown({ isOpen, onClose }) {
                     const Icon = item.icon
                     return (
                         <button
-                            key={item.label}
+                            key={item.id}
+                            onClick={() => {
+                                onNavigate(item.id)
+                                onClose()
+                            }}
                             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-300 cursor-pointer
                                        transition-colors duration-200 hover:bg-neutral-900 hover:text-white"
                         >
@@ -359,11 +366,11 @@ function ProfileDropdown({ isOpen, onClose }) {
 /* ── Competition Modal (Auth-first flow) ─────────────────── */
 
 function CompetitionModal({ isOpen, onClose }) {
-    const { isAuthenticated, user, login, register } = useAuth()
+    const { isAuthenticated, user, login, register, updateUser, verifyEmail } = useAuth()
 
     // Phase determines which view the user sees
-    // 'login' | 'register' — unauthenticated
-    // 'create' | 'join'    — authenticated
+    // 'login' | 'register' | 'verify' — unauthenticated
+    // 'create' | 'join'               — authenticated
     const [phase, setPhase] = useState('login')
 
     // ── Form state ──────────────────────────────────────────
@@ -372,6 +379,7 @@ function CompetitionModal({ isOpen, onClose }) {
     const [name, setName] = useState('')
     const [teamName, setTeamName] = useState('')
     const [inviteCode, setInviteCode] = useState('')
+    const [otpCode, setOtpCode] = useState('')
 
     // ── UX state ────────────────────────────────────────────
     const [error, setError] = useState('')
@@ -380,7 +388,7 @@ function CompetitionModal({ isOpen, onClose }) {
 
     // When auth state changes, auto-advance to team phase
     useEffect(() => {
-        if (isAuthenticated && (phase === 'login' || phase === 'register')) {
+        if (isAuthenticated && (phase === 'login' || phase === 'register' || phase === 'verify')) {
             setPhase('create')
             setError('')
         }
@@ -395,6 +403,7 @@ function CompetitionModal({ isOpen, onClose }) {
             setName('')
             setTeamName('')
             setInviteCode('')
+            setOtpCode('')
             setError('')
             setSuccessMsg('')
         }
@@ -415,7 +424,12 @@ function CompetitionModal({ isOpen, onClose }) {
         try {
             await login(email, password)
         } catch (err) {
-            setError(err.message || 'Login failed. Check your credentials.')
+            if (err.data?.requiresVerification) {
+                setPhase('verify')
+                setSuccessMsg('Please verify your email to log in.')
+            } else {
+                setError(err.message || 'Login failed. Check your credentials.')
+            }
         } finally {
             setLoading(false)
         }
@@ -430,8 +444,25 @@ function CompetitionModal({ isOpen, onClose }) {
         setLoading(true)
         try {
             await register(email, password, name)
+            setPhase('verify')
+            setSuccessMsg('Account created! Please check your email for the verification code.')
         } catch (err) {
             setError(err.message || 'Registration failed.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    async function handleVerify(e) {
+        e.preventDefault()
+        setError('')
+        if (otpCode.length !== 6) { setError('Please enter a 6-digit code.'); return }
+        setLoading(true)
+        try {
+            await verifyEmail(email, otpCode)
+            setSuccessMsg('Email verified successfully! Welcome to ICARUS.')
+        } catch (err) {
+            setError(err.message || 'Verification failed. Invalid code.')
         } finally {
             setLoading(false)
         }
@@ -445,6 +476,7 @@ function CompetitionModal({ isOpen, onClose }) {
         setLoading(true)
         try {
             const data = await api.post('/teams/create', { name: teamName })
+            if (data.user) updateUser(data.user) // Update context with new team Id
             setSuccessMsg(`Team created! Invite code: ${data.team.inviteCode}`)
             setTeamName('')
         } catch (err) {
@@ -461,6 +493,7 @@ function CompetitionModal({ isOpen, onClose }) {
         setLoading(true)
         try {
             const data = await api.post('/teams/join', { inviteCode, userId: user.id })
+            if (data.user) updateUser(data.user)
             setSuccessMsg(data.message || 'Successfully joined the team!')
             setInviteCode('')
         } catch (err) {
@@ -471,7 +504,7 @@ function CompetitionModal({ isOpen, onClose }) {
     }
 
     // ── Determine which tabs to show ────────────────────────
-    const isAuthPhase = phase === 'login' || phase === 'register'
+    const isAuthPhase = phase === 'login' || phase === 'register' || phase === 'verify'
 
     return (
         <div
@@ -494,14 +527,15 @@ function CompetitionModal({ isOpen, onClose }) {
 
                 {/* Title */}
                 <h2 className="text-2xl font-black uppercase tracking-widest text-white mb-1 text-center">
-                    {isAuthPhase ? 'ACCESS ICARUS' : 'JOIN COMPETITION'}
+                    {isAuthPhase ? 'ACCESS ICARUS' : user?.teamId ? 'ASSIGNMENT COMPLETE' : 'JOIN COMPETITION'}
                 </h2>
                 <p className="text-xs text-neutral-500 text-center mb-6 tracking-wider uppercase">
                     {isAuthPhase ? 'Authenticate to continue' : `Welcome back, ${user?.name}`}
                 </p>
 
                 {/* Mode Toggle */}
-                <div className="flex rounded-xl bg-neutral-950 border border-neutral-800 p-1 mb-6">
+                {!(!isAuthPhase && user?.teamId) && phase !== 'verify' && (
+                    <div className="flex rounded-xl bg-neutral-950 border border-neutral-800 p-1 mb-6">
                     {isAuthPhase ? (
                         <>
                             <button
@@ -545,7 +579,8 @@ function CompetitionModal({ isOpen, onClose }) {
                             </button>
                         </>
                     )}
-                </div>
+                    </div>
+                )}
 
                 {/* ── Error / Success messages ── */}
                 {error && (
@@ -559,8 +594,63 @@ function CompetitionModal({ isOpen, onClose }) {
                     </div>
                 )}
 
-                {/* ═════════ PHASE: LOGIN ═════════ */}
-                {phase === 'login' && (
+                {!isAuthPhase && user?.teamId ? (
+                    <div className="text-center py-2 animate-in fade-in zoom-in duration-500">
+                        <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 flex items-center justify-center mx-auto mb-6">
+                            <CheckCircle2 size={32} />
+                        </div>
+                        <h3 className="text-lg font-bold text-white mb-2">Team Configured</h3>
+                        <p className="text-sm text-neutral-400 mb-8">You are successfully assigned to a team.</p>
+                        <button onClick={onClose} className="w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-[0.15em] bg-neutral-800 border border-neutral-700 text-white hover:bg-neutral-700 transition">
+                            Return to Dashboard
+                        </button>
+                    </div>
+                ) : (
+                    <>
+                        {/* ═════════ PHASE: VERIFY EMAIL ═════════ */}
+                        {phase === 'verify' && (
+                            <form onSubmit={handleVerify} className="space-y-4">
+                                <div className="text-center mb-6">
+                                    <Shield size={32} className="text-yellow-600 mx-auto mb-3" />
+                                    <p className="text-sm text-neutral-400">
+                                        We sent a 6-digit code to <strong className="text-white">{email}</strong>.
+                                    </p>
+                                </div>
+                                <div>
+                                    <input
+                                        type="text"
+                                        placeholder="• • • • • •"
+                                        maxLength={6}
+                                        value={otpCode}
+                                        onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                                        className={`${inputClass} text-center text-3xl tracking-[0.5em] font-mono py-4`}
+                                        required
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="mt-4 w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
+                                               bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
+                                               shadow-lg shadow-yellow-600/20
+                                               transition-all duration-300 ease-out
+                                               hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
+                                               active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                                >
+                                    {loading ? 'VERIFYING...' : 'VERIFY & ACCESS'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setPhase('login'); setError(''); setSuccessMsg(''); }}
+                                    className="mt-3 w-full py-2 text-xs font-bold uppercase tracking-wider text-neutral-500 hover:text-white transition-colors cursor-pointer"
+                                >
+                                    BACK TO SIGN IN
+                                </button>
+                            </form>
+                        )}
+
+                        {/* ═════════ PHASE: LOGIN ═════════ */}
+                        {phase === 'login' && (
                     <form onSubmit={handleLogin} className="space-y-4">
                         <div>
                             <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Email</label>
@@ -680,7 +770,7 @@ function CompetitionModal({ isOpen, onClose }) {
                                        hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
                                        active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
-                            {loading ? 'CREATING...' : 'INITIALIZE SEQUENCE'}
+                            {loading ? 'CREATING...' : 'CREATE TEAM'}
                         </button>
                     </form>
                 )}
@@ -710,9 +800,11 @@ function CompetitionModal({ isOpen, onClose }) {
                                        hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
                                        active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
-                            {loading ? 'JOINING...' : 'JOIN SQUADRON'}
+                            {loading ? 'JOINING...' : 'JOIN TEAM'}
                         </button>
                     </form>
+                )}
+                </>
                 )}
 
                 <p className="text-[10px] text-neutral-600 text-center mt-4 tracking-wide">
@@ -726,7 +818,7 @@ function CompetitionModal({ isOpen, onClose }) {
 
 /* ── Header ──────────────────────────────────────────────── */
 
-function Header({ onOpenModal, activeTab, setActiveTab }) {
+function Header({ onOpenModal, activeTab, setActiveTab, onNavigatePage }) {
     const { user, isAuthenticated } = useAuth()
     const currentUser = isAuthenticated ? user : guestData
     const [isProfileOpen, setIsProfileOpen] = useState(false)
@@ -749,7 +841,10 @@ function Header({ onOpenModal, activeTab, setActiveTab }) {
                 <div className="flex items-center justify-between h-16 md:h-20">
                     {/* Logo + Motto */}
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2.5 group cursor-pointer">
+                        <div 
+                            className="flex items-center gap-2.5 group cursor-pointer"
+                            onClick={() => onNavigatePage('home')}
+                        >
                             <img
                                 src="/logo_white.png"
                                 alt="ICARUS"
@@ -803,12 +898,20 @@ function Header({ onOpenModal, activeTab, setActiveTab }) {
                                         onClick={() => setIsProfileOpen(!isProfileOpen)}
                                         className="relative cursor-pointer group"
                                     >
-                                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-lg shadow-yellow-600/15">
-                                            <User size={17} className="text-black md:w-[19px] md:h-[19px]" />
+                                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-lg shadow-yellow-600/15 overflow-hidden">
+                                            {currentUser?.avatarUrl ? (
+                                                <img src={currentUser.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <User size={17} className="text-black md:w-[19px] md:h-[19px]" />
+                                            )}
                                         </div>
                                         <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-neutral-950" />
                                     </button>
-                                    <ProfileDropdown isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+                                    <ProfileDropdown 
+                                        isOpen={isProfileOpen} 
+                                        onClose={() => setIsProfileOpen(false)} 
+                                        onNavigate={onNavigatePage}
+                                    />
                                 </div>
                             </>
                         ) : (
@@ -1238,7 +1341,7 @@ function PodiumColumn({ entry, height, theme }) {
     const t = themes[theme]
 
     return (
-        <div className="flex flex-col items-center" style={{ width: theme === 'gold' ? '30%' : '25%', maxWidth: theme === 'gold' ? 220 : 200 }}>
+        <div className="flex flex-col items-center w-full">
             {theme === 'gold' && (
                 <div className="mb-3 animate-float">
                     <Crown size={32} className="text-yellow-400 drop-shadow-lg" />
@@ -1334,9 +1437,150 @@ function PodiumBar({ entry, theme }) {
     )
 }
 
+function TeamDetailsModal({ teamId, onClose }) {
+    const [team, setTeam] = useState(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState('')
+
+    useEffect(() => {
+        async function fetchTeam() {
+            try {
+                const res = await api.get(`/teams/${teamId}`)
+                setTeam(res.team)
+            } catch (err) {
+                setError(err.message || 'Failed to load team details')
+            } finally {
+                setLoading(false)
+            }
+        }
+        if (teamId) fetchTeam()
+    }, [teamId])
+
+    if (!document.body) return null;
+
+    return createPortal(
+        <div 
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] px-4"
+            onClick={onClose}
+        >
+            <div 
+                className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-lg p-6 relative shadow-2xl shadow-black/80"
+                onClick={e => e.stopPropagation()}
+                style={{ animation: 'fadeSlideIn 0.25s ease-out' }}
+            >
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors duration-200 cursor-pointer"
+                >
+                    <X size={20} />
+                </button>
+
+                {loading ? (
+                    <div className="py-20 flex flex-col items-center justify-center">
+                        <Loader2 size={32} className="text-yellow-600 animate-spin mb-4" />
+                    </div>
+                ) : error ? (
+                    <div className="py-10 text-center text-red-400 font-semibold">{error}</div>
+                ) : team ? (
+                    <>
+                        <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-widest text-white mb-2 text-center mt-2">
+                            {team.name}
+                        </h2>
+                        <div className="flex justify-center items-center gap-4 mb-8">
+                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-600/10 border border-yellow-600/25">
+                                <Star size={14} className="text-yellow-600" />
+                                <span className="text-sm font-bold text-yellow-600 tabular-nums">{team.totalScore.toLocaleString()} XP</span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-3 px-1">
+                                Team Roster ({team.members.length}/6)
+                            </p>
+                            {team.members.map(member => {
+                                const isCaptain = member.id === team.captainId
+                                return (
+                                    <div 
+                                        key={member.id}
+                                        className="flex items-center justify-between bg-neutral-950/50 border border-neutral-800/80 rounded-xl px-4 py-3"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center overflow-hidden border border-neutral-700">
+                                                {member.avatarUrl ? (
+                                                    <img src={member.avatarUrl} alt={member.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <User size={16} className="text-neutral-500" />
+                                                )}
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-bold text-white tracking-wide">{member.name}</span>
+                                                    {isCaptain && <Crown size={14} className="text-yellow-500" />}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4 text-right">
+                                            {member.currentStreak > 0 && (
+                                                <div className="hidden sm:flex items-center gap-1 opacity-80">
+                                                    <Flame size={14} className="text-orange-400" />
+                                                    <span className="text-xs font-bold text-orange-400">{member.currentStreak}d</span>
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-1.5">
+                                                <Star size={13} className="text-yellow-600/70" />
+                                                <span className="text-sm font-semibold text-neutral-300 tabular-nums">
+                                                    {member.xp.toLocaleString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </>
+                ) : null}
+            </div>
+        </div>,
+        document.body
+    )
+}
+
 function RankingTab({ onOpenModal }) {
-    const top3 = leaderboard.filter(e => e.rank <= 3)
-    const rest = leaderboard.filter(e => e.rank > 3)
+    const [leaderboard, setLeaderboard] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [selectedTeamId, setSelectedTeamId] = useState(null)
+
+    useEffect(() => {
+        async function fetchLeaderboard() {
+            try {
+                const res = await api.get('/leaderboard')
+                setLeaderboard(res.leaderboard || [])
+            } catch (err) {
+                console.error("Failed to load leaderboard:", err)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchLeaderboard()
+    }, [])
+
+    if (loading) {
+        return (
+            <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-20 flex flex-col items-center justify-center">
+                <Loader2 size={32} className="text-yellow-600 animate-spin mb-4" />
+                <p className="text-neutral-500 font-mono tracking-widest uppercase text-xs">Loading rankings...</p>
+            </div>
+        )
+    }
+
+    // Assign fallback dummy rank if API returns unsorted or unranked data (though backend does map rank)
+    const rankedData = leaderboard.map((item, idx) => ({
+        ...item,
+        rank: item.rank || idx + 1
+    }))
+
+    const top3 = rankedData.filter(e => e.rank <= 3)
+    const rest = rankedData.filter(e => e.rank > 3)
     const second = top3.find(e => e.rank === 2)
     const first = top3.find(e => e.rank === 1)
     const third = top3.find(e => e.rank === 3)
@@ -1359,16 +1603,16 @@ function RankingTab({ onOpenModal }) {
 
             {/* ── Part A — Mobile: Premium compact list ── */}
             <div className="flex flex-col gap-3 w-full mt-6 mb-10 md:hidden max-w-lg mx-auto">
-                {first && <PodiumBar entry={first} theme="gold" />}
-                {second && <PodiumBar entry={second} theme="silver" />}
-                {third && <PodiumBar entry={third} theme="bronze" />}
+                {first && <div onClick={() => setSelectedTeamId(first.id)} className="cursor-pointer"><PodiumBar entry={first} theme="gold" /></div>}
+                {second && <div onClick={() => setSelectedTeamId(second.id)} className="cursor-pointer"><PodiumBar entry={second} theme="silver" /></div>}
+                {third && <div onClick={() => setSelectedTeamId(third.id)} className="cursor-pointer"><PodiumBar entry={third} theme="bronze" /></div>}
             </div>
 
             {/* ── Part A — Desktop: Classic 3D podium ── */}
-            <div className="hidden md:flex justify-center items-end gap-8 mt-8 mb-14">
-                {second && <PodiumColumn entry={second} height="180px" theme="silver" />}
-                {first && <PodiumColumn entry={first} height="240px" theme="gold" />}
-                {third && <PodiumColumn entry={third} height="150px" theme="bronze" />}
+            <div className="hidden md:flex justify-center items-end gap-6 lg:gap-8 mt-8 mb-14 w-full max-w-3xl mx-auto">
+                {second && <div onClick={() => setSelectedTeamId(second.id)} className="cursor-pointer group flex-1 max-w-[200px] w-full"><PodiumColumn entry={second} height="180px" theme="silver" /></div>}
+                {first && <div onClick={() => setSelectedTeamId(first.id)} className="cursor-pointer group flex-1 max-w-[240px] w-full"><PodiumColumn entry={first} height="240px" theme="gold" /></div>}
+                {third && <div onClick={() => setSelectedTeamId(third.id)} className="cursor-pointer group flex-1 max-w-[200px] w-full"><PodiumColumn entry={third} height="150px" theme="bronze" /></div>}
             </div>
 
             {/* ── Part B: Card List (Ranks 4+) ── */}
@@ -1377,6 +1621,7 @@ function RankingTab({ onOpenModal }) {
                     {rest.map(entry => (
                         <div
                             key={entry.rank}
+                            onClick={() => setSelectedTeamId(entry.id)}
                             className="flex items-center justify-between bg-neutral-900/80 border border-neutral-800 rounded-xl px-5 sm:px-6 py-4
                                        transition-all duration-300 ease-out hover:border-yellow-600/40 hover:bg-neutral-900 cursor-pointer"
                         >
@@ -1410,6 +1655,14 @@ function RankingTab({ onOpenModal }) {
                         </div>
                     ))}
                 </div>
+            )}
+
+            {/* Modal */}
+            {selectedTeamId && (
+                <TeamDetailsModal 
+                    teamId={selectedTeamId} 
+                    onClose={() => setSelectedTeamId(null)} 
+                />
             )}
 
             {/* CTA */}
@@ -1470,7 +1723,7 @@ function Preloader({ isVisible }) {
                 />
             </div>
             <p className="text-[11px] sm:text-sm font-bold uppercase tracking-[0.45em] text-neutral-400 mb-2">
-                INITIALIZING ICARUS...
+                LOADING ICARUS...
             </p>
             {/* Subtle loading bar */}
             <div className="w-40 h-[2px] bg-neutral-800 rounded-full overflow-hidden mt-3">
@@ -1483,11 +1736,479 @@ function Preloader({ isVisible }) {
     )
 }
 
+/* ── Full Pages (Profile, Team, Settings) ────────────────── */
+
+function PageHeader({ title, onBack }) {
+    return (
+        <div className="mb-8 flex items-center gap-4 border-b border-neutral-800/60 pb-6">
+            <button 
+                onClick={onBack}
+                className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-700 transition"
+            >
+                <ArrowLeft size={18} />
+            </button>
+            <h1 className="text-2xl md:text-4xl font-black uppercase tracking-[0.15em] text-white">
+                {title}
+            </h1>
+        </div>
+    )
+}
+
+function ProfilePage({ onBack }) {
+    const { user } = useAuth()
+    
+    return (
+        <div className="max-w-4xl mx-auto px-4 md:px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <PageHeader title="Your Profile" onBack={onBack} />
+            
+            <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 md:p-10 mb-8 backdrop-blur-sm">
+                <div className="flex flex-col md:flex-row items-center gap-8">
+                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center shadow-2xl shadow-yellow-600/20 overflow-hidden shrink-0 border-2 border-yellow-600/20">
+                        {user?.avatarUrl ? (
+                            <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                            <User size={50} className="text-black" />
+                        )}
+                    </div>
+                    <div className="flex-1 text-center md:text-left">
+                        <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+                            <h2 className="text-3xl font-bold text-white">{user?.name}</h2>
+                            <span className="px-3 py-1 rounded-full bg-yellow-600/10 border border-yellow-600/30 text-yellow-600 text-xs font-bold uppercase tracking-wider">
+                                {user?.role || 'Member'}
+                            </span>
+                        </div>
+                        <p className="text-neutral-400 mb-6">{user?.email}</p>
+                        
+                        <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto md:mx-0">
+                            <div className="bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-center">
+                                <div className="text-2xl font-black text-yellow-600 tabular-nums">
+                                    {(user?.xp || 0).toLocaleString()}
+                                </div>
+                                <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mt-1">Total XP</div>
+                            </div>
+                            <div className="bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-center">
+                                <div className="text-2xl font-black text-white tabular-nums">
+                                    {user?.currentStreak || 0}
+                                </div>
+                                <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mt-1">Day Streak</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div className="bg-neutral-900/30 border border-neutral-800 rounded-2xl p-6 md:p-10">
+                <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-neutral-500 mb-6">Recent Activity</h3>
+                <div className="text-center py-10">
+                    <p className="text-neutral-500 italic">No recent activity recorded.</p>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function TeamDashboardPage({ onBack }) {
+    const { user, updateUser } = useAuth()
+    const [team, setTeam] = useState(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState('')
+    const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+    const [leaving, setLeaving] = useState(false)
+
+    useEffect(() => {
+        async function fetchTeam() {
+            try {
+                const res = await api.get('/user/team')
+                setTeam(res.team)
+            } catch (err) {
+                setError(err.message || 'Failed to load team data.')
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchTeam()
+    }, [])
+
+    return (
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <PageHeader title="Team Dashboard" onBack={onBack} />
+            
+            {loading ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                    <Loader2 size={32} className="text-yellow-600 animate-spin mb-4" />
+                    <p className="text-neutral-500 font-mono tracking-widest uppercase text-xs">Loading team data...</p>
+                </div>
+            ) : error || !team ? (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-10 text-center">
+                    <p className="text-red-400 mb-6">{error || "You have not joined a team yet."}</p>
+                    <button onClick={onBack} className="px-6 py-3 bg-neutral-900 border border-neutral-700 rounded-xl text-sm font-bold uppercase tracking-widest hover:bg-neutral-800 transition">
+                        Return to Dashboard
+                    </button>
+                </div>
+            ) : (
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div className="md:col-span-2 bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800 rounded-2xl p-6 md:p-8 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-wider mb-2">
+                                    {team.name}
+                                </h2>
+                                <p className="text-neutral-500 text-sm tracking-wide">Team Status: <span className="text-emerald-400 font-semibold">ACTIVE</span></p>
+                                <p className="text-neutral-500 text-sm tracking-wide mt-1">Captain: <span className="text-yellow-600 font-semibold">{team.members.find(m => m.id === team.captainId)?.name || '—'}</span></p>
+                            </div>
+                            <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-neutral-900 border-2 border-yellow-600/30 flex items-center justify-center shadow-lg shadow-yellow-600/10">
+                                <Users size={32} className="text-yellow-600" />
+                            </div>
+                        </div>
+                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 md:p-8 flex flex-col justify-center">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Invite Code</p>
+                            <div className="text-3xl font-mono text-yellow-600 tracking-[0.3em] font-bold">
+                                {team.inviteCode}
+                            </div>
+                            <p className="text-xs text-neutral-500 mt-3">Share this code with your team members.</p>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-neutral-900/40 border border-neutral-800 rounded-2xl overflow-hidden">
+                        <div className="px-6 py-4 border-b border-neutral-800 bg-neutral-900/80">
+                            <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-white">Team Members</h3>
+                        </div>
+                        <div className="divide-y divide-neutral-800/60">
+                            {team.members.map((member, index) => (
+                                <div key={member.id} className="flex items-center justify-between p-6 hover:bg-neutral-800/30 transition-colors">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center font-bold text-sm text-neutral-300 shrink-0">
+                                            {index + 1}
+                                        </div>
+                                        <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center overflow-hidden border border-neutral-700 shrink-0 shadow-inner">
+                                            {member.avatarUrl ? (
+                                                <img src={member.avatarUrl} alt={member.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <User size={16} className="text-neutral-500" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="font-bold text-white text-lg">{member.name}</h4>
+                                                {member.id === team.captainId && (
+                                                    <span className="px-2 py-0.5 rounded bg-yellow-600/15 border border-yellow-600/30 text-yellow-600 text-[10px] font-bold uppercase flex items-center gap-1">
+                                                        <Crown size={10} /> Captain
+                                                    </span>
+                                                )}
+                                                {member.id === user?.id && (
+                                                    <span className="px-2 py-0.5 rounded bg-neutral-800 text-neutral-400 text-[10px] font-bold uppercase">You</span>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-neutral-500">{member.email}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-6">
+                                        <div className="text-right hidden sm:block">
+                                            <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Streak</p>
+                                            <p className="font-mono text-yellow-600 font-bold">{member.currentStreak}d</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">XP</p>
+                                            <p className="font-mono text-white text-lg font-bold">{(member.xp || 0).toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Leave Team Button */}
+                    <div className="mt-8 flex justify-end">
+                        <button
+                            onClick={() => setShowLeaveConfirm(true)}
+                            className="px-6 py-3 rounded-xl text-sm font-bold uppercase tracking-widest
+                                       bg-red-500/10 border border-red-500/30 text-red-400
+                                       hover:bg-red-500/20 hover:border-red-500/50 transition-all cursor-pointer"
+                        >
+                            Leave Team
+                        </button>
+                    </div>
+                </>
+            )}
+
+            {/* Leave Confirmation Modal */}
+            {showLeaveConfirm && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[80] px-4" onClick={() => setShowLeaveConfirm(false)}>
+                    <div
+                        className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-sm p-7 text-center shadow-2xl shadow-black/60"
+                        onClick={e => e.stopPropagation()}
+                        style={{ animation: 'fadeSlideIn 0.2s ease-out' }}
+                    >
+                        <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 flex items-center justify-center mx-auto mb-5">
+                            <LogOut size={24} />
+                        </div>
+                        <h3 className="text-lg font-bold text-white mb-2">Leave Team?</h3>
+                        <p className="text-sm text-neutral-400 mb-6">
+                            Are you sure you want to leave <span className="text-white font-semibold">{team?.name}</span>?
+                            {user?.id === team?.captainId && (
+                                <span className="block mt-2 text-yellow-600">You are the captain. Leadership will transfer to the next highest-XP member.</span>
+                            )}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowLeaveConfirm(false)}
+                                className="flex-1 py-3 rounded-xl text-sm font-bold uppercase tracking-widest
+                                           bg-neutral-800 border border-neutral-700 text-white
+                                           hover:bg-neutral-700 transition cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    setLeaving(true)
+                                    try {
+                                        const data = await api.post('/teams/leave')
+                                        if (data.user) updateUser(data.user)
+                                        onBack()
+                                    } catch (err) {
+                                        setError(err.message || 'Failed to leave team.')
+                                        setShowLeaveConfirm(false)
+                                    } finally {
+                                        setLeaving(false)
+                                    }
+                                }}
+                                disabled={leaving}
+                                className="flex-1 py-3 rounded-xl text-sm font-bold uppercase tracking-widest
+                                           bg-red-500/20 border border-red-500/40 text-red-400
+                                           hover:bg-red-500/30 transition cursor-pointer
+                                           disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {leaving ? 'Leaving...' : 'Leave'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
+function SettingsPage({ onBack }) {
+    const { user, logout } = useAuth()
+    const [name, setName] = useState(user?.name || '')
+    const [avatarFile, setAvatarFile] = useState(null)
+    const [saving, setSaving] = useState(false)
+    const [status, setStatus] = useState(null) // { type: 'success' | 'error', msg: string }
+    
+    const dropzoneRef = useRef(null)
+
+    // Delete Account states
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [deleting, setDeleting] = useState(false)
+
+    useEffect(() => {
+        const handlePaste = (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            for (const item of items) {
+                if (item.type.startsWith('image/')) {
+                    const file = item.getAsFile();
+                    setAvatarFile(file);
+                    break;
+                }
+            }
+        };
+        window.addEventListener('paste', handlePaste);
+        return () => window.removeEventListener('paste', handlePaste);
+    }, []);
+
+    const handleSave = async (e) => {
+        e.preventDefault()
+        setSaving(true)
+        setStatus(null)
+        try {
+            // First update name if needed
+            let updatedUser = user;
+            if (name !== user?.name) {
+                const res = await api.put('/user/me', { name });
+                updatedUser = res.user;
+            }
+
+            // Then upload avatar if selected
+            if (avatarFile) {
+                const formData = new FormData()
+                formData.append('avatar', avatarFile)
+                const res = await api.post('/user/avatar', formData)
+                updatedUser = res.user;
+            }
+
+            setStatus({ type: 'success', msg: 'Profile updated successfully.' })
+            
+            // Crucial step: update the global auth context AND localStorage 
+            // so the avatar shows up everywhere immediately!
+            if (updateUser && updatedUser) {
+                updateUser(updatedUser);
+            }
+        } catch (err) {
+            setStatus({ type: 'error', msg: err.message || 'Failed to update settings.' })
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    return (
+        <div className="max-w-3xl mx-auto px-4 md:px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <PageHeader title="System Settings" onBack={onBack} />
+            
+            <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 md:p-10 mb-8 backdrop-blur-sm">
+                <form onSubmit={handleSave} className="space-y-6">
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Display Name</label>
+                        <input
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full bg-neutral-950/50 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-600/50 font-medium transition-colors"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-3">Avatar Image</label>
+                        <div className="flex flex-col sm:flex-row items-center gap-6">
+                            {/* Current / Preview Avatar */}
+                            <div className="w-20 h-20 rounded-full bg-neutral-900 flex items-center justify-center overflow-hidden border border-neutral-800 shrink-0 shadow-lg relative">
+                                {avatarFile ? (
+                                    <img src={URL.createObjectURL(avatarFile)} alt="Preview" className="w-full h-full object-cover" />
+                                ) : user?.avatarUrl ? (
+                                    <img src={user.avatarUrl} alt="Current Avatar" className="w-full h-full object-cover" />
+                                ) : (
+                                    <User size={32} className="text-neutral-500" />
+                                )}
+                            </div>
+                            
+                            {/* Dropzone Area */}
+                            <div 
+                                className="flex-1 w-full border border-neutral-800 bg-[#161616] rounded-xl p-5 flex flex-col items-center justify-center text-center transition-colors hover:bg-[#1a1a1a] cursor-pointer"
+                                onClick={() => dropzoneRef.current?.click()}
+                            >
+                                <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    className="hidden" 
+                                    ref={dropzoneRef}
+                                    onChange={(e) => {
+                                        if (e.target.files?.[0]) setAvatarFile(e.target.files[0])
+                                    }}
+                                />
+                                <div className="bg-[#242424] text-neutral-300 text-[13px] font-semibold py-2 px-6 rounded mb-4 border border-neutral-800 hover:bg-[#2a2a2a] transition-colors shadow-sm w-full max-w-[240px]">
+                                    Upload file
+                                </div>
+                                <p className="text-[13px] text-neutral-500 mb-2 font-medium">or <span className="text-neutral-400">Ctrl+V</span> to paste an image</p>
+                                <p className="text-[11px] text-neutral-600">Images wider than 256 pixels work best.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Email Address (Read-only)</label>
+                        <input
+                            type="text"
+                            value={user?.email || ''}
+                            disabled
+                            className="w-full bg-neutral-950/20 border border-neutral-800/50 rounded-xl px-4 py-3 text-neutral-500 focus:outline-none cursor-not-allowed"
+                        />
+                        <p className="text-[10px] text-neutral-600 mt-2">Email cannot be changed during active competition phase.</p>
+                    </div>
+
+                    {status && (
+                        <div className={`p-4 rounded-xl text-sm font-semibold tracking-wide border ${
+                            status.type === 'success' 
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
+                                : 'bg-red-500/10 text-red-400 border-red-500/30'
+                        }`}>
+                            {status.msg}
+                        </div>
+                    )}
+                    
+                    <div className="pt-4 flex justify-end">
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="px-8 py-3 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
+                                       bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
+                                       shadow-lg shadow-yellow-600/20 hover:scale-[1.02] transition-all
+                                       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        >
+                            {saving ? 'Updating...' : 'Save Changes'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-6 md:p-8">
+                <h3 className="text-red-400 font-bold uppercase tracking-[0.1em] mb-2">Danger Zone</h3>
+                <p className="text-neutral-500 text-sm mb-6">Once you delete your account, there is no going back. Please be certain.</p>
+                <button 
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="px-6 py-2.5 rounded-lg border border-red-500/30 text-red-400 text-sm font-bold uppercase tracking-widest hover:bg-red-500/10 transition cursor-pointer"
+                >
+                    Delete Account
+                </button>
+            </div>
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[80] px-4" onClick={() => setShowDeleteConfirm(false)}>
+                    <div
+                        className="bg-neutral-900 border border-red-500/30 rounded-2xl w-full max-w-sm p-8 text-center shadow-2xl shadow-red-500/10"
+                        onClick={e => e.stopPropagation()}
+                        style={{ animation: 'fadeSlideIn 0.2s ease-out' }}
+                    >
+                        <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/30 text-red-500 flex items-center justify-center mx-auto mb-6">
+                            <LogOut size={28} />
+                        </div>
+                        <h3 className="text-xl font-bold text-white mb-2 uppercase tracking-widest">Delete Account?</h3>
+                        <p className="text-sm text-neutral-400 mb-8">
+                            This action is <span className="text-red-400 font-bold">permanent</span> and cannot be undone. All your progress, XP, and team affiliations will be lost entirely.
+                        </p>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setShowDeleteConfirm(false)}
+                                className="flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest
+                                           bg-neutral-800 border border-neutral-700 text-white
+                                           hover:bg-neutral-700 transition cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    setDeleting(true)
+                                    try {
+                                        await api.delete('/user/me')
+                                        logout()
+                                        window.location.reload()
+                                    } catch (err) {
+                                        setStatus({ type: 'error', msg: err.message || 'Failed to delete account.' })
+                                        setShowDeleteConfirm(false)
+                                    } finally {
+                                        setDeleting(false)
+                                    }
+                                }}
+                                disabled={deleting}
+                                className="flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest
+                                           bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20
+                                           transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {deleting ? 'Deleting...' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
 
 /* ── Main App ────────────────────────────────────────────── */
 
 export default function App() {
     const [activeTab, setActiveTab] = useState('journey')
+    const [activePage, setActivePage] = useState('home') // 'home', 'profile', 'team', 'settings'
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
 
@@ -1515,16 +2236,29 @@ export default function App() {
                     onOpenModal={() => setIsModalOpen(true)}
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
+                    onNavigatePage={setActivePage}
                 />
-                <TabNav activeTab={activeTab} setActiveTab={setActiveTab} />
-                <main className="flex-1">
-                    <div key={activeTab} className="tab-animate">
-                        {activeTab === 'journey' && <JourneyTab />}
-                        {activeTab === 'training' && <TrainingTab />}
-                        {activeTab === 'ranking' && <RankingTab onOpenModal={() => setIsModalOpen(true)} />}
-                    </div>
-                </main>
-                <Footer />
+                
+                {activePage === 'home' ? (
+                    <>
+                        <TabNav activeTab={activeTab} setActiveTab={setActiveTab} />
+                        <main className="flex-1">
+                            <div key={activeTab} className="tab-animate">
+                                {activeTab === 'journey' && <JourneyTab />}
+                                {activeTab === 'training' && <TrainingTab />}
+                                {activeTab === 'ranking' && <RankingTab onOpenModal={() => setIsModalOpen(true)} />}
+                            </div>
+                        </main>
+                        <Footer />
+                    </>
+                ) : (
+                    <main className="flex-1 bg-neutral-950/90 backdrop-blur-md">
+                        {activePage === 'profile' && <ProfilePage onBack={() => setActivePage('home')} />}
+                        {activePage === 'team' && <TeamDashboardPage onBack={() => setActivePage('home')} />}
+                        {activePage === 'settings' && <SettingsPage onBack={() => setActivePage('home')} />}
+                    </main>
+                )}
+                
                 <CompetitionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
             </div>
         </>

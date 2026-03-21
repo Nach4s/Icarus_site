@@ -20,8 +20,12 @@ export async function apiFetch(endpoint, options = {}) {
     const token = localStorage.getItem('icarus_token')
 
     const headers = {
-        'Content-Type': 'application/json',
         ...options.headers,
+    }
+
+    // Only force JSON if the body is not FormData
+    if (!(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json'
     }
 
     if (token) {
@@ -59,14 +63,16 @@ export const api = {
     post: (endpoint, body) =>
         apiFetch(endpoint, {
             method: 'POST',
-            body: JSON.stringify(body),
+            body: body instanceof FormData ? body : JSON.stringify(body),
         }),
 
     put: (endpoint, body) =>
         apiFetch(endpoint, {
             method: 'PUT',
-            body: JSON.stringify(body),
+            body: body instanceof FormData ? body : JSON.stringify(body),
         }),
 
     delete: (endpoint) => apiFetch(endpoint, { method: 'DELETE' }),
 }
+
+export const getLeaderboard = () => apiFetch('/leaderboard');
