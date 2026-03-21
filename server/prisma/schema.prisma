@@ -33,8 +33,6 @@ model User {
   name          String
   avatarUrl     String?   /// URL to the user's avatar image
   role          Role      @default(STUDENT)
-  isVerified    Boolean   @default(false)
-  verificationCode String?
 
   // ── Gamification ──────────────────────────────────────────────────
   xp            Int       @default(0)       /// Lifetime experience points
@@ -73,6 +71,8 @@ model Team {
   captain    User?    @relation("TeamCaptain", fields: [captainId], references: [id], onDelete: SetNull)
 
   members    User[]   @relation("TeamMembers")
+
+  isRegisteredForCompetition Boolean @default(false)
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

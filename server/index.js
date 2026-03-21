@@ -11,6 +11,7 @@ const { PrismaClient } = require("@prisma/client");
 const multer = require("multer");
 const { createClient } = require("@supabase/supabase-js");
 const { sendVerificationEmail } = require("./utils/email");
+const redis = require("./utils/redis");
 
 // ─── Initialisation ──────────────────────────────────────────────────
 
@@ -123,20 +124,13 @@ app.post(
         .json({ error: "A user with this email already exists." });
     }
 
-    // ── Hash password & persist ───────────────────────────────────
+    // ── Hash password & set up OTP ────────────────────────────────
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-    
-    // Generate OTP
     const otpCode = generateOTP();
 
-    const user = await prisma.user.create({
-      data: { 
-        email, 
-        passwordHash, 
-        name,
-        verificationCode: otpCode 
-      },
-    });
+    // ── Save pending registration to Redis ────────────────────────
+    const pendingUser = { name, email, passwordHash, otpCode };
+    await redis.set(`registration:${email}`, JSON.stringify(pendingUser), "EX", 600); // 10 mins TTL
 
     // ── Send Verification Email ───────────────────────────────────
     try {
@@ -148,9 +142,9 @@ app.post(
 
     // ── Respond (Do not issue JWT yet) ────────────────────────────
     return res.status(201).json({
-      message: "Registration successful. Please verify your email.",
+      message: "Registration successful. Please check your email for the verification code.",
       requiresVerification: true,
-      email: user.email
+      email
     });
   })
 );
@@ -172,36 +166,38 @@ app.post(
       return res.status(400).json({ error: "Email and verification code are required." });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      return res.status(404).json({ error: "User not found." });
+    // ── Fetch pending registration from Redis ─────────────────────
+    const pendingUserData = await redis.get(`registration:${email}`);
+    if (!pendingUserData) {
+      return res.status(400).json({ error: "Verification code has expired or is invalid." });
     }
 
-    if (user.isVerified) {
-      return res.status(400).json({ error: "User is already verified." });
-    }
+    const pendingUser = JSON.parse(pendingUserData);
 
-    if (user.verificationCode !== code) {
+    if (pendingUser.otpCode !== code) {
       return res.status(400).json({ error: "Invalid verification code." });
     }
 
-    // Code matches, mark as verified
-    const updatedUser = await prisma.user.update({
-      where: { email },
+    // ── Code matches, create user in DB ───────────────────────────
+    const newUser = await prisma.user.create({
       data: {
-        isVerified: true,
-        verificationCode: null
+        email: pendingUser.email,
+        name: pendingUser.name,
+        passwordHash: pendingUser.passwordHash,
       }
     });
 
+    // ── Remove pending user from Redis ────────────────────────────
+    await redis.del(`registration:${email}`);
+
     // Issue JWT
     const token = jwt.sign(
-      { userId: updatedUser.id, role: updatedUser.role },
+      { userId: newUser.id, role: newUser.role },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    const { passwordHash: _, ...safeUser } = updatedUser;
+    const { passwordHash: _, ...safeUser } = newUser;
 
     return res.json({
       message: "Email verified successfully.",
@@ -240,29 +236,6 @@ app.post(
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       return res.status(401).json({ error: "Invalid credentials." });
-    }
-
-    // ── Check if verified ─────────────────────────────────────────
-    if (!user.isVerified) {
-      // Generate and save a fresh OTP so legacy accounts can verify, 
-      // or if they just lost the previous email.
-      const freshOtp = generateOTP();
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { verificationCode: freshOtp }
-      });
-
-      try {
-          await sendVerificationEmail(user.email, freshOtp, user.name);
-      } catch (err) {
-          console.error("Failed to send OTP on login:", err);
-      }
-
-      return res.status(403).json({ 
-          error: "Please verify your email first. A new code has been sent.", 
-          requiresVerification: true,
-          email: user.email
-      });
     }
 
     // ── Issue JWT ─────────────────────────────────────────────────
@@ -481,6 +454,49 @@ app.post(
     return res.json({
       message: "You have left the team.",
       user: safeUser,
+    });
+  })
+);
+
+// ═══════════════════════════════════════════════════════════════════════
+//  COMPETITION ROUTES
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * POST /api/competition/register
+ * ──────────────────────────────
+ * Flag a team as officially registered for the competition.
+ * Only the Captain can perform this action.
+ */
+app.post(
+  "/api/competition/register",
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      include: { team: true },
+    });
+
+    if (!user || !user.teamId) {
+      return res.status(400).json({ error: "You must be in a team to register." });
+    }
+
+    if (user.id !== user.team.captainId) {
+      return res.status(403).json({ error: "Only the Team Captain can register the team." });
+    }
+
+    if (user.team.isRegisteredForCompetition) {
+      return res.status(400).json({ error: "Team is already registered." });
+    }
+
+    const updatedTeam = await prisma.team.update({
+      where: { id: user.teamId },
+      data: { isRegisteredForCompetition: true },
+    });
+
+    return res.json({
+      message: "Your team is successfully registered!",
+      team: updatedTeam,
     });
   })
 );
