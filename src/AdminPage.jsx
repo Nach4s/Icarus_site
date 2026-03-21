@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
     ShieldCheck, Plus, Square, Users, Trophy, Calendar,
     ArrowLeft, Loader2, AlertTriangle, CheckCircle2,
-    ChevronRight, X, Clock, Ban, Activity,
+    ChevronRight, X, Clock, Ban, Activity, Trash2
 } from 'lucide-react'
 import { api } from './api'
 import { useAuth } from './AuthContext'
@@ -199,7 +199,7 @@ function CreateCompetitionForm({ onCreated }) {
 
 // ─── CompetitionCard ─────────────────────────────────────────────────
 
-function CompetitionCard({ comp, isSelected, onSelect, onStop }) {
+function CompetitionCard({ comp, isSelected, onSelect, onStop, onDelete }) {
     const [stopping, setStopping] = useState(false)
 
     async function handleStop(e) {
@@ -264,7 +264,15 @@ function CompetitionCard({ comp, isSelected, onSelect, onStop }) {
                     {comp._count?.teams ?? 0} team{comp._count?.teams !== 1 ? 's' : ''}
                 </span>
 
-                <button
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(comp.id); }}
+                        className="p-1.5 rounded-lg border border-red-500/20 text-red-500 hover:bg-red-500/10 hover:border-red-500/40 transition-colors cursor-pointer"
+                        title="Delete Competition"
+                    >
+                        <Trash2 size={13} />
+                    </button>
+                    <button
                     onClick={handleStop}
                     disabled={!comp.isSelectionActive || stopping}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold
@@ -278,6 +286,7 @@ function CompetitionCard({ comp, isSelected, onSelect, onStop }) {
                         : <Square size={10} />}
                     {comp.isSelectionActive ? 'Stop Selection' : 'Selection Stopped'}
                 </button>
+                </div>
             </div>
         </div>
     )
@@ -518,6 +527,8 @@ export default function AdminPage({ onBack }) {
     const [loading, setLoading]           = useState(true)
     const [selectedComp, setSelectedComp] = useState(null)
     const [toast, setToast]               = useState(null) // { msg, type }
+    const [compToDelete, setCompToDelete] = useState(null)
+    const [deleting, setDeleting]         = useState(false)
 
     // ── guard ────────────────────────────────────────────────────────
     if (user?.role !== 'ADMIN') {
@@ -580,6 +591,27 @@ export default function AdminPage({ onBack }) {
     function handleCreated(newComp) {
         setCompetitions(prev => [{ ...newComp, _count: { teams: 0 } }, ...prev])
         showToast(`"${newComp.title}" created successfully.`, 'success')
+    }
+
+    async function handleDeleteConfirm() {
+        if (!compToDelete) return
+        setDeleting(true)
+        try {
+            await api.delete(`/admin/competitions/${compToDelete.id}`)
+            setCompetitions(prev => prev.filter(c => c.id !== compToDelete.id))
+            if (selectedComp?.id === compToDelete.id) setSelectedComp(null)
+            showToast('Competition deleted successfully.', 'success')
+            setCompToDelete(null)
+        } catch (err) {
+            showToast(err.message || 'Failed to delete competition.', 'error')
+        } finally {
+            setDeleting(false)
+        }
+    }
+
+    function handleDeleteClick(competitionId) {
+        const comp = competitions.find(c => c.id === competitionId)
+        if (comp) setCompToDelete(comp)
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -672,6 +704,7 @@ export default function AdminPage({ onBack }) {
                                             isSelected={selectedComp?.id === comp.id}
                                             onSelect={setSelectedComp}
                                             onStop={handleStop}
+                                            onDelete={handleDeleteClick}
                                         />
                                     ))}
                                 </div>
@@ -700,6 +733,57 @@ export default function AdminPage({ onBack }) {
 
                 </div>
             </div>
+            {/* Delete Confirmation Modal */}
+            {compToDelete && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-sm cursor-pointer"
+                         onClick={() => !deleting && setCompToDelete(null)} />
+                    <div className="relative bg-neutral-900 border border-neutral-800 rounded-3xl w-full max-w-md
+                                    shadow-2xl shadow-black p-8 md:p-10 flex flex-col items-center text-center"
+                         style={{ animation: 'zoomIn 0.25s ease-out' }}>
+                        
+                        <div className="w-20 h-20 rounded-2xl bg-red-500/10 flex items-center justify-center mb-6
+                                        border border-red-500/20 text-red-500 shadow-inner">
+                            <AlertTriangle size={36} />
+                        </div>
+                        
+                        <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-3">
+                            Delete Competition?
+                        </h3>
+                        
+                        <p className="text-neutral-500 text-sm mb-8 leading-relaxed">
+                            You are about to permanently delete <strong className="text-white">"{compToDelete.title}"</strong>. 
+                            All associated teams will be completely unregistered from this competition.
+                            <br/><br/>
+                            <span className="text-red-400 font-bold uppercase tracking-widest text-[10px]">
+                                This action cannot be undone.
+                            </span>
+                        </p>
+                        
+                        <div className="flex gap-4 w-full">
+                            <button
+                                onClick={() => setCompToDelete(null)}
+                                disabled={deleting}
+                                className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest
+                                           bg-neutral-800 text-white hover:bg-neutral-700 transition-colors
+                                           disabled:opacity-50 cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteConfirm}
+                                disabled={deleting}
+                                className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest
+                                           bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20
+                                           active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer
+                                           flex items-center justify-center gap-2"
+                            >
+                                {deleting ? <Loader2 size={18} className="animate-spin" /> : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

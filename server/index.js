@@ -699,6 +699,38 @@ app.patch(
 );
 
 /**
+ * DELETE /api/admin/competitions/:id
+ * ───────────────────────────────────
+ * Delete a competition and unregister all associated teams.
+ */
+app.delete(
+  "/api/admin/competitions/:id",
+  authMiddleware,
+  adminMiddleware,
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const competition = await prisma.competition.findUnique({ where: { id } });
+    if (!competition) {
+      return res.status(404).json({ error: "Competition not found." });
+    }
+
+    // 1. Unregister all teams from this competition
+    await prisma.team.updateMany({
+      where: { competitionId: id },
+      data: { isRegisteredForCompetition: false },
+    });
+
+    // 2. Delete the competition
+    await prisma.competition.delete({
+      where: { id },
+    });
+
+    return res.json({ message: "Competition deleted successfully." });
+  })
+);
+
+/**
  * GET /api/admin/competitions/:id/teams
  * ──────────────────────────────────────
  * Fetch all teams registered for a specific competition.
