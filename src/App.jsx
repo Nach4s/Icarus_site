@@ -43,6 +43,8 @@ import {
     Loader2,
     AlertTriangle,
     Activity,
+    Maximize,
+    Minimize
 } from 'lucide-react'
 
 /* ═══════════════════════════════════════════════════════════
@@ -427,7 +429,7 @@ function CompetitionModal({ isOpen, onClose }) {
 
     if (!isOpen) return null
 
-    const inputClass = `w-full px-4 py-3 rounded-xl text-sm text-white placeholder-neutral-500
+    const inputClass = `w-full px-5 py-4 rounded-2xl text-base text-white placeholder-neutral-500
         bg-neutral-950 border border-neutral-700
         focus:border-yellow-600 focus:ring-1 focus:ring-yellow-600 focus:outline-none
         transition-all duration-300`
@@ -544,7 +546,7 @@ function CompetitionModal({ isOpen, onClose }) {
             onClick={onClose}
         >
             <div
-                className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md p-7 relative
+                className="bg-neutral-900 border border-neutral-800 rounded-[2rem] w-full max-w-xl p-10 md:p-14 relative
                            shadow-2xl shadow-black/60"
                 onClick={e => e.stopPropagation()}
                 style={{ animation: 'fadeSlideIn 0.25s ease-out' }}
@@ -558,10 +560,10 @@ function CompetitionModal({ isOpen, onClose }) {
                 </button>
 
                 {/* Title */}
-                <h2 className="text-2xl font-black uppercase tracking-widest text-white mb-1 text-center">
+                <h2 className="text-3xl md:text-4xl font-black uppercase tracking-widest text-white mb-2 text-center">
                     {isAuthPhase ? 'ACCESS ICARUS' : user?.teamId ? 'ASSIGNMENT COMPLETE' : 'JOIN COMPETITION'}
                 </h2>
-                <p className="text-xs text-neutral-500 text-center mb-6 tracking-wider uppercase">
+                <p className="text-sm text-neutral-500 text-center mb-10 tracking-wider uppercase">
                     {isAuthPhase ? 'Authenticate to continue' : `Welcome back, ${user?.name}`}
                 </p>
 
@@ -572,7 +574,7 @@ function CompetitionModal({ isOpen, onClose }) {
                         <>
                             <button
                                 onClick={() => { setPhase('login'); setError(''); setSuccessMsg(''); }}
-                                className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
+                                className={`flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
                                     ${phase === 'login'
                                         ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
                                         : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
@@ -581,7 +583,7 @@ function CompetitionModal({ isOpen, onClose }) {
                             </button>
                             <button
                                 onClick={() => { setPhase('register'); setError(''); setSuccessMsg(''); }}
-                                className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
+                                className={`flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
                                     ${phase === 'register'
                                         ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
                                         : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
@@ -593,7 +595,7 @@ function CompetitionModal({ isOpen, onClose }) {
                         <>
                             <button
                                 onClick={() => { setPhase('create'); setError(''); setSuccessMsg(''); }}
-                                className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
+                                className={`flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
                                     ${phase === 'create'
                                         ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
                                         : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
@@ -602,7 +604,7 @@ function CompetitionModal({ isOpen, onClose }) {
                             </button>
                             <button
                                 onClick={() => { setPhase('join'); setError(''); setSuccessMsg(''); }}
-                                className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
+                                className={`flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
                                     ${phase === 'join'
                                         ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
                                         : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
@@ -650,7 +652,7 @@ function CompetitionModal({ isOpen, onClose }) {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="mt-4 w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
+                                    className="mt-6 w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
                                                bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
                                                shadow-lg shadow-yellow-600/20
                                                transition-all duration-300 ease-out
@@ -662,7 +664,7 @@ function CompetitionModal({ isOpen, onClose }) {
                                 <button
                                     type="button"
                                     onClick={() => { setPhase('login'); setError(''); setSuccessMsg(''); }}
-                                    className="mt-3 w-full py-2 text-xs font-bold uppercase tracking-wider text-neutral-500 hover:text-white transition-colors cursor-pointer"
+                                    className="mt-4 w-full py-3 text-sm font-bold uppercase tracking-wider text-neutral-500 hover:text-white transition-colors cursor-pointer"
                                 >
                                     BACK TO SIGN IN
                                 </button>
@@ -699,7 +701,7 @@ function CompetitionModal({ isOpen, onClose }) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="mt-2 w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
+                            className="mt-4 w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
                                        bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
                                        shadow-lg shadow-yellow-600/20
                                        transition-all duration-300 ease-out
@@ -708,11 +710,11 @@ function CompetitionModal({ isOpen, onClose }) {
                         >
                             {loading ? 'AUTHENTICATING...' : 'SIGN IN'}
                         </button>
-                        <div className="text-center mt-2">
+                        <div className="text-center mt-4">
                             <button
                                 type="button"
                                 onClick={() => { setPhase('forgot'); setError(''); setSuccessMsg(''); }}
-                                className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 hover:text-white transition-colors cursor-pointer"
+                                className="text-xs font-bold uppercase tracking-wider text-neutral-500 hover:text-white transition-colors cursor-pointer"
                             >
                                 Forgot Password?
                             </button>
@@ -744,7 +746,7 @@ function CompetitionModal({ isOpen, onClose }) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="mt-2 w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
+                            className="mt-4 w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
                                        bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
                                        shadow-lg shadow-yellow-600/20
                                        transition-all duration-300 ease-out
@@ -756,7 +758,7 @@ function CompetitionModal({ isOpen, onClose }) {
                         <button
                             type="button"
                             onClick={() => { setPhase('login'); setError(''); setSuccessMsg(''); }}
-                            className="mt-3 w-full py-2 text-xs font-bold uppercase tracking-wider text-neutral-500 hover:text-white transition-colors cursor-pointer"
+                            className="mt-4 w-full py-3 text-sm font-bold uppercase tracking-wider text-neutral-500 hover:text-white transition-colors cursor-pointer"
                         >
                             BACK TO SIGN IN
                         </button>
@@ -806,7 +808,7 @@ function CompetitionModal({ isOpen, onClose }) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="mt-2 w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
+                            className="mt-4 w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
                                        bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
                                        shadow-lg shadow-yellow-600/20
                                        transition-all duration-300 ease-out
@@ -835,7 +837,7 @@ function CompetitionModal({ isOpen, onClose }) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="mt-2 w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
+                            className="mt-4 w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
                                        bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
                                        shadow-lg shadow-yellow-600/20
                                        transition-all duration-300 ease-out
@@ -865,7 +867,7 @@ function CompetitionModal({ isOpen, onClose }) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="mt-2 w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
+                            className="mt-4 w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
                                        bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
                                        shadow-lg shadow-yellow-600/20
                                        transition-all duration-300 ease-out
@@ -988,12 +990,12 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
                             /* Guest: show Sign In button */
                             <button
                                 onClick={onSignInClick}
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer
-                                           border border-neutral-700 text-neutral-300
+                                className="flex items-center gap-2 px-6 py-2.5 md:px-8 md:py-3 rounded-2xl text-sm md:text-base font-bold uppercase tracking-wider cursor-pointer
+                                           border-2 border-neutral-700 text-neutral-300
                                            transition-all duration-300
                                            hover:border-yellow-600/50 hover:text-white hover:bg-neutral-800/60"
                             >
-                                <User size={14} />
+                                <User size={18} />
                                 Sign In
                             </button>
                         )}
@@ -2016,6 +2018,119 @@ function PageHeader({ title, onBack }) {
     )
 }
 
+function ActivityHeatmap() {
+    const { user } = useAuth();
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    // Generate dummy data: 52 weeks * 7 days
+    const weeks = 52;
+    const daysPerWeek = 7;
+    
+    // Instead of completely random, make it look somewhat realistic
+    const grid = [];
+    for (let w = 0; w < weeks; w++) {
+        const week = [];
+        for (let d = 0; d < daysPerWeek; d++) {
+            let level = 0;
+            if (user?.role === 'ADMIN') {
+                // Random chance of activity, higher chance in later weeks
+                const chance = (w / weeks) * 0.4 + 0.05; 
+                if (Math.random() < chance) {
+                    level = Math.floor(Math.random() * 4) + 1; // 1 to 4
+                }
+            }
+            week.push(level);
+        }
+        grid.push(week);
+    }
+
+    const getColor = (level) => {
+        if (level === 0) return 'bg-neutral-800/40';
+        if (level === 1) return 'bg-yellow-900/40';
+        if (level === 2) return 'bg-yellow-700/60';
+        if (level === 3) return 'bg-yellow-600';
+        return 'bg-yellow-500';
+    };
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    return (
+        <div className={isExpanded ? "fixed inset-0 z-[100] bg-neutral-950 flex flex-col items-center justify-center p-4 md:p-12 animate-in fade-in duration-300 overflow-auto" : "relative w-full"}>
+            <div className={`relative ${isExpanded ? 'w-full max-w-7xl mx-auto flex-1 flex flex-col justify-center' : 'w-full'}`}>
+                
+                <div className="flex justify-between items-start mb-4">
+                    {isExpanded ? (
+                        <div>
+                            <h2 className="text-2xl font-black uppercase tracking-widest text-white flex items-center gap-3">
+                                <Activity className="text-yellow-600" />
+                                Activity Heatmap
+                            </h2>
+                            <p className="text-neutral-500 text-sm mt-1">Detailed view of your learning and mission progress.</p>
+                        </div>
+                    ) : (
+                        <div />
+                    )}
+                    
+                    <button 
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className={`p-2 text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors z-10 ${!isExpanded ? 'absolute -top-10 right-0' : ''}`}
+                        title={isExpanded ? "Minimize" : "Full Screen"}
+                    >
+                        {isExpanded ? <Minimize size={20} /> : <Maximize size={20} />}
+                    </button>
+                </div>
+
+                <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+                    <div className="min-w-[800px]">
+                {/* Months Row */}
+                <div className="flex text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-2 pl-8">
+                    {months.map((m) => (
+                        <div key={m} className="flex-1 text-left">{m}</div>
+                    ))}
+                </div>
+                
+                {/* Grid */}
+                <div className="flex gap-1">
+                    {/* Days column */}
+                    <div className="flex flex-col gap-1 text-[9px] text-neutral-500 font-bold uppercase tracking-widest pr-2 justify-between py-1">
+                        <span>Mon</span>
+                        <span>Wed</span>
+                        <span>Fri</span>
+                    </div>
+                    
+                    {/* Heatmap Squares */}
+                    <div className="flex gap-1 flex-1">
+                        {grid.map((week, wIndex) => (
+                            <div key={wIndex} className="flex flex-col gap-1 flex-1">
+                                {week.map((level, dIndex) => (
+                                    <div 
+                                        key={dIndex} 
+                                        className={`w-full aspect-square rounded-[3px] ${getColor(level)} transition-colors duration-300 hover:ring-1 hover:ring-white/30 cursor-pointer`}
+                                        title={level > 0 ? `Activity level: ${level}` : 'No activity'}
+                                    />
+                                ))}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                
+                {/* Legend */}
+                <div className="flex items-center justify-end gap-2 mt-4 text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
+                    <span>Less</span>
+                    <div className="flex gap-1">
+                        {[0, 1, 2, 3, 4].map(l => (
+                            <div key={l} className={`w-3 h-3 rounded-[2px] ${getColor(l)}`} />
+                        ))}
+                    </div>
+                    <span>More</span>
+                </div>
+            </div>
+        </div>
+            </div>
+        </div>
+    )
+}
+
 function ProfilePage({ onBack }) {
     const { user } = useAuth()
     
@@ -2061,8 +2176,8 @@ function ProfilePage({ onBack }) {
             
             <div className="bg-neutral-900/30 border border-neutral-800 rounded-2xl p-6 md:p-10">
                 <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-neutral-500 mb-6">Recent Activity</h3>
-                <div className="text-center py-10">
-                    <p className="text-neutral-500 italic">No recent activity recorded.</p>
+                <div className="py-2">
+                    <ActivityHeatmap />
                 </div>
             </div>
         </div>
