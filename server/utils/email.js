@@ -81,7 +81,7 @@ async function sendPasswordResetEmail(toEmail, resetToken, userName) {
         return true; 
     }
 
-    const resetLink = `http://localhost:5173/reset-password?token=${resetToken}`;
+    const resetLink = `${process.env.APP_URL || 'https://icarusrockets.tech'}/reset-password?token=${resetToken}`;
 
     const htmlContent = `
         <div style="font-family: Arial, sans-serif; background-color: #0a0a0a; color: #ffffff; padding: 40px; text-align: center;">
