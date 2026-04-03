@@ -52,6 +52,14 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Scale down to ~80% on laptops and larger screens */
+  font-size: 80%;
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 100%; /* Full size on mobile */
+  }
 }
 
 body {
