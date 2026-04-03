@@ -51,8 +51,13 @@ export function AuthProvider({ children }) {
                         setUser(res.user)
                     } catch (apiErr) {
                         console.error("Failed to sync user data with server:", apiErr)
-                        // If token is invalid/expired, api layer usually logs them out
-                        // but we handle basic hydration errors here gracefully
+                        // If user was deleted in DB (404) or token is invalid (401), clear session
+                        if (apiErr.status === 401 || apiErr.status === 404) {
+                            localStorage.removeItem(TOKEN_KEY)
+                            localStorage.removeItem(USER_KEY)
+                            setToken(null)
+                            setUser(null)
+                        }
                     }
                 }
             } catch (err) {

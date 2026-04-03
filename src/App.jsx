@@ -44,8 +44,10 @@ import {
     AlertTriangle,
     Activity,
     Maximize,
-    Minimize
+    Minimize,
+    MessageCircle
 } from 'lucide-react'
+import ContactUs from './ContactUs.jsx'
 
 /* ═══════════════════════════════════════════════════════════
    ICARUS DASHBOARD — Aerospace Innovation Platform
@@ -241,6 +243,7 @@ const TABS = [
     { id: 'journey', label: 'THE JOURNEY', icon: Compass },
     { id: 'training', label: 'TRAINING', icon: Crosshair },
     { id: 'ranking', label: 'GLOBAL RANKING', icon: Globe },
+    { id: 'contact', label: 'CONTACT US', icon: MessageCircle },
 ]
 
 
@@ -1106,23 +1109,33 @@ function TabNav({ activeTab, setActiveTab }) {
 /* ── Tab 1: THE JOURNEY ──────────────────────────────────── */
 
 function JourneyTab() {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const videoRef = useRef(null);
+
+    const handlePlayClick = () => {
+        setIsPlaying(true);
+        if (videoRef.current) {
+            videoRef.current.play();
+        }
+    };
+
     return (
         <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-10 sm:py-16 md:py-24">
             {/* Cinematic Title */}
             <div className="text-center mb-14 sm:mb-20">
                 <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.4em] text-neutral-500 mb-4">
-                    Module 01 — Foundation
+                    Platform Guide
                 </p>
                 <h1 className="leading-none mb-6">
                     <span className="block text-4xl sm:text-6xl lg:text-8xl font-black uppercase tracking-[0.1em] text-white mb-2">
-                        THE JOURNEY OF
+                        GETTING STARTED
                     </span>
                     <span className="block text-5xl sm:text-7xl lg:text-9xl font-black uppercase tracking-[0.12em] text-gold-shimmer">
-                        ICARUS
+                        WITH ICARUS
                     </span>
                 </h1>
                 <p className="mt-6 text-sm sm:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed">
-                    Master the engineering principles that defy gravity. Your path to innovation begins here.
+                    Learn how to navigate the platform, manage your team, and begin your journey to the stars.
                 </p>
             </div>
 
@@ -1132,27 +1145,37 @@ function JourneyTab() {
                 <div className="relative rounded-2xl overflow-hidden bg-neutral-900 shadow-2xl shadow-black/50"
                     style={{ boxShadow: '0 0 40px rgba(197,160,89,0.08), 0 8px 40px rgba(0,0,0,0.6)' }}>
                     <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                        <div
-                            className="absolute inset-0 bg-cover bg-center"
-                            style={{
-                                backgroundImage: "linear-gradient(to bottom, rgba(10,10,10,0.2), rgba(10,10,10,0.85)), url('https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=2048&auto=format&fit=crop')",
-                            }}
+                        <video
+                            ref={videoRef}
+                            playsInline
+                            controls={isPlaying}
+                            className={`absolute inset-0 w-full h-full object-cover ${isPlaying ? 'z-10' : 'z-0'}`}
+                            src="/background.mp4"
+                            onPause={() => setIsPlaying(false)}
+                            onEnded={() => setIsPlaying(false)}
                         />
-                        {/* Play button */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <button className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center
-                             bg-yellow-600/20 border-2 border-yellow-600/50 backdrop-blur-sm cursor-pointer
-                             transition-all duration-500 ease-out
-                             group-hover:scale-110 group-hover:bg-yellow-600/30 group-hover:border-yellow-600/70
-                             group-hover:shadow-2xl group-hover:shadow-yellow-600/20">
-                                <Play size={32} className="text-yellow-600 ml-1" fill="currentColor" />
-                            </button>
-                        </div>
-                        <div className="absolute bottom-4 right-4 px-3 py-1 rounded-md bg-black/60 backdrop-blur-sm text-[11px] font-semibold text-neutral-300 tracking-wider">24:35</div>
-                        <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-yellow-600/80 mb-1">Episode 01</p>
-                            <h3 className="text-sm sm:text-lg font-bold text-white tracking-wide">Introduction to Aerospace Engineering</h3>
-                        </div>
+                        
+                        {/* Play button overlay */}
+                        {!isPlaying && (
+                            <>
+                                <div className="absolute inset-0 flex items-center justify-center z-20">
+                                    <button 
+                                     onClick={handlePlayClick}
+                                     className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center
+                                     bg-yellow-600/20 border-2 border-yellow-600/50 backdrop-blur-sm cursor-pointer
+                                     transition-all duration-500 ease-out
+                                     group-hover:scale-110 group-hover:bg-yellow-600/30 group-hover:border-yellow-600/70
+                                     group-hover:shadow-2xl group-hover:shadow-yellow-600/20">
+                                        <Play size={32} className="text-yellow-600 ml-1" fill="currentColor" />
+                                    </button>
+                                </div>
+                                <div className="absolute bottom-4 right-4 px-3 py-1 rounded-md bg-black/60 backdrop-blur-sm text-[11px] font-semibold text-neutral-300 tracking-wider z-20">05:20</div>
+                                <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 z-20 pointer-events-none">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-yellow-600/80 mb-1">Quick Start</p>
+                                    <h3 className="text-sm sm:text-lg font-bold text-white tracking-wide">How to use the ICARUS Platform</h3>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
                 <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-yellow-600/30 rounded-tl-xl -translate-x-1.5 -translate-y-1.5" />
@@ -2811,7 +2834,8 @@ export default function App() {
                     backgroundImage: "linear-gradient(to bottom, rgba(18,18,18,0.85), rgba(18,18,18,1)), url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2048&auto=format&fit=crop')",
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
-                    backgroundAttachment: 'fixed',
+                    backgroundAttachment: 'scroll',
+                    willChange: 'transform',
                 }}
             >
                 <Header
@@ -2831,6 +2855,7 @@ export default function App() {
                                 {activeTab === 'journey' && <JourneyTab />}
                                 {activeTab === 'training' && <TrainingTab />}
                                 {activeTab === 'ranking' && <RankingTab onJoinClick={handleGlobalJoinClick} isRegistered={isRegistered} />}
+                                {activeTab === 'contact' && <ContactUs />}
                             </div>
                         </main>
                         <Footer />
