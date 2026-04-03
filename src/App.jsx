@@ -545,12 +545,12 @@ function CompetitionModal({ isOpen, onClose }) {
 
     return (
         <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] px-4"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] px-4 py-4"
             onClick={onClose}
         >
             <div
-                className="bg-neutral-900 border border-neutral-800 rounded-[2rem] w-full max-w-xl p-10 md:p-14 relative
-                           shadow-2xl shadow-black/60"
+                className="bg-neutral-900 border border-neutral-800 rounded-[2rem] w-full max-w-xl p-8 md:p-14 relative
+                           shadow-2xl shadow-black/60 overflow-y-auto max-h-[90dvh]"
                 onClick={e => e.stopPropagation()}
                 style={{ animation: 'fadeSlideIn 0.25s ease-out' }}
             >
@@ -1172,7 +1172,7 @@ function JourneyTab() {
                                 <div className="absolute bottom-4 right-4 px-3 py-1 rounded-md bg-black/60 backdrop-blur-sm text-[11px] font-semibold text-neutral-300 tracking-wider z-20">05:20</div>
                                 <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 z-20 pointer-events-none">
                                     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-yellow-600/80 mb-1">Quick Start</p>
-                                    <h3 className="text-sm sm:text-lg font-bold text-white tracking-wide">How to use the ICARUS Platform</h3>
+                                    <h3 className="text-sm sm:text-lg font-bold text-yellow-500 tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">How to use the ICARUS Platform</h3>
                                 </div>
                             </>
                         )}

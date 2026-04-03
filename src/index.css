@@ -58,7 +58,8 @@ html {
 
 @media (max-width: 768px) {
   html {
-    font-size: 100%; /* Full size on mobile */
+    font-size: 100%;
+    /* Full size on mobile */
   }
 }
 
