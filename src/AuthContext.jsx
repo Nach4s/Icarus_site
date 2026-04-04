@@ -39,26 +39,40 @@ export function AuthProvider({ children }) {
                     setToken(savedToken)
                     
                     // Optimistic UI: use local user data first to avoid flicker
+                    let hasCachedUser = false
                     if (savedUserStr) {
                         setUser(JSON.parse(savedUserStr))
+                        hasCachedUser = true
                     }
 
-                    // Background fetch to sync with DB
-                    try {
-                        const res = await api.get('/user/me')
-                        // Update local storage and context with fresh DB data (including avatarUrl)
-                        localStorage.setItem(USER_KEY, JSON.stringify(res.user))
-                        setUser(res.user)
-                    } catch (apiErr) {
-                        console.error("Failed to sync user data with server:", apiErr)
-                        // If user was deleted in DB (404) or token is invalid (401), clear session
-                        if (apiErr.status === 401 || apiErr.status === 404) {
-                            localStorage.removeItem(TOKEN_KEY)
-                            localStorage.removeItem(USER_KEY)
-                            setToken(null)
-                            setUser(null)
+                    // Background fetch to sync with DB — non-critical
+                    // If this fails, we keep the cached session intact
+                    const syncWithServer = async (attempt = 1) => {
+                        try {
+                            const res = await api.get('/user/me')
+                            localStorage.setItem(USER_KEY, JSON.stringify(res.user))
+                            setUser(res.user)
+                        } catch (apiErr) {
+                            console.warn(`[Auth] /user/me sync failed (attempt ${attempt}):`, apiErr?.message || apiErr)
+                            
+                            // Only clear session on definitive 401 AND no cached user
+                            // If we have cached user data, keep them logged in —
+                            // they'll get a proper error when they try an action
+                            if (apiErr.status === 401 && !hasCachedUser) {
+                                localStorage.removeItem(TOKEN_KEY)
+                                localStorage.removeItem(USER_KEY)
+                                setToken(null)
+                                setUser(null)
+                                return
+                            }
+                            
+                            // For network errors, 502, 503, etc — retry once after 2s
+                            if (attempt === 1 && apiErr.status !== 401) {
+                                setTimeout(() => syncWithServer(2), 2000)
+                            }
                         }
                     }
+                    syncWithServer()
                 }
             } catch (err) {
                 // Corrupted storage — wipe it
