@@ -278,7 +278,7 @@ app.post(
     const token = jwt.sign(
       { userId: newUser.id, role: newUser.role },
       JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "30d" }
     );
 
     const { passwordHash: _, ...safeUser } = newUser;
@@ -334,7 +334,7 @@ app.post(
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "30d" }
     );
 
     const { passwordHash: _, ...safeUser } = user;

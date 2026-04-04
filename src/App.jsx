@@ -936,8 +936,8 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
                         </span>
                     </div>
 
-                    {/* Right side */}
-                    <div className="flex items-center gap-3 md:gap-5">
+                    {/* Right side — tighter gaps on mobile */}
+                    <div className="flex items-center gap-2 md:gap-5">
                         {isAuthenticated ? (
                             <>
                                 {/* JOIN CTA */}
@@ -953,10 +953,10 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
                                     {isRegistered ? <CheckCircle2 size={16} /> : <Rocket size={16} />}
                                     {isRegistered ? "Registered" : "Join Competition"}
                                 </button>
-                                {/* Streak */}
-                                <div className="flex items-center gap-2 sm:gap-2.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full bg-yellow-600/10 border border-yellow-600/25">
-                                    <Flame size={18} className="text-yellow-600 animate-gold-pulse sm:w-[20px] sm:h-[20px]" />
-                                    <span className="text-sm sm:text-base font-bold text-yellow-600 tracking-wide">
+                                {/* Streak — smaller on mobile */}
+                                <div className="flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-full bg-yellow-600/10 border border-yellow-600/25">
+                                    <Flame size={16} className="text-yellow-600 animate-gold-pulse sm:w-[20px] sm:h-[20px]" />
+                                    <span className="text-xs sm:text-base font-bold text-yellow-600 tracking-wide">
                                         {currentUser.currentStreak ?? 0}d
                                     </span>
                                 </div>
@@ -1029,6 +1029,7 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
                                             <button
                                                 key={tab.id}
                                                 onClick={() => {
+                                                    onNavigatePage('home')
                                                     setActiveTab(tab.id)
                                                     setIsMobileMenuOpen(false)
                                                 }}
@@ -1075,7 +1076,7 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
 
 /* ── Tab Navigation (hidden on mobile — accessible via hamburger) ── */
 
-function TabNav({ activeTab, setActiveTab }) {
+function TabNav({ activeTab, setActiveTab, onNavigatePage }) {
     return (
         <nav className="hidden md:block border-b border-neutral-800/50 bg-neutral-950/50 backdrop-blur-lg">
             <div className="max-w-7xl mx-auto w-full px-6">
@@ -1086,7 +1087,7 @@ function TabNav({ activeTab, setActiveTab }) {
                         return (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
+                                onClick={() => { onNavigatePage('home'); setActiveTab(tab.id) }}
                                 className={`relative flex items-center gap-3 px-8 py-5 text-sm md:text-base font-bold uppercase tracking-[0.15em]
                            transition-all duration-300 ease-out cursor-pointer
                            ${isActive ? 'text-yellow-600' : 'text-neutral-500 hover:text-neutral-300'}`}
@@ -1120,26 +1121,26 @@ function JourneyTab() {
     };
 
     return (
-        <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-10 sm:py-16 md:py-24">
-            {/* Cinematic Title */}
-            <div className="text-center mb-14 sm:mb-20">
-                <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.4em] text-neutral-500 mb-4">
+        <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-8 sm:py-16 md:py-24">
+            {/* Cinematic Title — mobile-first font sizes */}
+            <div className="text-center mb-10 sm:mb-20">
+                <p className="text-[10px] sm:text-sm font-semibold uppercase tracking-[0.4em] text-neutral-500 mb-3">
                     Platform Guide
                 </p>
-                <h1 className="leading-none mb-6">
-                    <span className="block text-4xl sm:text-6xl lg:text-8xl font-black uppercase tracking-[0.1em] text-white mb-2">
+                <h1 className="leading-tight mb-4">
+                    <span className="block text-3xl sm:text-6xl lg:text-8xl font-black uppercase tracking-[0.08em] sm:tracking-[0.1em] text-white mb-1 sm:mb-2">
                         GETTING STARTED
                     </span>
-                    <span className="block text-5xl sm:text-7xl lg:text-9xl font-black uppercase tracking-[0.12em] text-gold-shimmer">
+                    <span className="block text-4xl sm:text-7xl lg:text-9xl font-black uppercase tracking-[0.08em] sm:tracking-[0.12em] text-gold-shimmer">
                         WITH ICARUS
                     </span>
                 </h1>
-                <p className="mt-6 text-sm sm:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed">
-                    Learn how to navigate the platform, manage your team, and begin your journey to the stars.
+                <p className="mt-4 text-sm sm:text-lg text-neutral-400 max-w-xl mx-auto leading-relaxed px-2">
+                    Navigate the platform, build your team, and launch your journey.
                 </p>
             </div>
 
-            {/* Video Placeholder */}
+            {/* Video wrapper */}
             <div className="relative max-w-5xl mx-auto group">
                 <div className="absolute -inset-px rounded-2xl bg-gradient-to-br from-yellow-600/30 via-transparent to-yellow-600/10 opacity-50 group-hover:opacity-100 transition-opacity duration-700" />
                 <div className="relative rounded-2xl overflow-hidden bg-neutral-900 shadow-2xl shadow-black/50"
@@ -1149,37 +1150,50 @@ function JourneyTab() {
                             ref={videoRef}
                             playsInline
                             controls={isPlaying}
+                            disablePictureInPicture
+                            disableRemotePlayback
                             className={`absolute inset-0 w-full h-full object-cover ${isPlaying ? 'z-10' : 'z-0'}`}
                             src="/background.mp4"
-                            onPause={() => setIsPlaying(false)}
+                            onPause={() => {
+                                if (videoRef.current && videoRef.current.seeking) return
+                                setIsPlaying(false)
+                            }}
                             onEnded={() => setIsPlaying(false)}
+                            style={{ objectFit: 'cover' }}
                         />
-                        
-                        {/* Play button overlay */}
+
+                        {/* Play button — always centered */}
                         {!isPlaying && (
-                            <>
-                                <div className="absolute inset-0 flex items-center justify-center z-20">
-                                    <button 
-                                     onClick={handlePlayClick}
-                                     className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center
-                                     bg-yellow-600/20 border-2 border-yellow-600/50 backdrop-blur-sm cursor-pointer
-                                     transition-all duration-500 ease-out
-                                     group-hover:scale-110 group-hover:bg-yellow-600/30 group-hover:border-yellow-600/70
-                                     group-hover:shadow-2xl group-hover:shadow-yellow-600/20">
-                                        <Play size={32} className="text-yellow-600 ml-1" fill="currentColor" />
-                                    </button>
-                                </div>
-                                <div className="absolute bottom-4 right-4 px-3 py-1 rounded-md bg-black/60 backdrop-blur-sm text-[11px] font-semibold text-neutral-300 tracking-wider z-20">05:20</div>
-                                <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 z-20 pointer-events-none">
-                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-yellow-600/80 mb-1">Quick Start</p>
-                                    <h3 className="text-sm sm:text-lg font-bold text-yellow-500 tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">How to use the ICARUS Platform</h3>
-                                </div>
-                            </>
+                            <div className="absolute inset-0 flex items-center justify-center z-20">
+                                <button
+                                    onClick={handlePlayClick}
+                                    className="w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center
+                                    bg-yellow-600/20 border-2 border-yellow-600/50 backdrop-blur-sm cursor-pointer
+                                    transition-all duration-500 ease-out
+                                    group-hover:scale-110 group-hover:bg-yellow-600/30 group-hover:border-yellow-600/70
+                                    group-hover:shadow-2xl group-hover:shadow-yellow-600/20">
+                                    <Play size={28} className="text-yellow-600 ml-1 sm:w-8 sm:h-8" fill="currentColor" />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Overlay label — only on sm+ to avoid overlap on tiny screens */}
+                        {!isPlaying && (
+                            <div className="absolute bottom-3 left-3 sm:bottom-6 sm:left-6 z-20 pointer-events-none hidden sm:block">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-yellow-600/80 mb-1">Quick Start</p>
+                                <h3 className="text-sm sm:text-lg font-bold text-yellow-500 tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">How to use the ICARUS Platform</h3>
+                            </div>
                         )}
                     </div>
                 </div>
                 <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-yellow-600/30 rounded-tl-xl -translate-x-1.5 -translate-y-1.5" />
                 <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-yellow-600/30 rounded-br-xl translate-x-1.5 translate-y-1.5" />
+            </div>
+
+            {/* Caption below video — always visible on mobile */}
+            <div className="mt-4 sm:hidden px-1">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-yellow-600/80 mb-1">Quick Start</p>
+                <h3 className="text-base font-bold text-yellow-500 tracking-wide">How to use the ICARUS Platform</h3>
             </div>
         </div>
     )
@@ -2412,46 +2426,92 @@ function TeamDashboardPage({ onBack }) {
                     </div>
                     
                     <div className="bg-neutral-900/40 border border-neutral-800 rounded-2xl overflow-hidden">
-                        <div className="px-6 py-4 border-b border-neutral-800 bg-neutral-900/80">
+                        <div className="px-6 py-5 border-b border-neutral-800 bg-neutral-900/80 flex items-center justify-between">
                             <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-white">Team Members</h3>
+                            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{team.members.length} members</span>
                         </div>
-                        <div className="divide-y divide-neutral-800/60">
+
+                        {/* ── Desktop layout (md+) ── */}
+                        <div className="hidden md:block divide-y divide-neutral-800/60">
                             {team.members.map((member, index) => (
-                                <div key={member.id} className="flex items-center justify-between p-6 hover:bg-neutral-800/30 transition-colors">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center font-bold text-sm text-neutral-300 shrink-0">
+                                <div key={member.id} className="flex items-center gap-5 px-8 py-6 hover:bg-neutral-800/20 transition-colors group">
+                                    {/* Rank */}
+                                    <div className="w-11 h-11 rounded-xl bg-neutral-800 border border-neutral-700/60 flex items-center justify-center font-black text-base text-neutral-300 shrink-0 group-hover:border-neutral-600 transition-colors">
+                                        {index + 1}
+                                    </div>
+                                    {/* Avatar */}
+                                    <div className="w-14 h-14 rounded-2xl bg-neutral-800 flex items-center justify-center overflow-hidden border border-neutral-700 shrink-0 shadow-lg group-hover:shadow-yellow-600/5 transition-shadow">
+                                        {member.avatarUrl ? (
+                                            <img src={member.avatarUrl} alt={member.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <User size={22} className="text-neutral-500" />
+                                        )}
+                                    </div>
+                                    {/* Info */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <h4 className="font-black text-white text-xl tracking-tight">{member.name}</h4>
+                                            {member.id === team.captainId && (
+                                                <span className="px-2.5 py-1 rounded-lg bg-yellow-600/15 border border-yellow-600/30 text-yellow-600 text-[10px] font-bold uppercase flex items-center gap-1 shrink-0">
+                                                    <Crown size={10} /> Captain
+                                                </span>
+                                            )}
+                                            {member.id === user?.id && (
+                                                <span className="px-2.5 py-1 rounded-lg bg-neutral-800 border border-neutral-700 text-neutral-400 text-[10px] font-bold uppercase shrink-0">You</span>
+                                            )}
+                                        </div>
+                                        <p className="text-sm text-neutral-500">{member.email}</p>
+                                    </div>
+                                    {/* Streak */}
+                                    <div className="text-center px-6 border-l border-neutral-800">
+                                        <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest mb-1">Streak</p>
+                                        <p className="font-mono text-yellow-600 font-black text-xl">{member.currentStreak ?? 0}<span className="text-sm">d</span></p>
+                                    </div>
+                                    {/* XP */}
+                                    <div className="text-center px-6 border-l border-neutral-800">
+                                        <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest mb-1">XP</p>
+                                        <p className="font-mono text-white font-black text-xl">{(member.xp || 0).toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* ── Mobile layout (<md) ── */}
+                        <div className="md:hidden divide-y divide-neutral-800/60">
+                            {team.members.map((member, index) => (
+                                <div key={member.id} className="p-4 hover:bg-neutral-800/20 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        {/* Rank */}
+                                        <div className="w-7 h-7 rounded-lg bg-neutral-800 border border-neutral-700 flex items-center justify-center font-black text-xs text-neutral-400 shrink-0">
                                             {index + 1}
                                         </div>
-                                        <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center overflow-hidden border border-neutral-700 shrink-0 shadow-inner">
+                                        {/* Avatar */}
+                                        <div className="w-11 h-11 rounded-xl bg-neutral-800 flex items-center justify-center overflow-hidden border border-neutral-700 shrink-0">
                                             {member.avatarUrl ? (
                                                 <img src={member.avatarUrl} alt={member.name} className="w-full h-full object-cover" />
                                             ) : (
-                                                <User size={16} className="text-neutral-500" />
+                                                <User size={18} className="text-neutral-500" />
                                             )}
                                         </div>
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <h4 className="font-bold text-white text-lg">{member.name}</h4>
+                                        {/* Name + email */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                <h4 className="font-bold text-white text-base leading-tight">{member.name}</h4>
                                                 {member.id === team.captainId && (
-                                                    <span className="px-2 py-0.5 rounded bg-yellow-600/15 border border-yellow-600/30 text-yellow-600 text-[10px] font-bold uppercase flex items-center gap-1">
-                                                        <Crown size={10} /> Captain
+                                                    <span className="px-1.5 py-0.5 rounded bg-yellow-600/15 border border-yellow-600/30 text-yellow-600 text-[9px] font-bold uppercase flex items-center gap-0.5">
+                                                        <Crown size={8} /> Captain
                                                     </span>
                                                 )}
                                                 {member.id === user?.id && (
-                                                    <span className="px-2 py-0.5 rounded bg-neutral-800 text-neutral-400 text-[10px] font-bold uppercase">You</span>
+                                                    <span className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-neutral-400 text-[9px] font-bold uppercase">You</span>
                                                 )}
                                             </div>
-                                            <p className="text-xs text-neutral-500">{member.email}</p>
+                                            <p className="text-[11px] text-neutral-500 mt-0.5 truncate">{member.email}</p>
                                         </div>
-                                    </div>
-                                    <div className="flex items-center gap-6">
-                                        <div className="text-right hidden sm:block">
-                                            <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Streak</p>
-                                            <p className="font-mono text-yellow-600 font-bold">{member.currentStreak}d</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">XP</p>
-                                            <p className="font-mono text-white text-lg font-bold">{(member.xp || 0).toLocaleString()}</p>
+                                        {/* XP — right side */}
+                                        <div className="text-right shrink-0 ml-2">
+                                            <p className="text-[9px] font-bold text-neutral-600 uppercase tracking-widest mb-0.5">XP</p>
+                                            <p className="font-mono text-white font-black text-base">{(member.xp || 0).toLocaleString()}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -2619,114 +2679,149 @@ function SettingsPage({ onBack }) {
     }
 
     return (
-        <div className="max-w-5xl mx-auto px-4 md:px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <PageHeader title="System Settings" onBack={onBack} />
-            
-            <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 md:p-10 mb-8 backdrop-blur-sm">
-                <form onSubmit={handleSave} className="space-y-6">
-                    <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Display Name</label>
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full bg-neutral-950/50 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-600/50 font-medium transition-colors"
-                        />
-                    </div>
+        <div className="max-w-2xl md:max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <PageHeader title="Settings" onBack={onBack} />
 
-                    <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-3">Avatar Image</label>
-                        <div className="flex flex-col sm:flex-row items-center gap-6">
-                            {/* Current / Preview Avatar */}
-                            <div className="w-20 h-20 rounded-full bg-neutral-900 flex items-center justify-center overflow-hidden border border-neutral-800 shrink-0 shadow-lg relative">
-                                {avatarFile ? (
-                                    <img src={URL.createObjectURL(avatarFile)} alt="Preview" className="w-full h-full object-cover" />
-                                ) : user?.avatarUrl ? (
-                                    <img src={user.avatarUrl} alt="Current Avatar" className="w-full h-full object-cover" />
-                                ) : (
-                                    <User size={32} className="text-neutral-500" />
-                                )}
+            <form onSubmit={handleSave} className="space-y-4">
+
+                {/* ── Profile Section ─────────────────────────── */}
+                <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl overflow-hidden">
+                    <div className="px-5 py-4 border-b border-neutral-800/80 bg-neutral-900/80">
+                        <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">Profile</h2>
+                    </div>
+                    <div className="p-5 md:p-6 space-y-5">
+
+                        {/* Avatar section — large, centered */}
+                        <div className="flex flex-col items-center gap-4 py-2">
+                            {/* Big avatar with edit badge */}
+                            <div className="relative">
+                                <div className="w-24 h-24 md:w-36 md:h-36 rounded-full bg-neutral-800 border-2 border-neutral-700 flex items-center justify-center overflow-hidden shadow-xl ring-2 ring-yellow-600/20">
+                                    {avatarFile ? (
+                                        <img src={URL.createObjectURL(avatarFile)} alt="Preview" className="w-full h-full object-cover" />
+                                    ) : user?.avatarUrl ? (
+                                        <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <User size={38} className="text-neutral-500 md:w-14 md:h-14" />
+                                    )}
+                                </div>
+                                {/* Edit badge */}
+                                <button
+                                    type="button"
+                                    onClick={() => dropzoneRef.current?.click()}
+                                    className="absolute bottom-0 right-0 w-8 h-8 md:w-10 md:h-10 rounded-full bg-yellow-600 hover:bg-yellow-500 border-2 border-neutral-900 flex items-center justify-center cursor-pointer transition-colors shadow-lg"
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-black">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                    </svg>
+                                </button>
                             </div>
-                            
-                            {/* Dropzone Area */}
-                            <div 
-                                className="flex-1 w-full border border-neutral-800 bg-[#161616] rounded-xl p-5 flex flex-col items-center justify-center text-center transition-colors hover:bg-[#1a1a1a] cursor-pointer"
+
+                            {/* Dropzone */}
+                            <div
+                                className="w-full border-2 border-dashed border-neutral-700 hover:border-yellow-600/50 bg-neutral-950/30 hover:bg-neutral-800/20 rounded-2xl p-5 md:p-8 flex flex-col items-center gap-2 md:gap-3 cursor-pointer transition-all duration-200 group"
                                 onClick={() => dropzoneRef.current?.click()}
                             >
-                                <input 
-                                    type="file" 
-                                    accept="image/*" 
-                                    className="hidden" 
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
                                     ref={dropzoneRef}
-                                    onChange={(e) => {
-                                        if (e.target.files?.[0]) setAvatarFile(e.target.files[0])
-                                    }}
+                                    onChange={(e) => { if (e.target.files?.[0]) setAvatarFile(e.target.files[0]) }}
                                 />
-                                <div className="bg-[#242424] text-neutral-300 text-[13px] font-semibold py-2 px-6 rounded mb-4 border border-neutral-800 hover:bg-[#2a2a2a] transition-colors shadow-sm w-full max-w-[240px]">
-                                    Upload file
+                                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-neutral-800 border border-neutral-700 group-hover:border-yellow-600/30 group-hover:bg-neutral-700 flex items-center justify-center transition-colors">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-400 group-hover:text-yellow-600 transition-colors">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="17 8 12 3 7 8"/>
+                                        <line x1="12" y1="3" x2="12" y2="15"/>
+                                    </svg>
                                 </div>
-                                 <p className="text-[13px] text-neutral-500 mb-2 font-medium">or <span className="text-neutral-400">Ctrl+V</span> to paste an image</p>
-                                <p className="text-[11px] text-neutral-600">Images wider than 256 pixels work best.</p>
+                                <div className="text-center">
+                                    <p className="text-sm md:text-base font-semibold text-neutral-300 group-hover:text-white transition-colors">
+                                        {avatarFile ? avatarFile.name : 'Click to upload a photo'}
+                                    </p>
+                                    <p className="text-xs text-neutral-600 mt-0.5">or press <span className="text-neutral-500 font-mono">Ctrl+V</span> to paste · JPG, PNG, WEBP</p>
+                                </div>
                             </div>
-                            
-                            {/* Remove Photo Action */}
+
+                            {/* Remove link */}
                             {(avatarFile || user?.avatarUrl) && (
                                 <button
                                     type="button"
                                     onClick={handleRemovePhoto}
                                     disabled={saving}
-                                    className="px-4 py-2 rounded-lg border border-red-500/20 text-red-500/60 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/40 transition-all cursor-pointer disabled:opacity-50 h-fit"
+                                    className="text-xs font-bold uppercase tracking-widest text-red-500/40 hover:text-red-400 transition-colors cursor-pointer disabled:opacity-40"
                                 >
-                                    Remove Photo
+                                    Remove photo
                                 </button>
                             )}
                         </div>
-                    </div>
-                    
-                    <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Email Address (Read-only)</label>
-                        <input
-                            type="text"
-                            value={user?.email || ''}
-                            disabled
-                            className="w-full bg-neutral-950/20 border border-neutral-800/50 rounded-xl px-4 py-3 text-neutral-500 focus:outline-none cursor-not-allowed"
-                        />
-                        <p className="text-[10px] text-neutral-600 mt-2">Email cannot be changed during active competition phase.</p>
-                    </div>
 
-                    {status && (
-                        <div className={`p-4 rounded-xl text-sm font-semibold tracking-wide border ${
-                            status.type === 'success' 
-                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
-                                : 'bg-red-500/10 text-red-400 border-red-500/30'
-                        }`}>
-                            {status.msg}
+
+                        {/* Display Name */}
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Display Name</label>
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className="w-full bg-neutral-950/60 border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-600/50 font-medium transition-colors placeholder:text-neutral-600"
+                                placeholder="Your display name"
+                            />
                         </div>
-                    )}
-                    
-                    <div className="pt-4 flex justify-end">
-                        <button
-                            type="submit"
-                            disabled={saving}
-                            className="px-8 py-3 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
-                                       bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
-                                       shadow-lg shadow-yellow-600/20 hover:scale-[1.02] transition-all
-                                       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                        >
-                            {saving ? 'Updating...' : 'Save Changes'}
-                        </button>
+
+                        {/* Email (read-only) */}
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">
+                                Email <span className="text-neutral-700 normal-case tracking-normal font-normal ml-1">— read only</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={user?.email || ''}
+                                disabled
+                                className="w-full bg-neutral-950/20 border border-neutral-800/40 rounded-xl px-4 py-3 text-neutral-600 text-sm focus:outline-none cursor-not-allowed"
+                            />
+                        </div>
+
                     </div>
-                </form>
-            </div>
-            
-            <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-6 md:p-8">
-                <h3 className="text-red-400 font-bold uppercase tracking-[0.1em] mb-2">Danger Zone</h3>
-                <p className="text-neutral-500 text-sm mb-6">Once you delete your account, there is no going back. Please be certain.</p>
-                <button 
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="px-6 py-2.5 rounded-lg border border-red-500/30 text-red-400 text-sm font-bold uppercase tracking-widest hover:bg-red-500/10 transition cursor-pointer"
+                </div>
+
+                {/* ── Status message ───────────────────────────── */}
+                {status && (
+                    <div className={`px-4 py-3 rounded-xl text-sm font-semibold border ${
+                        status.type === 'success'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
+                            : 'bg-red-500/10 text-red-400 border-red-500/25'
+                    }`}>
+                        {status.msg}
+                    </div>
+                )}
+
+                {/* ── Save button ──────────────────────────────── */}
+                <button
+                    type="submit"
+                    disabled={saving}
+                    className="w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
+                               bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
+                               shadow-lg shadow-yellow-600/20 hover:scale-[1.01] active:scale-100 transition-all
+                               disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
-                    Delete Account
+                    {saving ? 'Saving…' : 'Save Changes'}
+                </button>
+
+            </form>
+
+            {/* ── Danger Zone ──────────────────────────────────── */}
+            <div className="mt-6 bg-red-950/20 border border-red-500/15 rounded-2xl p-5 md:p-6 flex items-center justify-between gap-4">
+                <div>
+                    <h3 className="text-sm font-bold text-red-400 uppercase tracking-[0.1em] mb-1">Danger Zone</h3>
+                    <p className="text-xs text-neutral-600">Permanently delete your account and all data.</p>
+                </div>
+                <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="shrink-0 px-4 py-2 rounded-lg border border-red-500/25 text-red-400/70 text-xs font-bold uppercase tracking-widest hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/40 transition-all cursor-pointer"
+                >
+                    Delete
                 </button>
             </div>
 
@@ -2786,7 +2881,7 @@ function SettingsPage({ onBack }) {
 /* ── Main App ────────────────────────────────────────────── */
 
 export default function App() {
-    const { user, isAuthenticated } = useAuth()
+    const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth()
     const [activeTab, setActiveTab] = useState('journey')
     const [activePage, setActivePage] = useState('home')
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -2817,6 +2912,10 @@ export default function App() {
         return () => clearTimeout(timer)
     }, [])
 
+    // Keep preloader visible until BOTH the animation AND auth hydration are done.
+    // This prevents a flash of "Sign In" state on mobile while localStorage is being read.
+    const showPreloader = isLoading || isAuthLoading
+
     // ── Route intercept for Reset Password Page ──
     if (window.location.pathname === '/reset-password') {
         return <ResetPasswordPage />
@@ -2825,7 +2924,7 @@ export default function App() {
     return (
         <>
             {/* ── Cinematic Preloader Overlay ── */}
-            <Preloader isVisible={isLoading} />
+            <Preloader isVisible={showPreloader} />
 
             {/* ── Main Shell ── */}
             <div
@@ -2849,7 +2948,7 @@ export default function App() {
                 
                 {activePage === 'home' ? (
                     <>
-                        <TabNav activeTab={activeTab} setActiveTab={setActiveTab} />
+                        <TabNav activeTab={activeTab} setActiveTab={setActiveTab} onNavigatePage={setActivePage} />
                         <main className="flex-1">
                             <div key={activeTab} className="tab-animate">
                                 {activeTab === 'journey' && <JourneyTab />}

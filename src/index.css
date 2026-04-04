@@ -152,6 +152,18 @@ body {
   animation: shimmer 4s linear infinite;
 }
 
+/* ── Hide built-in video subtitles/captions ──────────── */
+/* Prevents the video's own embedded subtitles from
+   overlapping the custom "How to use the ICARUS Platform"
+   title overlay */
+video::cue {
+  visibility: hidden;
+  opacity: 0;
+  color: transparent;
+  background: transparent;
+  text-shadow: none;
+}
+
 /* ── Video Glow ───────────────────────────────────────── */
 .video-glow {
   box-shadow:
