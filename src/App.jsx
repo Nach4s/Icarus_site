@@ -1720,15 +1720,17 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
 
         async function check() {
             try {
-                // 1. Check if user has a team
-                if (!user?.teamId) { setPhase('no_team'); return }
-
-                // 2. Check for active competition
                 const data = await api.get('/competitions/active')
                 if (!data.competition) { setPhase('no_competition'); return }
                 setCompetition(data.competition)
 
-                // 3. Check captain
+                if (data.competition.isIndividual) {
+                    setPhase('ready')
+                    return
+                }
+
+                // Team requirements
+                if (!user?.teamId) { setPhase('no_team'); return }
                 if (user.id !== user.team?.captainId) { setPhase('not_captain'); return }
 
                 setPhase('ready')
@@ -1846,11 +1848,11 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                     <Trophy size={36} className="text-yellow-600" />
                 </div>
                 <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
-                    Register Your Team
+                    {competition?.isIndividual ? 'Join Workshop' : 'Register Your Team'}
                 </h3>
                 {competition && (
                     <div className="mb-6 px-5 py-4 rounded-xl bg-neutral-800/60 border border-yellow-600/15 text-left">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-yellow-600/60 mb-1">Active Competition</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-yellow-600/60 mb-1">Active {competition.isIndividual ? 'Workshop' : 'Competition'}</p>
                         <p className="font-black text-white text-base uppercase tracking-wide">{competition.title}</p>
                         <p className="text-xs text-neutral-500 mt-2">
                             Closes: {new Date(competition.regEnd).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}
@@ -1858,7 +1860,11 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                     </div>
                 )}
                 <p className="text-neutral-400 text-sm leading-relaxed mb-8 max-w-xs mx-auto">
-                    As the <span className="text-yellow-500 font-bold">Team Captain</span>, you are about to officially enter your team. Make sure all members are ready.
+                    {competition?.isIndividual ? (
+                        <>You are about to register for this individual workshop event. Prepare yourself for the mission.</>
+                    ) : (
+                        <>As the <span className="text-yellow-500 font-bold">Team Captain</span>, you are about to officially enter your team. Make sure all members are ready.</>
+                    )}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
                     <button onClick={onClose} disabled={registering}
@@ -1891,10 +1897,12 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                     <CheckCircle2 size={36} className="text-emerald-400" />
                 </div>
                 <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
-                    Team Registered!
+                    {competition?.isIndividual ? 'Registered!' : 'Team Registered!'}
                 </h3>
                 <p className="text-neutral-400 leading-relaxed mb-8 max-w-xs mx-auto">
-                    Your team has been officially entered into the competition. Keep pushing for the stars!
+                    {competition?.isIndividual 
+                        ? 'You have been officially enrolled in this event. Keep pushing for the stars!'
+                        : 'Your team has been officially entered into the competition. Keep pushing for the stars!'}
                 </p>
                 <button onClick={onClose}
                     className="px-10 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest text-black

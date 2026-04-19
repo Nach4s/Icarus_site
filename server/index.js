@@ -634,31 +634,15 @@ app.post(
 /**
  * POST /api/competition/register
  * ──────────────────────────────
- * Flag a team as officially registered for the active competition.
- * Only the Captain can perform this action.
- * Requires an active (isSelectionActive: true) competition to exist.
+ * Register for the active competition.
+ *
+ * - If competition.isIndividual = true  → register the user directly (no team needed).
+ * - If competition.isIndividual = false → register the team (captain only).
  */
 app.post(
   "/api/competition/register",
   authMiddleware,
   asyncHandler(async (req, res) => {
-    const user = await prisma.user.findUnique({
-      where: { id: req.userId },
-      include: { team: true },
-    });
-
-    if (!user || !user.teamId) {
-      return res.status(400).json({ error: "You must be in a team to register." });
-    }
-
-    if (user.id !== user.team.captainId) {
-      return res.status(403).json({ error: "Only the Team Captain can register the team." });
-    }
-
-    if (user.team.isRegisteredForCompetition) {
-      return res.status(400).json({ error: "Team is already registered." });
-    }
-
     // ── Find an active competition ─────────────────────────────────
     const now = new Date();
     const activeCompetition = await prisma.competition.findFirst({
@@ -672,6 +656,41 @@ app.post(
 
     if (!activeCompetition) {
       return res.status(400).json({ error: "No active competition is currently open for registration." });
+    }
+
+    // ── Individual (workshop) mode ─────────────────────────────────
+    if (activeCompetition.isIndividual) {
+      // Check if user already registered
+      const existing = await prisma.competitionParticipant.findUnique({
+        where: { userId_competitionId: { userId: req.userId, competitionId: activeCompetition.id } },
+      });
+      if (existing) {
+        return res.status(400).json({ error: "You are already registered for this event." });
+      }
+
+      await prisma.competitionParticipant.create({
+        data: { userId: req.userId, competitionId: activeCompetition.id },
+      });
+
+      return res.json({ message: "You are successfully registered for this event!", individual: true });
+    }
+
+    // ── Team mode ──────────────────────────────────────────────────
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      include: { team: true },
+    });
+
+    if (!user || !user.teamId) {
+      return res.status(400).json({ error: "You must be in a team to register for this competition." });
+    }
+
+    if (user.id !== user.team.captainId) {
+      return res.status(403).json({ error: "Only the Team Captain can register the team." });
+    }
+
+    if (user.team.isRegisteredForCompetition) {
+      return res.status(400).json({ error: "Your team is already registered." });
     }
 
     const updatedTeam = await prisma.team.update({
@@ -698,14 +717,14 @@ app.post(
  * ─────────────────────────────
  * Create a new competition tournament.
  *
- * Body: { title: string, regStart: ISO string, regEnd: ISO string }
+ * Body: { title: string, regStart: ISO string, regEnd: ISO string, isIndividual?: boolean }
  */
 app.post(
   "/api/admin/competitions",
   authMiddleware,
   adminMiddleware,
   asyncHandler(async (req, res) => {
-    const { title, regStart, regEnd } = req.body;
+    const { title, regStart, regEnd, isIndividual } = req.body;
 
     if (!title || !regStart || !regEnd) {
       return res.status(400).json({ error: "Fields 'title', 'regStart', and 'regEnd' are required." });
@@ -723,7 +742,7 @@ app.post(
     }
 
     const competition = await prisma.competition.create({
-      data: { title, regStart: start, regEnd: end },
+      data: { title, regStart: start, regEnd: end, isIndividual: !!isIndividual },
     });
 
     return res.status(201).json({ message: "Competition created.", competition });
@@ -733,7 +752,7 @@ app.post(
 /**
  * GET /api/admin/competitions
  * ────────────────────────────
- * List all competitions (newest first) with team count.
+ * List all competitions (newest first) with team/participant count.
  */
 app.get(
   "/api/admin/competitions",
@@ -743,11 +762,54 @@ app.get(
     const competitions = await prisma.competition.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-        _count: { select: { teams: true } },
+        _count: { select: { teams: true, participants: true } },
       },
     });
 
     return res.json({ competitions });
+  })
+);
+
+/**
+ * PATCH /api/admin/competitions/:id
+ * ──────────────────────────────────
+ * Edit a competition's properties (title, regStart, regEnd, isIndividual).
+ *
+ * Body: { title?, regStart?, regEnd?, isIndividual? }
+ */
+app.patch(
+  "/api/admin/competitions/:id",
+  authMiddleware,
+  adminMiddleware,
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { title, regStart, regEnd, isIndividual } = req.body;
+
+    const competition = await prisma.competition.findUnique({ where: { id } });
+    if (!competition) {
+      return res.status(404).json({ error: "Competition not found." });
+    }
+
+    const data = {};
+    if (title !== undefined)        data.title = title;
+    if (isIndividual !== undefined) data.isIndividual = !!isIndividual;
+    if (regStart !== undefined) {
+      const s = new Date(regStart);
+      if (isNaN(s.getTime())) return res.status(400).json({ error: "Invalid regStart." });
+      data.regStart = s;
+    }
+    if (regEnd !== undefined) {
+      const e = new Date(regEnd);
+      if (isNaN(e.getTime())) return res.status(400).json({ error: "Invalid regEnd." });
+      data.regEnd = e;
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: "No fields to update." });
+    }
+
+    const updated = await prisma.competition.update({ where: { id }, data });
+    return res.json({ message: "Competition updated.", competition: updated });
   })
 );
 
@@ -812,7 +874,8 @@ app.delete(
 /**
  * GET /api/admin/competitions/:id/teams
  * ──────────────────────────────────────
- * Fetch all teams registered for a specific competition.
+ * Fetch registered teams (team mode) OR participants (individual mode).
+ * Returns: { competition, teams } or { competition, participants }
  */
 app.get(
   "/api/admin/competitions/:id/teams",
@@ -826,6 +889,21 @@ app.get(
       return res.status(404).json({ error: "Competition not found." });
     }
 
+    // ── Individual (workshop) mode: return participants list ───────────
+    if (competition.isIndividual) {
+      const participants = await prisma.competitionParticipant.findMany({
+        where: { competitionId: id },
+        include: {
+          user: {
+            select: { id: true, name: true, email: true, avatarUrl: true, xp: true },
+          },
+        },
+        orderBy: { registeredAt: "asc" },
+      });
+      return res.json({ competition, participants, teams: [] });
+    }
+
+    // ── Team mode: return registered teams ───────────────────────────
     const teams = await prisma.team.findMany({
       where: { competitionId: id },
       include: {
@@ -840,7 +918,7 @@ app.get(
       orderBy: { totalScore: "desc" },
     });
 
-    return res.json({ competition, teams });
+    return res.json({ competition, teams, participants: [] });
   })
 );
 

@@ -49,6 +49,9 @@ model User {
   // ── Learning progress ─────────────────────────────────────────────
   progress      UserProgress[]
 
+  // ── Individual competition participations ─────────────────────────
+  competitionParticipations CompetitionParticipant[]
+
   // ── Authentication recovery ───────────────────────────────────────
   resetToken       String?   @unique
   resetTokenExpiry DateTime?
@@ -171,15 +174,39 @@ model UserProgress {
 
 /// A tournament/competition event. Teams register during the open window.
 /// `isSelectionActive` can be set to false by an Admin to close registration.
+/// `isIndividual` switches the event to individual (workshop) mode —
+/// users register themselves without needing a team.
 model Competition {
   id                String   @id @default(uuid())
   title             String
   regStart          DateTime                        /// Registration window opens
   regEnd            DateTime                        /// Registration window closes
-  isSelectionActive Boolean  @default(true)         /// Admin can toggle off to stop team selection
+  isSelectionActive Boolean  @default(true)         /// Admin can toggle off to stop selection
+  isIndividual      Boolean  @default(false)        /// If true, individuals register (no team required)
 
   teams             Team[]
+  participants      CompetitionParticipant[]
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+}
+
+// ─── CompetitionParticipant ───────────────────────────────────────────
+
+/// Junction table for individual (workshop) event registrations.
+/// Only used when Competition.isIndividual = true.
+model CompetitionParticipant {
+  id            String      @id @default(uuid())
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  competitionId String
+
+  registeredAt  DateTime    @default(now())
+
+  @@unique([userId, competitionId])
+  @@index([competitionId])
+  @@index([userId])
 }

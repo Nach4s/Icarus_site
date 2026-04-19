@@ -88,6 +88,7 @@ function CreateCompetitionForm({ onCreated }) {
     const [title, setTitle]       = useState('')
     const [regStart, setRegStart] = useState('')
     const [regEnd, setRegEnd]     = useState('')
+    const [isIndividual, setIsIndividual] = useState(false)
     const [loading, setLoading]   = useState(false)
     const [error, setError]       = useState('')
 
@@ -107,8 +108,9 @@ function CreateCompetitionForm({ onCreated }) {
                 title: title.trim(),
                 regStart: new Date(regStart).toISOString(),
                 regEnd:   new Date(regEnd).toISOString(),
+                isIndividual
             })
-            setTitle(''); setRegStart(''); setRegEnd('')
+            setTitle(''); setRegStart(''); setRegEnd(''); setIsIndividual(false);
             onCreated(data.competition)
         } catch (err) {
             setError(err.message || 'Failed to create competition.')
@@ -177,6 +179,19 @@ function CreateCompetitionForm({ onCreated }) {
                     </div>
                 </div>
 
+                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 transition-colors">
+                    <input 
+                        type="checkbox" 
+                        checked={isIndividual} 
+                        onChange={e => setIsIndividual(e.target.checked)} 
+                        className="w-4 h-4 rounded bg-neutral-900 border-neutral-700 accent-yellow-600"
+                    />
+                    <div>
+                        <p className="text-sm font-bold text-white uppercase tracking-wide">Individual Workshop</p>
+                        <p className="text-[10px] text-neutral-500 uppercase tracking-widest mt-0.5">Users register without a team</p>
+                    </div>
+                </label>
+
                 <button
                     type="submit"
                     disabled={loading}
@@ -199,8 +214,9 @@ function CreateCompetitionForm({ onCreated }) {
 
 // ─── CompetitionCard ─────────────────────────────────────────────────
 
-function CompetitionCard({ comp, isSelected, onSelect, onStop, onDelete }) {
+function CompetitionCard({ comp, isSelected, onSelect, onStop, onDelete, onToggleType }) {
     const [stopping, setStopping] = useState(false)
+    const [toggling, setToggling] = useState(false)
 
     async function handleStop(e) {
         e.stopPropagation()
@@ -208,6 +224,13 @@ function CompetitionCard({ comp, isSelected, onSelect, onStop, onDelete }) {
         setStopping(true)
         await onStop(comp.id)
         setStopping(false)
+    }
+
+    async function handleToggle(e) {
+        e.stopPropagation()
+        setToggling(true)
+        await onToggleType(comp.id, comp.isIndividual)
+        setToggling(false)
     }
 
     return (
@@ -237,8 +260,13 @@ function CompetitionCard({ comp, isSelected, onSelect, onStop, onDelete }) {
                     <h3 className="text-sm font-bold text-white truncate leading-tight">
                         {comp.title}
                     </h3>
-                    <div className="mt-1">
+                    <div className="mt-2 flex flex-wrap gap-2">
                         <StatusBadge active={comp.isSelectionActive} />
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full
+                                         text-[10px] font-bold uppercase tracking-wider
+                                         bg-neutral-800 text-yellow-500 border border-neutral-700">
+                            {comp.isIndividual ? 'Workshop' : 'Tournament'}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -258,13 +286,24 @@ function CompetitionCard({ comp, isSelected, onSelect, onStop, onDelete }) {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mt-1">
                 <span className="flex items-center gap-1.5 text-[11px] text-neutral-500">
                     <Users size={11} />
-                    {comp._count?.teams ?? 0} team{comp._count?.teams !== 1 ? 's' : ''}
+                    {comp.isIndividual 
+                        ? <>{comp._count?.participants ?? 0} participants</>
+                        : <>{comp._count?.teams ?? 0} team{comp._count?.teams !== 1 ? 's' : ''}</>
+                    }
                 </span>
 
                 <div className="flex items-center gap-2">
+                    <button
+                        onClick={handleToggle}
+                        disabled={toggling}
+                        className="p-1.5 rounded-lg border border-neutral-700 text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors cursor-pointer"
+                        title={comp.isIndividual ? "Make it a Team Tournament" : "Make it an Individual Workshop"}
+                    >
+                        {toggling ? <Loader2 size={13} className="animate-spin" /> : <div className="text-[10px] uppercase font-bold tracking-widest px-1">Toggle Type</div>}
+                    </button>
                     <button
                         onClick={(e) => { e.stopPropagation(); onDelete(comp.id); }}
                         className="p-1.5 rounded-lg border border-red-500/20 text-red-500 hover:bg-red-500/10 hover:border-red-500/40 transition-colors cursor-pointer"
@@ -273,19 +312,19 @@ function CompetitionCard({ comp, isSelected, onSelect, onStop, onDelete }) {
                         <Trash2 size={13} />
                     </button>
                     <button
-                    onClick={handleStop}
-                    disabled={!comp.isSelectionActive || stopping}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold
-                               uppercase tracking-wider transition-all duration-200
-                               ${comp.isSelectionActive
-                                    ? 'bg-red-500/15 border border-red-500/30 text-red-400 hover:bg-red-500/25 cursor-pointer'
-                                    : 'bg-neutral-800 border border-neutral-700 text-neutral-600 cursor-not-allowed'}`}
-                >
-                    {stopping
-                        ? <Loader2 size={10} className="animate-spin" />
-                        : <Square size={10} />}
-                    {comp.isSelectionActive ? 'Stop Selection' : 'Selection Stopped'}
-                </button>
+                        onClick={handleStop}
+                        disabled={!comp.isSelectionActive || stopping}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold
+                                   uppercase tracking-wider transition-all duration-200
+                                   ${comp.isSelectionActive
+                                        ? 'bg-red-500/15 border border-red-500/30 text-red-400 hover:bg-red-500/25 cursor-pointer'
+                                        : 'bg-neutral-800 border border-neutral-700 text-neutral-600 cursor-not-allowed'}`}
+                    >
+                        {stopping
+                            ? <Loader2 size={10} className="animate-spin" />
+                            : <Square size={10} />}
+                        {comp.isSelectionActive ? 'Stop Selection' : 'Selection Stopped'}
+                    </button>
                 </div>
             </div>
         </div>
@@ -391,8 +430,8 @@ function TeamViewer({ competition }) {
         setLoading(true)
         setError('')
         api.get(`/admin/competitions/${competition.id}/teams`)
-            .then(data => setTeams(data.teams))
-            .catch(err => setError(err.message || 'Failed to load teams.'))
+            .then(data => setTeams(competition.isIndividual ? (data.participants || []) : (data.teams || [])))
+            .catch(err => setError(err.message || 'Failed to load participants.'))
             .finally(() => setLoading(false))
     }, [competition])
 
@@ -408,7 +447,7 @@ function TeamViewer({ competition }) {
                 </div>
                 <div>
                     <h2 className="text-sm font-black uppercase tracking-widest text-white leading-tight">
-                        Registered Teams
+                        {competition.isIndividual ? 'Registered Participants' : 'Registered Teams'}
                     </h2>
                     <p className="text-[10px] text-neutral-500 mt-0.5 truncate max-w-xs">
                         {competition.title}
@@ -421,7 +460,7 @@ function TeamViewer({ competition }) {
                 {loading && (
                     <div className="flex items-center justify-center gap-3 py-12 text-neutral-600">
                         <Loader2 size={18} className="animate-spin" />
-                        <span className="text-sm">Loading teams…</span>
+                        <span className="text-sm">Loading data…</span>
                     </div>
                 )}
                 {error && (
@@ -434,10 +473,10 @@ function TeamViewer({ competition }) {
                 {!loading && !error && teams.length === 0 && (
                     <div className="text-center py-12">
                         <Users size={32} className="text-neutral-700 mx-auto mb-3" />
-                        <p className="text-sm text-neutral-500">No teams registered yet.</p>
+                        <p className="text-sm text-neutral-500">No registrations yet.</p>
                     </div>
                 )}
-                {!loading && !error && teams.length > 0 && (
+                {!loading && !error && teams.length > 0 && !competition.isIndividual && (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
@@ -499,6 +538,46 @@ function TeamViewer({ competition }) {
                                                              px-2.5 py-1 rounded-lg border border-neutral-700 tracking-widest">
                                                 {team.inviteCode}
                                             </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+                {!loading && !error && teams.length > 0 && competition.isIndividual && (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-neutral-800">
+                                    <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">#</th>
+                                    <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">Participant</th>
+                                    <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">Email</th>
+                                    <th className="pb-3 text-right text-[10px] font-bold uppercase tracking-widest text-neutral-500">Score</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-neutral-800/50">
+                                {teams.map((participant, i) => (
+                                    <tr 
+                                        key={participant.id} 
+                                        className="group hover:bg-neutral-800/60 transition-colors"
+                                    >
+                                        <td className="py-3.5 pr-4 text-neutral-600 font-mono text-xs">
+                                            {String(i + 1).padStart(2, '0')}
+                                        </td>
+                                        <td className="py-3.5 pr-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-6 h-6 rounded-full bg-neutral-700 border border-neutral-600 flex items-center justify-center overflow-hidden text-[9px] font-bold text-neutral-300">
+                                                    {participant.user.avatarUrl ? <img src={participant.user.avatarUrl} alt={participant.user.name} className="w-full h-full object-cover" /> : participant.user.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <span className="font-bold text-white">{participant.user.name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="py-3.5 pr-4 text-neutral-400 text-xs">
+                                            {participant.user.email}
+                                        </td>
+                                        <td className="py-3.5 text-right font-mono text-yellow-500 font-bold text-xs">
+                                            {participant.user.xp.toLocaleString()}
                                         </td>
                                     </tr>
                                 ))}
@@ -585,6 +664,23 @@ export default function AdminPage({ onBack }) {
             showToast(data.message || 'Selection stopped.', 'success')
         } catch (err) {
             showToast(err.message || 'Failed to stop selection.', 'error')
+        }
+    }
+
+    async function handleToggleType(competitionId, currentIsIndividual) {
+        try {
+            const data = await api.patch(`/admin/competitions/${competitionId}`, {
+                isIndividual: !currentIsIndividual
+            })
+            setCompetitions(prev =>
+                prev.map(c => c.id === competitionId ? { ...c, isIndividual: !currentIsIndividual } : c)
+            )
+            if (selectedComp?.id === competitionId) {
+                setSelectedComp(prev => ({ ...prev, isIndividual: !currentIsIndividual }))
+            }
+            showToast(`Switched to ${!currentIsIndividual ? 'Individual Workshop' : 'Team Tournament'} mode.`, 'success')
+        } catch (err) {
+            showToast(err.message || 'Failed to toggle mode.', 'error')
         }
     }
 
@@ -705,6 +801,7 @@ export default function AdminPage({ onBack }) {
                                             onSelect={setSelectedComp}
                                             onStop={handleStop}
                                             onDelete={handleDeleteClick}
+                                            onToggleType={handleToggleType}
                                         />
                                     ))}
                                 </div>
