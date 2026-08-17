@@ -82,6 +82,65 @@ function Toast({ msg, type, onDismiss }) {
     )
 }
 
+// ─── TimeSlider ────────────────────────────────────────────────────────────
+
+function TimeSlider({ value, onChange }) {
+    // Parse "HH:mm" to minutes (0-1439)
+    let minutes = 0;
+    if (value) {
+        const [h, m] = value.split(':').map(Number);
+        if (!isNaN(h) && !isNaN(m)) {
+            minutes = h * 60 + m;
+        }
+    }
+
+    const handleChange = (e) => {
+        const val = parseInt(e.target.value, 10);
+        const hours = Math.floor(val / 60);
+        const mins = val % 60;
+        const formatted = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+        onChange(formatted);
+    };
+
+    const formattedTime = value || "00:00";
+    const percentage = (minutes / 1439) * 100;
+
+    return (
+        <div className="w-full flex flex-col gap-3 p-4 bg-neutral-950 border border-neutral-800 rounded-xl">
+            <div className="flex items-center justify-between">
+                <span className="text-[10px] text-neutral-500 font-mono font-bold tracking-widest">00:00</span>
+                <span className="text-2xl font-black font-mono text-yellow-500 tracking-wider drop-shadow-[0_0_15px_rgba(202,138,4,0.3)]">{formattedTime}</span>
+                <span className="text-[10px] text-neutral-500 font-mono font-bold tracking-widest">23:59</span>
+            </div>
+            
+            <div className="relative flex items-center h-6 group">
+                <input
+                    type="range"
+                    min="0"
+                    max="1439"
+                    step="1"
+                    value={minutes}
+                    onChange={handleChange}
+                    className="absolute w-full h-full opacity-0 cursor-pointer z-10"
+                />
+                {/* Custom Track */}
+                <div className="w-full h-2 bg-neutral-900 border border-neutral-800 rounded-full overflow-hidden shadow-inner">
+                    <div 
+                        className="h-full bg-gradient-to-r from-yellow-700 to-yellow-500 transition-all duration-75"
+                        style={{ width: `${percentage}%` }}
+                    />
+                </div>
+                {/* Custom Thumb */}
+                <div 
+                    className="absolute top-1/2 w-5 h-5 bg-yellow-400 rounded-full shadow-[0_0_12px_rgba(202,138,4,0.6)] border-2 border-neutral-900 
+                               group-focus-within:ring-4 group-focus-within:ring-yellow-600/30 transition-all duration-75 pointer-events-none"
+                    style={{ left: `calc(${percentage}%)`, transform: 'translate(-50%, -50%)' }}
+                />
+            </div>
+        </div>
+    );
+}
+
 // ─── CreateCompetitionForm ────────────────────────────────────────────
 
 const DESC_MAX = 2000
@@ -90,9 +149,9 @@ function CreateCompetitionForm({ onCreated }) {
     const [title, setTitle]             = useState('')
     const [description, setDescription] = useState('')
     const [regStartDate, setRegStartDate] = useState('')
-    const [regStartTime, setRegStartTime] = useState('')
+    const [regStartTime, setRegStartTime] = useState('00:00')
     const [regEndDate, setRegEndDate]     = useState('')
-    const [regEndTime, setRegEndTime]     = useState('')
+    const [regEndTime, setRegEndTime]     = useState('23:59')
     const [isIndividual, setIsIndividual] = useState(false)
     const [loading, setLoading]         = useState(false)
     const [error, setError]             = useState('')
@@ -125,8 +184,8 @@ function CreateCompetitionForm({ onCreated }) {
                 isIndividual
             })
             setTitle(''); setDescription('');
-            setRegStartDate(''); setRegStartTime('');
-            setRegEndDate(''); setRegEndTime('');
+            setRegStartDate(''); setRegStartTime('00:00');
+            setRegEndDate(''); setRegEndTime('23:59');
             setIsIndividual(false);
             onCreated(data.competition)
         } catch (err) {
@@ -194,7 +253,7 @@ function CreateCompetitionForm({ onCreated }) {
 
                 <div>
                     <label className={labelClass}>Registration Opens</label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-3">
                         <input
                             type="date"
                             value={regStartDate}
@@ -202,21 +261,12 @@ function CreateCompetitionForm({ onCreated }) {
                             className={`${inputClass} [color-scheme:dark]`}
                             required
                         />
-                        <input
-                            type="time"
-                            value={regStartTime}
-                            onChange={e => setRegStartTime(e.target.value)}
-                            min="00:00"
-                            max="23:59"
-                            step="60"
-                            className={`${inputClass} [color-scheme:dark]`}
-                            required
-                        />
+                        <TimeSlider value={regStartTime} onChange={setRegStartTime} />
                     </div>
                 </div>
                 <div>
                     <label className={labelClass}>Registration Closes</label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-3">
                         <input
                             type="date"
                             value={regEndDate}
@@ -224,16 +274,7 @@ function CreateCompetitionForm({ onCreated }) {
                             className={`${inputClass} [color-scheme:dark]`}
                             required
                         />
-                        <input
-                            type="time"
-                            value={regEndTime}
-                            onChange={e => setRegEndTime(e.target.value)}
-                            min="00:00"
-                            max="23:59"
-                            step="60"
-                            className={`${inputClass} [color-scheme:dark]`}
-                            required
-                        />
+                        <TimeSlider value={regEndTime} onChange={setRegEndTime} />
                     </div>
                 </div>
 
