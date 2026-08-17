@@ -3,7 +3,7 @@
 // Protected: ADMIN role only. Manage competitions without touching code.
 // ═══════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
     ShieldCheck, Plus, Square, Users, Trophy, Calendar,
     ArrowLeft, Loader2, AlertTriangle, CheckCircle2,
