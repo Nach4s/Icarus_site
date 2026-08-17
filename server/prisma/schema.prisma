@@ -179,6 +179,7 @@ model UserProgress {
 model Competition {
   id                String   @id @default(uuid())
   title             String
+  description       String?  @db.Text              /// Optional rich description shown to participants (max ~2000 chars)
   regStart          DateTime                        /// Registration window opens
   regEnd            DateTime                        /// Registration window closes
   isSelectionActive Boolean  @default(true)         /// Admin can toggle off to stop selection

@@ -1857,6 +1857,11 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                         <p className="text-xs text-neutral-500 mt-2">
                             Closes: {new Date(competition.regEnd).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}
                         </p>
+                        {competition.description && (
+                            <p className="text-xs text-neutral-400 mt-3 leading-relaxed border-t border-neutral-700/60 pt-3 whitespace-pre-wrap">
+                                {competition.description}
+                            </p>
+                        )}
                     </div>
                 )}
                 <p className="text-neutral-400 text-sm leading-relaxed mb-8 max-w-xs mx-auto">

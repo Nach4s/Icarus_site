@@ -717,17 +717,21 @@ app.post(
  * ─────────────────────────────
  * Create a new competition tournament.
  *
- * Body: { title: string, regStart: ISO string, regEnd: ISO string, isIndividual?: boolean }
+ * Body: { title: string, regStart: ISO string, regEnd: ISO string, isIndividual?: boolean, description?: string }
  */
 app.post(
   "/api/admin/competitions",
   authMiddleware,
   adminMiddleware,
   asyncHandler(async (req, res) => {
-    const { title, regStart, regEnd, isIndividual } = req.body;
+    const { title, regStart, regEnd, isIndividual, description } = req.body;
 
     if (!title || !regStart || !regEnd) {
       return res.status(400).json({ error: "Fields 'title', 'regStart', and 'regEnd' are required." });
+    }
+
+    if (description !== undefined && description !== null && typeof description === 'string' && description.length > 2000) {
+      return res.status(400).json({ error: "'description' must not exceed 2000 characters." });
     }
 
     const start = new Date(regStart);
@@ -742,7 +746,13 @@ app.post(
     }
 
     const competition = await prisma.competition.create({
-      data: { title, regStart: start, regEnd: end, isIndividual: !!isIndividual },
+      data: {
+        title,
+        regStart: start,
+        regEnd: end,
+        isIndividual: !!isIndividual,
+        description: description?.trim() || null,
+      },
     });
 
     return res.status(201).json({ message: "Competition created.", competition });
@@ -773,9 +783,10 @@ app.get(
 /**
  * PATCH /api/admin/competitions/:id
  * ──────────────────────────────────
- * Edit a competition's properties (title, regStart, regEnd, isIndividual).
+ * Edit a competition's properties (title, description, regStart, regEnd, isIndividual).
  *
- * Body: { title?, regStart?, regEnd?, isIndividual? }
+ * Body: { title?, description?, regStart?, regEnd?, isIndividual? }
+ * Pass description: null or description: "" to clear it.
  */
 app.patch(
   "/api/admin/competitions/:id",
@@ -783,7 +794,7 @@ app.patch(
   adminMiddleware,
   asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const { title, regStart, regEnd, isIndividual } = req.body;
+    const { title, description, regStart, regEnd, isIndividual } = req.body;
 
     const competition = await prisma.competition.findUnique({ where: { id } });
     if (!competition) {
@@ -793,6 +804,15 @@ app.patch(
     const data = {};
     if (title !== undefined)        data.title = title;
     if (isIndividual !== undefined) data.isIndividual = !!isIndividual;
+
+    // description: undefined = don't touch; null or "" = clear; string = update
+    if (description !== undefined) {
+      if (description !== null && typeof description === 'string' && description.length > 2000) {
+        return res.status(400).json({ error: "'description' must not exceed 2000 characters." });
+      }
+      data.description = (description === null || description === '') ? null : description.trim();
+    }
+
     if (regStart !== undefined) {
       const s = new Date(regStart);
       if (isNaN(s.getTime())) return res.status(400).json({ error: "Invalid regStart." });

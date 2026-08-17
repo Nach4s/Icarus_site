@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
     ShieldCheck, Plus, Square, Users, Trophy, Calendar,
     ArrowLeft, Loader2, AlertTriangle, CheckCircle2,
-    ChevronRight, X, Clock, Ban, Activity, Trash2
+    ChevronRight, X, Clock, Ban, Activity, Trash2, Pencil, FileText
 } from 'lucide-react'
 import { api } from './api'
 import { useAuth } from './AuthContext'
@@ -84,13 +84,16 @@ function Toast({ msg, type, onDismiss }) {
 
 // ─── CreateCompetitionForm ────────────────────────────────────────────
 
+const DESC_MAX = 2000
+
 function CreateCompetitionForm({ onCreated }) {
-    const [title, setTitle]       = useState('')
-    const [regStart, setRegStart] = useState('')
-    const [regEnd, setRegEnd]     = useState('')
+    const [title, setTitle]             = useState('')
+    const [description, setDescription] = useState('')
+    const [regStart, setRegStart]       = useState('')
+    const [regEnd, setRegEnd]           = useState('')
     const [isIndividual, setIsIndividual] = useState(false)
-    const [loading, setLoading]   = useState(false)
-    const [error, setError]       = useState('')
+    const [loading, setLoading]         = useState(false)
+    const [error, setError]             = useState('')
 
     async function handleSubmit(e) {
         e.preventDefault()
@@ -102,15 +105,20 @@ function CreateCompetitionForm({ onCreated }) {
             setError('End date must be after start date.')
             return
         }
+        if (description.length > DESC_MAX) {
+            setError(`Description must not exceed ${DESC_MAX} characters.`)
+            return
+        }
         setLoading(true)
         try {
             const data = await api.post('/admin/competitions', {
                 title: title.trim(),
+                description: description.trim() || null,
                 regStart: new Date(regStart).toISOString(),
                 regEnd:   new Date(regEnd).toISOString(),
                 isIndividual
             })
-            setTitle(''); setRegStart(''); setRegEnd(''); setIsIndividual(false);
+            setTitle(''); setDescription(''); setRegStart(''); setRegEnd(''); setIsIndividual(false);
             onCreated(data.competition)
         } catch (err) {
             setError(err.message || 'Failed to create competition.')
@@ -153,6 +161,25 @@ function CreateCompetitionForm({ onCreated }) {
                         onChange={e => setTitle(e.target.value)}
                         className={inputClass}
                         required
+                    />
+                </div>
+
+                <div>
+                    <div className="flex items-center justify-between mb-2">
+                        <label className={labelClass}>Description <span className="normal-case tracking-normal font-normal text-neutral-600">(optional)</span></label>
+                        <span className={`text-[10px] font-mono tabular-nums ${
+                            description.length > DESC_MAX ? 'text-red-400' : 'text-neutral-600'
+                        }`}>
+                            {description.length}/{DESC_MAX}
+                        </span>
+                    </div>
+                    <textarea
+                        placeholder="Briefly describe the competition goals, rules, schedule…"
+                        value={description}
+                        onChange={e => setDescription(e.target.value)}
+                        rows={3}
+                        maxLength={DESC_MAX + 1}
+                        className={`${inputClass} resize-none leading-relaxed`}
                     />
                 </div>
 
@@ -284,6 +311,13 @@ function CompetitionCard({ comp, isSelected, onSelect, onStop, onDelete, onToggl
                     <span className="text-neutral-400">{fmt(comp.regEnd)}</span>
                 </div>
             </div>
+
+            {/* Description snippet */}
+            {comp.description && (
+                <p className="text-[11px] text-neutral-500 leading-relaxed mb-3 line-clamp-2 italic border-l-2 border-neutral-700 pl-2.5">
+                    {comp.description}
+                </p>
+            )}
 
             {/* Footer */}
             <div className="flex items-center justify-between mt-1">
@@ -597,6 +631,109 @@ function TeamViewer({ competition }) {
     )
 }
 
+// ─── EditDescriptionPanel ────────────────────────────────────────────
+
+function EditDescriptionPanel({ competition, onUpdated, showToast }) {
+    const [description, setDescription] = useState(competition?.description ?? '')
+    const [saving, setSaving]           = useState(false)
+
+    // sync when selected competition changes
+    useEffect(() => {
+        setDescription(competition?.description ?? '')
+    }, [competition?.id, competition?.description])
+
+    if (!competition) return null
+
+    const isDirty   = description !== (competition.description ?? '')
+    const overLimit = description.length > DESC_MAX
+
+    async function handleSave(e) {
+        e.preventDefault()
+        if (overLimit) return
+        setSaving(true)
+        try {
+            const data = await api.patch(`/admin/competitions/${competition.id}`, {
+                description: description.trim() || null
+            })
+            onUpdated(data.competition)
+            showToast('Description updated.', 'success')
+        } catch (err) {
+            showToast(err.message || 'Failed to save description.', 'error')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    return (
+        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 mb-6">
+            <div className="flex items-center gap-3 mb-5">
+                <div className="w-9 h-9 rounded-xl bg-yellow-600/15 border border-yellow-600/30 flex items-center justify-center shrink-0">
+                    <FileText size={16} className="text-yellow-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <h2 className="text-sm font-black uppercase tracking-widest text-white leading-tight">Description</h2>
+                    <p className="text-[10px] text-neutral-500 mt-0.5 truncate max-w-xs">{competition.title}</p>
+                </div>
+            </div>
+
+            <form onSubmit={handleSave} className="space-y-3">
+                <div>
+                    <div className="flex items-center justify-between mb-2">
+                        <label className={labelClass}>
+                            Competition Description
+                            <span className="normal-case tracking-normal font-normal text-neutral-600 ml-1">(optional)</span>
+                        </label>
+                        <span className={`text-[10px] font-mono tabular-nums ${
+                            overLimit ? 'text-red-400' : 'text-neutral-600'
+                        }`}>
+                            {description.length}/{DESC_MAX}
+                        </span>
+                    </div>
+                    <textarea
+                        value={description}
+                        onChange={e => setDescription(e.target.value)}
+                        rows={4}
+                        maxLength={DESC_MAX + 1}
+                        placeholder="Describe the goals, format, rules, schedule, prizes…"
+                        className={`${inputClass} resize-none leading-relaxed`}
+                    />
+                    {overLimit && (
+                        <p className="mt-1.5 text-xs text-red-400 font-semibold">
+                            Description exceeds {DESC_MAX} character limit.
+                        </p>
+                    )}
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-1">
+                    {isDirty && !saving && (
+                        <button
+                            type="button"
+                            onClick={() => setDescription(competition.description ?? '')}
+                            className="text-[11px] text-neutral-500 hover:text-neutral-300 font-bold uppercase tracking-widest transition-colors cursor-pointer"
+                        >
+                            Reset
+                        </button>
+                    )}
+                    <button
+                        type="submit"
+                        disabled={saving || !isDirty || overLimit}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest
+                                   bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
+                                   shadow-lg shadow-yellow-600/20
+                                   transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:shadow-yellow-600/30
+                                   active:scale-100 disabled:opacity-40 disabled:cursor-not-allowed
+                                   disabled:hover:scale-100 cursor-pointer"
+                    >
+                        {saving
+                            ? <><Loader2 size={13} className="animate-spin" /> Saving…</>
+                            : <><Pencil size={13} /> Save Description</>}
+                    </button>
+                </div>
+            </form>
+        </div>
+    )
+}
+
 // ─── AdminPage (root) ─────────────────────────────────────────────────
 
 export default function AdminPage({ onBack }) {
@@ -812,7 +949,19 @@ export default function AdminPage({ onBack }) {
                     {/* ── Right column ─────────────────────────────── */}
                     <div>
                         {selectedComp ? (
-                            <TeamViewer competition={selectedComp} />
+                            <>
+                                <EditDescriptionPanel
+                                    competition={selectedComp}
+                                    showToast={showToast}
+                                    onUpdated={(updated) => {
+                                        setCompetitions(prev =>
+                                            prev.map(c => c.id === updated.id ? { ...c, description: updated.description } : c)
+                                        )
+                                        setSelectedComp(prev => ({ ...prev, description: updated.description }))
+                                    }}
+                                />
+                                <TeamViewer competition={selectedComp} />
+                            </>
                         ) : (
                             <div className="h-full min-h-64 flex flex-col items-center justify-center
                                             text-center bg-neutral-900/40 border border-dashed
@@ -822,7 +971,7 @@ export default function AdminPage({ onBack }) {
                                     Select a competition
                                 </p>
                                 <p className="text-xs text-neutral-600 mt-1 max-w-xs">
-                                    Click any competition card on the left to view its registered teams.
+                                    Click any competition card on the left to view its registered teams or edit its description.
                                 </p>
                             </div>
                         )}
