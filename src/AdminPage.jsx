@@ -89,8 +89,10 @@ const DESC_MAX = 2000
 function CreateCompetitionForm({ onCreated }) {
     const [title, setTitle]             = useState('')
     const [description, setDescription] = useState('')
-    const [regStart, setRegStart]       = useState('')
-    const [regEnd, setRegEnd]           = useState('')
+    const [regStartDate, setRegStartDate] = useState('')
+    const [regStartTime, setRegStartTime] = useState('')
+    const [regEndDate, setRegEndDate]     = useState('')
+    const [regEndTime, setRegEndTime]     = useState('')
     const [isIndividual, setIsIndividual] = useState(false)
     const [loading, setLoading]         = useState(false)
     const [error, setError]             = useState('')
@@ -99,8 +101,12 @@ function CreateCompetitionForm({ onCreated }) {
         e.preventDefault()
         setError('')
         if (!title.trim()) { setError('Title is required.'); return }
-        if (!regStart)      { setError('Start date is required.'); return }
-        if (!regEnd)        { setError('End date is required.'); return }
+        if (!regStartDate || !regStartTime) { setError('Start date and time are required.'); return }
+        if (!regEndDate || !regEndTime)     { setError('End date and time are required.'); return }
+
+        const regStart = `${regStartDate}T${regStartTime}`
+        const regEnd   = `${regEndDate}T${regEndTime}`
+
         if (new Date(regEnd) <= new Date(regStart)) {
             setError('End date must be after start date.')
             return
@@ -118,7 +124,10 @@ function CreateCompetitionForm({ onCreated }) {
                 regEnd:   new Date(regEnd).toISOString(),
                 isIndividual
             })
-            setTitle(''); setDescription(''); setRegStart(''); setRegEnd(''); setIsIndividual(false);
+            setTitle(''); setDescription('');
+            setRegStartDate(''); setRegStartTime('');
+            setRegEndDate(''); setRegEndTime('');
+            setIsIndividual(false);
             onCreated(data.competition)
         } catch (err) {
             setError(err.message || 'Failed to create competition.')
@@ -183,23 +192,45 @@ function CreateCompetitionForm({ onCreated }) {
                     />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className={labelClass}>Registration Opens</label>
+                <div>
+                    <label className={labelClass}>Registration Opens</label>
+                    <div className="grid grid-cols-2 gap-3">
                         <input
-                            type="datetime-local"
-                            value={regStart}
-                            onChange={e => setRegStart(e.target.value)}
+                            type="date"
+                            value={regStartDate}
+                            onChange={e => setRegStartDate(e.target.value)}
+                            className={`${inputClass} [color-scheme:dark]`}
+                            required
+                        />
+                        <input
+                            type="time"
+                            value={regStartTime}
+                            onChange={e => setRegStartTime(e.target.value)}
+                            min="00:00"
+                            max="23:59"
+                            step="60"
                             className={`${inputClass} [color-scheme:dark]`}
                             required
                         />
                     </div>
-                    <div>
-                        <label className={labelClass}>Registration Closes</label>
+                </div>
+                <div>
+                    <label className={labelClass}>Registration Closes</label>
+                    <div className="grid grid-cols-2 gap-3">
                         <input
-                            type="datetime-local"
-                            value={regEnd}
-                            onChange={e => setRegEnd(e.target.value)}
+                            type="date"
+                            value={regEndDate}
+                            onChange={e => setRegEndDate(e.target.value)}
+                            className={`${inputClass} [color-scheme:dark]`}
+                            required
+                        />
+                        <input
+                            type="time"
+                            value={regEndTime}
+                            onChange={e => setRegEndTime(e.target.value)}
+                            min="00:00"
+                            max="23:59"
+                            step="60"
                             className={`${inputClass} [color-scheme:dark]`}
                             required
                         />
