@@ -82,63 +82,122 @@ function Toast({ msg, type, onDismiss }) {
     )
 }
 
-// ─── TimeSlider ────────────────────────────────────────────────────────────
+// ─── CustomTimePicker ─────────────────────────────────────────────────────────
 
-function TimeSlider({ value, onChange }) {
-    // Parse "HH:mm" to minutes (0-1439)
-    let minutes = 0;
-    if (value) {
-        const [h, m] = value.split(':').map(Number);
-        if (!isNaN(h) && !isNaN(m)) {
-            minutes = h * 60 + m;
+const HOURS = Array.from({length: 24}, (_, i) => String(i).padStart(2, '0'))
+const MINUTES = Array.from({length: 60}, (_, i) => String(i).padStart(2, '0'))
+
+function Wheel({ items, selected, onChange }) {
+    const scrollRef = useRef(null)
+    const ITEM_HEIGHT = 36
+    const timeoutRef = useRef(null)
+
+    useEffect(() => {
+        const idx = items.indexOf(selected)
+        if (scrollRef.current && idx !== -1) {
+            scrollRef.current.scrollTop = idx * ITEM_HEIGHT
         }
+    }, []) // initial only
+
+    const handleScroll = (e) => {
+        const el = e.target
+        const idx = Math.round(el.scrollTop / ITEM_HEIGHT)
+        
+        if (timeoutRef.current) clearTimeout(timeoutRef.current)
+        
+        timeoutRef.current = setTimeout(() => {
+            if (items[idx] && items[idx] !== selected) {
+                onChange(items[idx])
+            }
+        }, 50)
     }
 
-    const handleChange = (e) => {
-        const val = parseInt(e.target.value, 10);
-        const hours = Math.floor(val / 60);
-        const mins = val % 60;
-        const formatted = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-        onChange(formatted);
-    };
+    return (
+        <div 
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="h-[108px] w-full overflow-y-auto overflow-x-hidden snap-y snap-mandatory relative hide-scroll"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+            <style dangerouslySetInnerHTML={{__html: `.hide-scroll::-webkit-scrollbar { display: none; }`}} />
+            <div style={{ height: ITEM_HEIGHT }} className="snap-align-none" />
+            {items.map((item) => (
+                <div 
+                    key={item}
+                    className={`h-[36px] flex items-center justify-center snap-center text-lg font-mono transition-all duration-200 select-none cursor-pointer
+                                ${item === selected ? 'text-white font-bold scale-110' : 'text-neutral-600 scale-100 hover:text-neutral-400'}`}
+                    onClick={() => {
+                        const idx = items.indexOf(item)
+                        scrollRef.current?.scrollTo({ top: idx * ITEM_HEIGHT, behavior: 'smooth' })
+                        onChange(item)
+                    }}
+                >
+                    {item}
+                </div>
+            ))}
+            <div style={{ height: ITEM_HEIGHT }} className="snap-align-none" />
+        </div>
+    )
+}
 
-    const formattedTime = value || "00:00";
-    const percentage = (minutes / 1439) * 100;
+function CustomTimePicker({ value, onChange }) {
+    const [isOpen, setIsOpen] = useState(false)
+    const pickerRef = useRef(null)
+    const [h, m] = (value || "00:00").split(':')
+    
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (pickerRef.current && !pickerRef.current.contains(event.target)) {
+                setIsOpen(false)
+            }
+        }
+        if (isOpen) document.addEventListener("mousedown", handleClickOutside)
+        return () => document.removeEventListener("mousedown", handleClickOutside)
+    }, [isOpen])
 
     return (
-        <div className="w-full flex flex-col gap-3 p-4 bg-neutral-950 border border-neutral-800 rounded-xl">
-            <div className="flex items-center justify-between">
-                <span className="text-[10px] text-neutral-500 font-mono font-bold tracking-widest">00:00</span>
-                <span className="text-2xl font-black font-mono text-yellow-500 tracking-wider drop-shadow-[0_0_15px_rgba(202,138,4,0.3)]">{formattedTime}</span>
-                <span className="text-[10px] text-neutral-500 font-mono font-bold tracking-widest">23:59</span>
-            </div>
+        <div className="relative" ref={pickerRef}>
+            <button 
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-mono tracking-wider
+                            bg-neutral-950 border transition-all duration-300 w-full h-[46px]
+                            ${isOpen ? 'border-yellow-600 text-yellow-500 shadow-[0_0_15px_rgba(202,138,4,0.15)] ring-1 ring-yellow-600/50' : 'border-neutral-700 text-white hover:border-neutral-600 hover:bg-neutral-900'}`}
+            >
+                <Clock size={15} className={isOpen ? 'text-yellow-600' : 'text-neutral-500'} />
+                {value || "00:00"}
+            </button>
             
-            <div className="relative flex items-center h-6 group">
-                <input
-                    type="range"
-                    min="0"
-                    max="1439"
-                    step="1"
-                    value={minutes}
-                    onChange={handleChange}
-                    className="absolute w-full h-full opacity-0 cursor-pointer z-10"
-                />
-                {/* Custom Track */}
-                <div className="w-full h-2 bg-neutral-900 border border-neutral-800 rounded-full overflow-hidden shadow-inner">
-                    <div 
-                        className="h-full bg-gradient-to-r from-yellow-700 to-yellow-500 transition-all duration-75"
-                        style={{ width: `${percentage}%` }}
-                    />
+            {isOpen && (
+                <div className="absolute top-full right-0 sm:left-auto mt-2 z-[100] animate-in fade-in zoom-in-95 duration-200 origin-top">
+                    <div className="relative flex bg-[#161616] border border-neutral-800 rounded-[24px] p-4 w-[160px] shadow-2xl">
+                        {/* Highlight pill in center */}
+                        <div className="absolute top-1/2 left-3 right-3 -translate-y-1/2 h-[36px] bg-neutral-800/80 rounded-xl pointer-events-none z-0" />
+                        
+                        <div 
+                            className="flex w-full relative z-10 hide-scroll"
+                            style={{ WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 35%, black 65%, transparent 100%)', maskImage: 'linear-gradient(to bottom, transparent 0%, black 35%, black 65%, transparent 100%)' }}
+                        >
+                            <div className="flex-1 hide-scroll">
+                                <Wheel 
+                                    items={HOURS} 
+                                    selected={h} 
+                                    onChange={(newH) => onChange(`${newH}:${m}`)} 
+                                />
+                            </div>
+                            <div className="flex-1 hide-scroll">
+                                <Wheel 
+                                    items={MINUTES} 
+                                    selected={m} 
+                                    onChange={(newM) => onChange(`${h}:${newM}`)} 
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                {/* Custom Thumb */}
-                <div 
-                    className="absolute top-1/2 w-5 h-5 bg-yellow-400 rounded-full shadow-[0_0_12px_rgba(202,138,4,0.6)] border-2 border-neutral-900 
-                               group-focus-within:ring-4 group-focus-within:ring-yellow-600/30 transition-all duration-75 pointer-events-none"
-                    style={{ left: `calc(${percentage}%)`, transform: 'translate(-50%, -50%)' }}
-                />
-            </div>
+            )}
         </div>
-    );
+    )
 }
 
 // ─── CreateCompetitionForm ────────────────────────────────────────────
@@ -253,7 +312,7 @@ function CreateCompetitionForm({ onCreated }) {
 
                 <div>
                     <label className={labelClass}>Registration Opens</label>
-                    <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                         <input
                             type="date"
                             value={regStartDate}
@@ -261,12 +320,12 @@ function CreateCompetitionForm({ onCreated }) {
                             className={`${inputClass} [color-scheme:dark]`}
                             required
                         />
-                        <TimeSlider value={regStartTime} onChange={setRegStartTime} />
+                        <CustomTimePicker value={regStartTime} onChange={setRegStartTime} />
                     </div>
                 </div>
                 <div>
                     <label className={labelClass}>Registration Closes</label>
-                    <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                         <input
                             type="date"
                             value={regEndDate}
@@ -274,7 +333,7 @@ function CreateCompetitionForm({ onCreated }) {
                             className={`${inputClass} [color-scheme:dark]`}
                             required
                         />
-                        <TimeSlider value={regEndTime} onChange={setRegEndTime} />
+                        <CustomTimePicker value={regEndTime} onChange={setRegEndTime} />
                     </div>
                 </div>
 
