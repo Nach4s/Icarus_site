@@ -88,54 +88,84 @@ const HOURS = Array.from({length: 24}, (_, i) => String(i).padStart(2, '0'))
 const MINUTES = Array.from({length: 60}, (_, i) => String(i).padStart(2, '0'))
 
 function Wheel({ items, selected, onChange }) {
-    const scrollRef = useRef(null)
-    const ITEM_HEIGHT = 36
-    const timeoutRef = useRef(null)
+    const wheelRef = useRef(null)
+    const localIndexRef = useRef(items.indexOf(selected))
+    
+    useEffect(() => {
+        localIndexRef.current = items.indexOf(selected)
+    }, [selected, items])
 
     useEffect(() => {
-        const idx = items.indexOf(selected)
-        if (scrollRef.current && idx !== -1) {
-            scrollRef.current.scrollTop = idx * ITEM_HEIGHT
-        }
-    }, []) // initial only
-
-    const handleScroll = (e) => {
-        const el = e.target
-        const idx = Math.round(el.scrollTop / ITEM_HEIGHT)
-        
-        if (timeoutRef.current) clearTimeout(timeoutRef.current)
-        
-        timeoutRef.current = setTimeout(() => {
-            if (items[idx] && items[idx] !== selected) {
-                onChange(items[idx])
+        let accumY = 0
+        const handleWheel = (e) => {
+            e.preventDefault()
+            accumY += e.deltaY
+            if (Math.abs(accumY) >= 30) {
+                const steps = Math.trunc(accumY / 30)
+                accumY = accumY % 30
+                const max = items.length
+                let nextIndex = (localIndexRef.current + steps) % max
+                if (nextIndex < 0) nextIndex += max
+                localIndexRef.current = nextIndex
+                onChange(items[nextIndex])
             }
-        }, 50)
+        }
+        
+        const el = wheelRef.current
+        if (el) el.addEventListener('wheel', handleWheel, { passive: false })
+        return () => {
+            if (el) el.removeEventListener('wheel', handleWheel)
+        }
+    }, [items, onChange])
+
+    const currentIndex = items.indexOf(selected)
+    const max = items.length
+    const getWrappedItem = (offset) => {
+        let index = (currentIndex + offset) % max
+        if (index < 0) index += max
+        return items[index]
     }
+
+    const visibleItems = [
+        { offset: -2, item: getWrappedItem(-2) },
+        { offset: -1, item: getWrappedItem(-1) },
+        { offset:  0, item: getWrappedItem(0) },
+        { offset:  1, item: getWrappedItem(1) },
+        { offset:  2, item: getWrappedItem(2) },
+    ]
 
     return (
         <div 
-            ref={scrollRef}
-            onScroll={handleScroll}
-            className="h-[108px] w-full overflow-y-auto overflow-x-hidden snap-y snap-mandatory relative hide-scroll"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            ref={wheelRef}
+            className="h-[150px] w-full flex flex-col items-center justify-center relative overflow-hidden"
         >
-            <style dangerouslySetInnerHTML={{__html: `.hide-scroll::-webkit-scrollbar { display: none; }`}} />
-            <div style={{ height: ITEM_HEIGHT }} className="snap-align-none" />
-            {items.map((item) => (
-                <div 
-                    key={item}
-                    className={`h-[36px] flex items-center justify-center snap-center text-lg font-mono transition-all duration-200 select-none cursor-pointer
-                                ${item === selected ? 'text-white font-bold scale-110' : 'text-neutral-600 scale-100 hover:text-neutral-400'}`}
-                    onClick={() => {
-                        const idx = items.indexOf(item)
-                        scrollRef.current?.scrollTo({ top: idx * ITEM_HEIGHT, behavior: 'smooth' })
-                        onChange(item)
-                    }}
-                >
-                    {item}
-                </div>
-            ))}
-            <div style={{ height: ITEM_HEIGHT }} className="snap-align-none" />
+            {visibleItems.map(({offset, item}) => {
+                let opacity = 'opacity-100'
+                let scale = 'scale-110'
+                let weight = 'font-bold text-white'
+                
+                if (Math.abs(offset) === 1) {
+                    opacity = 'opacity-50 hover:opacity-80'
+                    scale = 'scale-100'
+                    weight = 'font-medium text-neutral-400'
+                } else if (Math.abs(offset) === 2) {
+                    opacity = 'opacity-20 hover:opacity-50'
+                    scale = 'scale-90'
+                    weight = 'font-normal text-neutral-500'
+                }
+
+                return (
+                    <div 
+                        key={`${item}-${offset}`}
+                        className={`flex items-center justify-center text-lg font-mono select-none cursor-pointer
+                                    transition-all duration-100 w-full h-[30px]
+                                    ${opacity} ${scale} ${weight}`}
+                        onClick={() => onChange(item)}
+                    >
+                        {item}
+                    </div>
+                )
+            })}
         </div>
     )
 }
@@ -172,20 +202,20 @@ function CustomTimePicker({ value, onChange }) {
                 <div className="absolute top-full right-0 sm:left-auto mt-2 z-[100] animate-in fade-in zoom-in-95 duration-200 origin-top">
                     <div className="relative flex bg-[#161616] border border-neutral-800 rounded-[24px] p-4 w-[160px] shadow-2xl">
                         {/* Highlight pill in center */}
-                        <div className="absolute top-1/2 left-3 right-3 -translate-y-1/2 h-[36px] bg-neutral-800/80 rounded-xl pointer-events-none z-0" />
+                        <div className="absolute top-1/2 left-3 right-3 -translate-y-1/2 h-[32px] bg-neutral-800/80 rounded-xl pointer-events-none z-0" />
                         
                         <div 
-                            className="flex w-full relative z-10 hide-scroll"
-                            style={{ WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 35%, black 65%, transparent 100%)', maskImage: 'linear-gradient(to bottom, transparent 0%, black 35%, black 65%, transparent 100%)' }}
+                            className="flex w-full relative z-10"
+                            style={{ WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)', maskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)' }}
                         >
-                            <div className="flex-1 hide-scroll">
+                            <div className="flex-1">
                                 <Wheel 
                                     items={HOURS} 
                                     selected={h} 
                                     onChange={(newH) => onChange(`${newH}:${m}`)} 
                                 />
                             </div>
-                            <div className="flex-1 hide-scroll">
+                            <div className="flex-1">
                                 <Wheel 
                                     items={MINUTES} 
                                     selected={m} 
