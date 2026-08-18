@@ -11,6 +11,7 @@ const { PrismaClient } = require("@prisma/client");
 const multer = require("multer");
 const { createClient } = require("@supabase/supabase-js");
 const { sendVerificationEmail, sendPasswordResetEmail } = require("./utils/email");
+const { generateSlug } = require("./utils/slugify");
 const redis = require("./utils/redis");
 const crypto = require("crypto");
 const helmet = require("helmet");
@@ -939,6 +940,259 @@ app.get(
     });
 
     return res.json({ competition, teams, participants: [] });
+  })
+);
+
+    return res.json({ competition, teams, participants: [] });
+  })
+);
+
+// ═══════════════════════════════════════════════════════════════════════
+//  ADMIN POST ROUTES — Protected: ADMIN role only
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * POST /api/admin/posts
+ * ───────────────────────
+ * Create a new news post.
+ */
+app.post(
+  "/api/admin/posts",
+  authMiddleware,
+  adminMiddleware,
+  upload.single("coverImage"),
+  asyncHandler(async (req, res) => {
+    const { title, excerpt, content } = req.body;
+
+    if (!title || !content) {
+      return res.status(400).json({ error: "Fields 'title' and 'content' are required." });
+    }
+
+    let slug = generateSlug(title);
+    
+    // Ensure slug uniqueness
+    let counter = 1;
+    let originalSlug = slug;
+    while (await prisma.post.findUnique({ where: { slug } })) {
+      slug = `${originalSlug}-${counter}`;
+      counter++;
+    }
+
+    let coverImage = null;
+    if (req.file) {
+      const fileExt = req.file.originalname.split(".").pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from("posts-covers")
+        .upload(fileName, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: false,
+        });
+
+      if (error) {
+        console.error("Supabase upload error:", error);
+        return res.status(500).json({ error: "Failed to upload cover image." });
+      }
+
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from("posts-covers")
+        .getPublicUrl(fileName);
+        
+      coverImage = publicUrlData.publicUrl;
+    }
+
+    const post = await prisma.post.create({
+      data: {
+        title,
+        slug,
+        excerpt: excerpt || null,
+        content,
+        coverImage,
+        isVisible: true,
+        authorId: req.userId,
+      },
+    });
+
+    return res.status(201).json({ message: "Post created.", post });
+  })
+);
+
+/**
+ * GET /api/admin/posts
+ * ───────────────────────
+ * Fetch all posts for the admin dashboard (includes hidden).
+ */
+app.get(
+  "/api/admin/posts",
+  authMiddleware,
+  adminMiddleware,
+  asyncHandler(async (req, res) => {
+    const posts = await prisma.post.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        author: { select: { name: true, email: true } },
+      },
+    });
+    return res.json({ posts });
+  })
+);
+
+/**
+ * PATCH /api/admin/posts/:id
+ * ───────────────────────────
+ * Edit a post's content or cover image.
+ */
+app.patch(
+  "/api/admin/posts/:id",
+  authMiddleware,
+  adminMiddleware,
+  upload.single("coverImage"),
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { title, excerpt, content } = req.body;
+
+    const post = await prisma.post.findUnique({ where: { id } });
+    if (!post) {
+      return res.status(404).json({ error: "Post not found." });
+    }
+
+    const data = {};
+    if (title) {
+      data.title = title;
+      // Re-generate slug if title changes? The user didn't ask for it, 
+      // typically changing slug breaks URLs. We'll leave slug alone.
+    }
+    if (excerpt !== undefined) data.excerpt = excerpt || null;
+    if (content) data.content = content;
+
+    if (req.file) {
+      const fileExt = req.file.originalname.split(".").pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      const { error } = await supabase.storage
+        .from("posts-covers")
+        .upload(fileName, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: false,
+        });
+
+      if (!error) {
+        const { data: publicUrlData } = supabase.storage
+          .from("posts-covers")
+          .getPublicUrl(fileName);
+        data.coverImage = publicUrlData.publicUrl;
+      }
+    }
+
+    const updated = await prisma.post.update({ where: { id }, data });
+    return res.json({ message: "Post updated.", post: updated });
+  })
+);
+
+/**
+ * PATCH /api/admin/posts/:id/visibility
+ * ───────────────────────────────────────
+ * Toggle visibility of a post.
+ */
+app.patch(
+  "/api/admin/posts/:id/visibility",
+  authMiddleware,
+  adminMiddleware,
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    
+    const post = await prisma.post.findUnique({ where: { id } });
+    if (!post) {
+      return res.status(404).json({ error: "Post not found." });
+    }
+
+    const updated = await prisma.post.update({
+      where: { id },
+      data: { isVisible: !post.isVisible },
+    });
+
+    return res.json({ message: "Post visibility toggled.", post: updated });
+  })
+);
+
+/**
+ * DELETE /api/admin/posts/:id
+ * ─────────────────────────────
+ * Delete a post entirely.
+ */
+app.delete(
+  "/api/admin/posts/:id",
+  authMiddleware,
+  adminMiddleware,
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    await prisma.post.delete({ where: { id } });
+    return res.json({ message: "Post deleted successfully." });
+  })
+);
+
+// ═══════════════════════════════════════════════════════════════════════
+//  PUBLIC POST ROUTES
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/posts/latest
+ * ───────────────────────
+ * Fetch the single most recent visible post for the home page.
+ */
+app.get(
+  "/api/posts/latest",
+  asyncHandler(async (req, res) => {
+    const post = await prisma.post.findFirst({
+      where: { isVisible: true },
+      orderBy: { createdAt: "desc" },
+    });
+    return res.json({ post });
+  })
+);
+
+/**
+ * GET /api/posts
+ * ────────────────
+ * Fetch all visible posts.
+ */
+app.get(
+  "/api/posts",
+  asyncHandler(async (req, res) => {
+    const posts = await prisma.post.findMany({
+      where: { isVisible: true },
+      orderBy: { createdAt: "desc" },
+      include: {
+        author: { select: { name: true, avatarUrl: true } },
+      },
+    });
+    return res.json({ posts });
+  })
+);
+
+/**
+ * GET /api/posts/:slug
+ * ──────────────────────
+ * Fetch a single visible post by slug.
+ */
+app.get(
+  "/api/posts/:slug",
+  asyncHandler(async (req, res) => {
+    const { slug } = req.params;
+    const post = await prisma.post.findUnique({
+      where: { slug },
+      include: {
+        author: { select: { name: true, avatarUrl: true } },
+      },
+    });
+
+    if (!post || !post.isVisible) {
+      return res.status(404).json({ error: "Post not found." });
+    }
+
+    return res.json({ post });
   })
 );
 

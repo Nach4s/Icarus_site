@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { api } from './api'
 import { useAuth } from './AuthContext'
+import AdminPostsManager from './AdminPostsManager'
 
 // ─── Shared style tokens ──────────────────────────────────────────────
 
@@ -944,7 +945,9 @@ function EditDescriptionPanel({ competition, onUpdated, showToast }) {
 
 export default function AdminPage({ onBack }) {
     const { user } = useAuth()
-
+    const [adminTab, setAdminTab] = useState('competitions') // 'competitions' | 'posts'
+    
+    // ─── Competitions State ──────────────────────────────────────────────
     const [competitions, setCompetitions] = useState([])
     const [loading, setLoading]           = useState(true)
     const [selectedComp, setSelectedComp] = useState(null)
@@ -1091,17 +1094,45 @@ export default function AdminPage({ onBack }) {
 
             {/* Content */}
             <div className="max-w-7xl mx-auto px-6 py-10">
-                {/* Page header */}
-                <div className="mb-10">
-                    <h1 className="text-3xl font-black uppercase tracking-widest text-white mb-2">
-                        Competition Manager
-                    </h1>
-                    <p className="text-neutral-500 text-sm">
-                        Create tournaments, manage registration windows, and inspect team rosters.
-                    </p>
+                {/* Tabs */}
+                <div className="flex gap-4 mb-10 border-b border-neutral-800 pb-px">
+                    <button
+                        onClick={() => setAdminTab('competitions')}
+                        className={`pb-4 text-sm font-bold uppercase tracking-widest transition-colors cursor-pointer relative ${
+                            adminTab === 'competitions' ? 'text-yellow-500' : 'text-neutral-500 hover:text-neutral-300'
+                        }`}
+                    >
+                        Competitions
+                        {adminTab === 'competitions' && (
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-yellow-500" />
+                        )}
+                    </button>
+                    <button
+                        onClick={() => setAdminTab('posts')}
+                        className={`pb-4 text-sm font-bold uppercase tracking-widest transition-colors cursor-pointer relative ${
+                            adminTab === 'posts' ? 'text-yellow-500' : 'text-neutral-500 hover:text-neutral-300'
+                        }`}
+                    >
+                        News & Posts
+                        {adminTab === 'posts' && (
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-yellow-500" />
+                        )}
+                    </button>
                 </div>
 
-                <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-8">
+                {adminTab === 'posts' ? (
+                    <AdminPostsManager showToast={showToast} />
+                ) : (
+                    <>
+                        <div className="mb-10">
+                            <h1 className="text-3xl font-black uppercase tracking-widest text-white mb-2">
+                                Competition Manager
+                            </h1>
+                            <p className="text-neutral-500 text-sm">
+                                Create tournaments, manage registration windows, and inspect team rosters.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-8">
 
                     {/* ── Left column ──────────────────────────────── */}
                     <div className="space-y-6">
@@ -1184,6 +1215,8 @@ export default function AdminPage({ onBack }) {
                     </div>
 
                 </div>
+                    </>
+                )}
             </div>
             {/* Delete Confirmation Modal */}
             {compToDelete && (

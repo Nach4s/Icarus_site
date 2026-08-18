@@ -56,6 +56,9 @@ model User {
   resetToken       String?   @unique
   resetTokenExpiry DateTime?
 
+  // ── Posts (Author relation) ───────────────────────────────────────
+  posts            Post[]
+
   // ── Timestamps ────────────────────────────────────────────────────
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -210,4 +213,25 @@ model CompetitionParticipant {
   @@unique([userId, competitionId])
   @@index([competitionId])
   @@index([userId])
+}
+
+// ─── Post (News / Updates) ───────────────────────────────────────────
+
+/// A news post or platform update created by an Admin.
+model Post {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String   @unique
+  excerpt     String?  @db.Text
+  content     String   @db.Text
+  coverImage  String?
+  isVisible   Boolean  @default(true) /// Used to hide/show the post publicly
+  
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([authorId])
 }

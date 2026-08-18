@@ -4,6 +4,9 @@ import { useAuth } from './AuthContext.jsx'
 import { api } from './api.js'
 import AdminPage from './AdminPage.jsx'
 import ResetPasswordPage from './ResetPasswordPage.jsx'
+import LatestNewsBlock from './LatestNewsBlock.jsx'
+import NewsPage from './NewsPage.jsx'
+import NewsPostPage from './NewsPostPage.jsx'
 import {
     Rocket,
     Flame,
@@ -1110,20 +1113,13 @@ function TabNav({ activeTab, setActiveTab, onNavigatePage }) {
 /* ── Tab 1: THE JOURNEY ──────────────────────────────────── */
 
 function JourneyTab() {
-    const [isPlaying, setIsPlaying] = useState(false);
+    const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
     const videoRef = useRef(null);
-
-    const handlePlayClick = () => {
-        setIsPlaying(true);
-        if (videoRef.current) {
-            videoRef.current.play();
-        }
-    };
 
     return (
         <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-8 sm:py-16 md:py-24">
             {/* Cinematic Title — mobile-first font sizes */}
-            <div className="text-center mb-10 sm:mb-20">
+            <div className="relative text-center mb-10 sm:mb-20 max-w-4xl mx-auto">
                 <p className="text-[10px] sm:text-sm font-semibold uppercase tracking-[0.4em] text-neutral-500 mb-3">
                     Platform Guide
                 </p>
@@ -1138,63 +1134,51 @@ function JourneyTab() {
                 <p className="mt-4 text-sm sm:text-lg text-neutral-400 max-w-xl mx-auto leading-relaxed px-2">
                     Navigate the platform, build your team, and launch your journey.
                 </p>
+                
+                {/* Floating Video Guide Button */}
+                <button
+                    onClick={() => setIsVideoModalOpen(true)}
+                    className="absolute bottom-0 right-0 translate-x-4 sm:translate-x-12 translate-y-8 sm:translate-y-4 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center
+                               bg-yellow-600/20 border border-yellow-600/50 backdrop-blur-sm cursor-pointer hover:bg-yellow-600/30 hover:scale-110 hover:border-yellow-600 shadow-[0_0_20px_rgba(202,138,4,0.3)] transition-all duration-300 z-20 group"
+                    title="Watch Platform Guide"
+                >
+                    <Play size={20} className="text-yellow-500 ml-1 group-hover:text-yellow-400" fill="currentColor" />
+                    <span className="absolute -top-8 right-0 text-[10px] font-bold uppercase tracking-widest text-yellow-500/80 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                        Platform Guide
+                    </span>
+                </button>
             </div>
 
-            {/* Video wrapper */}
-            <div className="relative max-w-5xl mx-auto group">
-                <div className="absolute -inset-px rounded-2xl bg-gradient-to-br from-yellow-600/30 via-transparent to-yellow-600/10 opacity-50 group-hover:opacity-100 transition-opacity duration-700" />
-                <div className="relative rounded-2xl overflow-hidden bg-neutral-900 shadow-2xl shadow-black/50"
-                    style={{ boxShadow: '0 0 40px rgba(197,160,89,0.08), 0 8px 40px rgba(0,0,0,0.6)' }}>
-                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                        <video
-                            ref={videoRef}
-                            playsInline
-                            controls={isPlaying}
-                            disablePictureInPicture
-                            disableRemotePlayback
-                            className={`absolute inset-0 w-full h-full object-cover ${isPlaying ? 'z-10' : 'z-0'}`}
-                            src="/background.mp4"
-                            onPause={() => {
-                                if (videoRef.current && videoRef.current.seeking) return
-                                setIsPlaying(false)
-                            }}
-                            onEnded={() => setIsPlaying(false)}
-                            style={{ objectFit: 'cover' }}
-                        />
+            {/* Latest News block replaces the old video block */}
+            <LatestNewsBlock />
 
-                        {/* Play button — always centered */}
-                        {!isPlaying && (
-                            <div className="absolute inset-0 flex items-center justify-center z-20">
-                                <button
-                                    onClick={handlePlayClick}
-                                    className="w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center
-                                    bg-yellow-600/20 border-2 border-yellow-600/50 backdrop-blur-sm cursor-pointer
-                                    transition-all duration-500 ease-out
-                                    group-hover:scale-110 group-hover:bg-yellow-600/30 group-hover:border-yellow-600/70
-                                    group-hover:shadow-2xl group-hover:shadow-yellow-600/20">
-                                    <Play size={28} className="text-yellow-600 ml-1 sm:w-8 sm:h-8" fill="currentColor" />
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Overlay label — only on sm+ to avoid overlap on tiny screens */}
-                        {!isPlaying && (
-                            <div className="absolute bottom-3 left-3 sm:bottom-6 sm:left-6 z-20 pointer-events-none hidden sm:block">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-yellow-600/80 mb-1">Quick Start</p>
-                                <h3 className="text-sm sm:text-lg font-bold text-yellow-500 tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">How to use the ICARUS Platform</h3>
-                            </div>
-                        )}
+            {/* Video Modal Popup */}
+            {isVideoModalOpen && createPortal(
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-8">
+                    <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md cursor-pointer" onClick={() => setIsVideoModalOpen(false)} />
+                    <div className="relative w-full max-w-5xl rounded-2xl overflow-hidden bg-neutral-900 shadow-2xl border border-neutral-800" style={{ animation: 'zoomIn 0.25s ease-out' }}>
+                        <button 
+                            onClick={() => setIsVideoModalOpen(false)}
+                            className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-neutral-950/50 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-950/80 cursor-pointer transition-all"
+                        >
+                            <X size={20} />
+                        </button>
+                        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                            <video
+                                ref={videoRef}
+                                playsInline
+                                controls
+                                autoPlay
+                                disablePictureInPicture
+                                className="absolute inset-0 w-full h-full object-cover"
+                                src="/background.mp4"
+                                style={{ objectFit: 'cover' }}
+                            />
+                        </div>
                     </div>
-                </div>
-                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-yellow-600/30 rounded-tl-xl -translate-x-1.5 -translate-y-1.5" />
-                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-yellow-600/30 rounded-br-xl translate-x-1.5 translate-y-1.5" />
-            </div>
-
-            {/* Caption below video — always visible on mobile */}
-            <div className="mt-4 sm:hidden px-1">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-yellow-600/80 mb-1">Quick Start</p>
-                <h3 className="text-base font-bold text-yellow-500 tracking-wide">How to use the ICARUS Platform</h3>
-            </div>
+                </div>,
+                document.body
+            )}
         </div>
     )
 }
@@ -2932,6 +2916,15 @@ export default function App() {
     // ── Route intercept for Reset Password Page ──
     if (window.location.pathname === '/reset-password') {
         return <ResetPasswordPage />
+    }
+
+    // ── Route intercepts for News ──
+    if (window.location.pathname === '/news') {
+        return <NewsPage />
+    }
+    
+    if (window.location.pathname.startsWith('/news/')) {
+        return <NewsPostPage />
     }
 
     return (
