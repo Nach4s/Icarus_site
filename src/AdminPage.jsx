@@ -118,6 +118,37 @@ function Wheel({ items, selected, onChange }) {
         }
     }, [items, onChange])
 
+    const touchStartY = useRef(0)
+    const accumTouchY = useRef(0)
+
+    const handlePointerDown = (e) => {
+        touchStartY.current = e.clientY
+        accumTouchY.current = 0
+        e.currentTarget.setPointerCapture(e.pointerId)
+    }
+
+    const handlePointerMove = (e) => {
+        if (!e.currentTarget.hasPointerCapture(e.pointerId)) return
+        const delta = e.clientY - touchStartY.current
+        touchStartY.current = e.clientY
+        accumTouchY.current -= delta
+        
+        if (Math.abs(accumTouchY.current) >= 20) {
+            const steps = Math.trunc(accumTouchY.current / 20)
+            accumTouchY.current = accumTouchY.current % 20
+            const max = items.length
+            let nextIndex = (localIndexRef.current + steps) % max
+            if (nextIndex < 0) nextIndex += max
+            localIndexRef.current = nextIndex
+            onChange(items[nextIndex])
+        }
+    }
+
+    const handlePointerUp = (e) => {
+        e.currentTarget.releasePointerCapture(e.pointerId)
+        accumTouchY.current = 0
+    }
+
     const currentIndex = items.indexOf(selected)
     const max = items.length
     const getWrappedItem = (offset) => {
@@ -137,7 +168,12 @@ function Wheel({ items, selected, onChange }) {
     return (
         <div 
             ref={wheelRef}
-            className="h-[150px] w-full flex flex-col items-center justify-center relative overflow-hidden"
+            className="h-[220px] md:h-[150px] w-full flex flex-col items-center justify-center relative overflow-hidden"
+            style={{ touchAction: 'none' }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
         >
             {visibleItems.map(({offset, item}) => {
                 let opacity = 'opacity-100'
@@ -157,8 +193,8 @@ function Wheel({ items, selected, onChange }) {
                 return (
                     <div 
                         key={`${item}-${offset}`}
-                        className={`flex items-center justify-center text-lg font-mono select-none cursor-pointer
-                                    transition-all duration-100 w-full h-[30px]
+                        className={`flex items-center justify-center text-xl md:text-lg font-mono select-none cursor-pointer
+                                    transition-all duration-100 w-full h-[44px] md:h-[30px]
                                     ${opacity} ${scale} ${weight}`}
                         onClick={() => onChange(item)}
                     >
@@ -186,7 +222,7 @@ function CustomTimePicker({ value, onChange }) {
     }, [isOpen])
 
     return (
-        <div className="relative" ref={pickerRef}>
+        <div className="relative w-full" ref={pickerRef}>
             <button 
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
@@ -200,9 +236,10 @@ function CustomTimePicker({ value, onChange }) {
             
             {isOpen && (
                 <div className="absolute top-full right-0 sm:left-auto mt-2 z-[100] animate-in fade-in zoom-in-95 duration-200 origin-top">
-                    <div className="relative flex bg-[#161616] border border-neutral-800 rounded-[24px] p-4 w-[160px] shadow-2xl">
+                    <div className="relative flex bg-[#161616] border border-neutral-800 rounded-[24px] p-4 
+                                    w-[min(320px,calc(100vw-32px))] md:w-[160px] shadow-2xl mx-auto">
                         {/* Highlight pill in center */}
-                        <div className="absolute top-1/2 left-3 right-3 -translate-y-1/2 h-[32px] bg-neutral-800/80 rounded-xl pointer-events-none z-0" />
+                        <div className="absolute top-1/2 left-3 right-3 -translate-y-1/2 h-[44px] md:h-[32px] bg-neutral-800/80 rounded-xl pointer-events-none z-0" />
                         
                         <div 
                             className="flex w-full relative z-10"
@@ -342,28 +379,36 @@ function CreateCompetitionForm({ onCreated }) {
 
                 <div>
                     <label className={labelClass}>Registration Opens</label>
-                    <div className="grid grid-cols-2 gap-3">
-                        <input
-                            type="date"
-                            value={regStartDate}
-                            onChange={e => setRegStartDate(e.target.value)}
-                            className={`${inputClass} [color-scheme:dark]`}
-                            required
-                        />
-                        <CustomTimePicker value={regStartTime} onChange={setRegStartTime} />
+                    <div className="flex flex-col gap-3 md:flex-row md:gap-4">
+                        <div className="flex-1">
+                            <input
+                                type="date"
+                                value={regStartDate}
+                                onChange={e => setRegStartDate(e.target.value)}
+                                className={`${inputClass} [color-scheme:dark]`}
+                                required
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <CustomTimePicker value={regStartTime} onChange={setRegStartTime} />
+                        </div>
                     </div>
                 </div>
                 <div>
                     <label className={labelClass}>Registration Closes</label>
-                    <div className="grid grid-cols-2 gap-3">
-                        <input
-                            type="date"
-                            value={regEndDate}
-                            onChange={e => setRegEndDate(e.target.value)}
-                            className={`${inputClass} [color-scheme:dark]`}
-                            required
-                        />
-                        <CustomTimePicker value={regEndTime} onChange={setRegEndTime} />
+                    <div className="flex flex-col gap-3 md:flex-row md:gap-4">
+                        <div className="flex-1">
+                            <input
+                                type="date"
+                                value={regEndDate}
+                                onChange={e => setRegEndDate(e.target.value)}
+                                className={`${inputClass} [color-scheme:dark]`}
+                                required
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <CustomTimePicker value={regEndTime} onChange={setRegEndTime} />
+                        </div>
                     </div>
                 </div>
 
