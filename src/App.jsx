@@ -1139,7 +1139,8 @@ function JourneyTab() {
                     <div className="w-8 sm:w-16 lg:w-24 h-[1px] bg-yellow-600/50"></div>
                 </div>
                 <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-white uppercase tracking-widest mb-6 drop-shadow-lg flex flex-col items-center justify-center gap-2 sm:gap-4 lg:gap-6">
-                    <span className="text-center">Aerospace Engineering</span>
+                    <span className="text-center">Aerospace</span>
+                    <span className="text-center">Engineering</span>
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 to-yellow-500 text-center">
                         Competition Platform
                     </span>
