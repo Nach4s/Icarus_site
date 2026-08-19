@@ -1128,7 +1128,7 @@ function TabNav({ activeTab, setActiveTab, onNavigatePage }) {
 
 /* ── Tab 1: THE JOURNEY ──────────────────────────────────── */
 
-function JourneyTab() {
+function JourneyTab({ onPostClick }) {
     return (
         <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-8 sm:py-16 md:py-24">
             {/* Cinematic Title — mobile-first font sizes */}
@@ -1154,7 +1154,7 @@ function JourneyTab() {
             </div>
 
             {/* Latest News block replaces the old video block */}
-            <LatestNewsBlock />
+            <LatestNewsBlock onPostClick={onPostClick} />
 
         </div>
     )
@@ -2962,7 +2962,7 @@ export default function App() {
                         <TabNav activeTab={activeTab} setActiveTab={setActiveTab} onNavigatePage={setActivePage} />
                         <main className="flex-1">
                             <div key={activeTab} className="tab-animate">
-                                {activeTab === 'journey' && <JourneyTab />}
+                                {activeTab === 'journey' && <JourneyTab onPostClick={(slug) => { setActiveTab('newsPost'); window.history.pushState({}, '', `/news/${slug}`); }} />}
                                 {activeTab === 'news' && <NewsPage onPostClick={(slug) => { setActiveTab('newsPost'); window.history.pushState({}, '', `/news/${slug}`); }} />}
                                 {activeTab === 'newsPost' && <NewsPostPage onBack={() => { setActiveTab('news'); window.history.pushState({}, '', '/news'); }} />}
                                 {activeTab === 'training' && <TrainingTab />}
@@ -2995,10 +2995,10 @@ export default function App() {
                 {/* ── Guide Button ── */}
                 <button
                     onClick={() => setIsVideoModalOpen(true)}
-                    className="fixed z-40 right-4 bottom-4 md:right-6 md:bottom-6 w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center shadow-2xl shadow-yellow-600/30 border border-yellow-500/30 text-black hover:scale-110 transition-transform cursor-pointer"
+                    className="fixed z-40 right-4 bottom-4 md:right-6 md:bottom-6 w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center shadow-2xl shadow-yellow-600/30 border border-yellow-500/30 text-black hover:scale-110 transition-transform cursor-pointer"
                     title="Platform Guide"
                 >
-                    <BookOpen size={24} />
+                    <BookOpen size={28} />
                 </button>
 
                 {/* ── Video Modal ── */}

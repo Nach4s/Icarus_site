@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, Clock, FileText } from 'lucide-react';
 import { api } from './api';
 
-export default function LatestNewsBlock() {
+export default function LatestNewsBlock({ onPostClick }) {
     const [post, setPost] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -43,7 +43,13 @@ export default function LatestNewsBlock() {
 
     return (
         <a 
-            href={`/news/${post.slug}`} 
+            href={`/news/${post.slug}`}
+            onClick={(e) => {
+                if (onPostClick) {
+                    e.preventDefault();
+                    onPostClick(post.slug);
+                }
+            }}
             className="group relative max-w-6xl mx-auto block rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-800/80 hover:border-yellow-600/50 transition-all duration-500 shadow-2xl hover:shadow-[0_0_40px_rgba(202,138,4,0.15)]"
         >
             <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-900/90 to-transparent z-10" />

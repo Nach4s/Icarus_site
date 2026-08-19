@@ -40,6 +40,7 @@ export default function NewsPostPage({ onBack }) {
 
     return (
         <div className="w-full text-white relative">
+            <Preloader isVisible={loading} />
             {post && (
                 <article className="max-w-4xl mx-auto px-4 sm:px-6 py-12 md:py-20">
                     <button 
