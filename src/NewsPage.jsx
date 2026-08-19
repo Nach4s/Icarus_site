@@ -3,7 +3,7 @@ import { ArrowLeft, Clock, FileText } from 'lucide-react';
 import { api } from './api';
 import Preloader from './Preloader';
 
-export default function NewsPage() {
+export default function NewsPage({ onPostClick }) {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -22,21 +22,7 @@ export default function NewsPage() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-neutral-950 text-white relative">
-            <Preloader isVisible={loading} />
-
-            {/* Top Bar */}
-            <div className="sticky top-0 z-50 bg-neutral-950/90 backdrop-blur-md border-b border-neutral-800/60">
-                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <a 
-                        href="/"
-                        className="flex items-center gap-2 text-neutral-500 hover:text-white transition-colors text-sm font-semibold cursor-pointer group"
-                    >
-                        <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
-                        Back to Home
-                    </a>
-                </div>
-            </div>
+        <div className="w-full text-white relative">
 
             {/* Content */}
             <div className="max-w-7xl mx-auto px-6 py-12 md:py-20">
@@ -56,8 +42,12 @@ export default function NewsPage() {
                         {posts.map((post) => (
                             <a 
                                 key={post.id}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    if (onPostClick) onPostClick(post.slug);
+                                }}
                                 href={`/news/${post.slug}`}
-                                className="group flex flex-col bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden hover:border-yellow-600/50 hover:shadow-[0_0_30px_rgba(202,138,4,0.1)] transition-all duration-300"
+                                className="group flex flex-col bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden hover:border-yellow-600/50 hover:shadow-[0_0_30px_rgba(202,138,4,0.1)] transition-all duration-300 cursor-pointer"
                             >
                                 <div className="relative h-48 w-full bg-neutral-950 overflow-hidden shrink-0">
                                     {post.coverImage ? (

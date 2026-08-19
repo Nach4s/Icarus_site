@@ -990,8 +990,13 @@ app.post(
         });
 
       if (error) {
-        console.error("Supabase upload error:", error);
-        return res.status(500).json({ error: "Failed to upload cover image." });
+        console.error("Supabase upload error for new post:", {
+          message: error.message,
+          statusCode: error.statusCode,
+          error: error.error,
+          details: error
+        });
+        return res.status(500).json({ error: `Failed to upload cover image: ${error.message || 'Unknown error'}` });
       }
 
       // Get public URL
@@ -1078,6 +1083,16 @@ app.patch(
           contentType: req.file.mimetype,
           upsert: false,
         });
+
+      if (error) {
+        console.error("Supabase upload error for existing post:", {
+          message: error.message,
+          statusCode: error.statusCode,
+          error: error.error,
+          details: error
+        });
+        return res.status(500).json({ error: `Failed to upload cover image: ${error.message || 'Unknown error'}` });
+      }
 
       if (!error) {
         const { data: publicUrlData } = supabase.storage

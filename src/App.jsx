@@ -49,7 +49,8 @@ import {
     Activity,
     Minimize,
     MessageCircle,
-    Newspaper
+    Newspaper,
+    Maximize
 } from 'lucide-react'
 import ContactUs from './ContactUs.jsx'
 
@@ -245,10 +246,10 @@ const trainingCategories = [
 
 const TABS = [
     { id: 'journey', label: 'THE JOURNEY', icon: Compass },
+    { id: 'news', label: 'NEWS', icon: Newspaper },
     { id: 'training', label: 'TRAINING', icon: Crosshair },
     { id: 'ranking', label: 'GLOBAL RANKING', icon: Globe },
-    { id: 'contact', label: 'CONTACT US', icon: MessageCircle },
-    { id: 'news', label: 'NEWS', icon: Newspaper },
+    { id: 'contact', label: 'ABOUT US', icon: MessageCircle },
 ]
 
 
@@ -1034,13 +1035,14 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
                                             <button
                                                 key={tab.id}
                                                 onClick={() => {
-                                                    if (tab.id === 'news') {
-                                                        window.location.href = '/news'
-                                                        return
-                                                    }
                                                     onNavigatePage('home')
                                                     setActiveTab(tab.id)
                                                     setIsMobileMenuOpen(false)
+                                                    if (tab.id === 'news') {
+                                                        window.history.pushState({}, '', '/news')
+                                                    } else if (window.location.pathname.startsWith('/news')) {
+                                                        window.history.pushState({}, '', '/')
+                                                    }
                                                 }}
                                                 className={`w-full flex items-center gap-3 px-5 py-3.5 text-xs font-bold uppercase tracking-[0.15em]
                                                            transition-all duration-200 cursor-pointer
@@ -1097,12 +1099,13 @@ function TabNav({ activeTab, setActiveTab, onNavigatePage }) {
                             <button
                                 key={tab.id}
                                 onClick={() => {
-                                    if (tab.id === 'news') {
-                                        window.location.href = '/news'
-                                        return
-                                    }
                                     onNavigatePage('home')
                                     setActiveTab(tab.id)
+                                    if (tab.id === 'news') {
+                                        window.history.pushState({}, '', '/news')
+                                    } else if (window.location.pathname.startsWith('/news')) {
+                                        window.history.pushState({}, '', '/')
+                                    }
                                 }}
                                 className={`relative flex items-center gap-3 px-8 py-5 text-sm md:text-base font-bold uppercase tracking-[0.15em]
                            transition-all duration-300 ease-out cursor-pointer
@@ -1126,9 +1129,6 @@ function TabNav({ activeTab, setActiveTab, onNavigatePage }) {
 /* ── Tab 1: THE JOURNEY ──────────────────────────────────── */
 
 function JourneyTab() {
-    const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
-    const videoRef = useRef(null);
-
     return (
         <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-8 sm:py-16 md:py-24">
             {/* Cinematic Title — mobile-first font sizes */}
@@ -1156,33 +1156,6 @@ function JourneyTab() {
             {/* Latest News block replaces the old video block */}
             <LatestNewsBlock />
 
-            {/* Video Modal Popup */}
-            {isVideoModalOpen && createPortal(
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-8">
-                    <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md cursor-pointer" onClick={() => setIsVideoModalOpen(false)} />
-                    <div className="relative w-full max-w-5xl rounded-2xl overflow-hidden bg-neutral-900 shadow-2xl border border-neutral-800" style={{ animation: 'zoomIn 0.25s ease-out' }}>
-                        <button 
-                            onClick={() => setIsVideoModalOpen(false)}
-                            className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-neutral-950/50 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-950/80 cursor-pointer transition-all"
-                        >
-                            <X size={20} />
-                        </button>
-                        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                            <video
-                                ref={videoRef}
-                                playsInline
-                                controls
-                                autoPlay
-                                disablePictureInPicture
-                                className="absolute inset-0 w-full h-full object-cover"
-                                src="/background.mp4"
-                                style={{ objectFit: 'cover' }}
-                            />
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
         </div>
     )
 }
@@ -2893,6 +2866,8 @@ export default function App() {
     const [isJoinModalOpen, setIsJoinModalOpen] = useState(false)
     const [isRegistered, setIsRegistered] = useState(false)
     const [isAlreadyRegisteredModalOpen, setIsAlreadyRegisteredModalOpen] = useState(false)
+    const [isVideoModalOpen, setIsVideoModalOpen] = useState(false)
+    const videoRef = useRef(null)
 
     // Synchronize global registration status on page load or user change
     useEffect(() => {
@@ -2925,14 +2900,37 @@ export default function App() {
         return <ResetPasswordPage />
     }
 
-    // ── Route intercepts for News ──
-    if (window.location.pathname === '/news') {
-        return <NewsPage />
-    }
-    
-    if (window.location.pathname.startsWith('/news/')) {
-        return <NewsPostPage />
-    }
+    // Synchronize activeTab with URL for deep-linking News
+    useEffect(() => {
+        const path = window.location.pathname;
+        if (path === '/news') {
+            setActiveTab('news');
+            setActivePage('home');
+        } else if (path.startsWith('/news/')) {
+            setActiveTab('newsPost');
+            setActivePage('home');
+        }
+    }, []);
+
+    // Listen for popstate to handle back/forward navigation
+    useEffect(() => {
+        const handlePopState = () => {
+            const path = window.location.pathname;
+            if (path === '/news') {
+                setActiveTab('news');
+                setActivePage('home');
+            } else if (path.startsWith('/news/')) {
+                setActiveTab('newsPost');
+                setActivePage('home');
+            } else if (path === '/') {
+                 if(activeTab === 'news' || activeTab === 'newsPost') {
+                     setActiveTab('journey');
+                 }
+            }
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [activeTab]);
 
     return (
         <>
@@ -2965,6 +2963,8 @@ export default function App() {
                         <main className="flex-1">
                             <div key={activeTab} className="tab-animate">
                                 {activeTab === 'journey' && <JourneyTab />}
+                                {activeTab === 'news' && <NewsPage onPostClick={(slug) => { setActiveTab('newsPost'); window.history.pushState({}, '', `/news/${slug}`); }} />}
+                                {activeTab === 'newsPost' && <NewsPostPage onBack={() => { setActiveTab('news'); window.history.pushState({}, '', '/news'); }} />}
                                 {activeTab === 'training' && <TrainingTab />}
                                 {activeTab === 'ranking' && <RankingTab onJoinClick={handleGlobalJoinClick} isRegistered={isRegistered} />}
                                 {activeTab === 'contact' && <ContactUs />}
@@ -2991,6 +2991,43 @@ export default function App() {
                     isOpen={isAlreadyRegisteredModalOpen}
                     onClose={() => setIsAlreadyRegisteredModalOpen(false)}
                 />
+
+                {/* ── Guide Button ── */}
+                <button
+                    onClick={() => setIsVideoModalOpen(true)}
+                    className="fixed z-40 right-4 bottom-4 md:right-6 md:bottom-6 w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center shadow-2xl shadow-yellow-600/30 border border-yellow-500/30 text-black hover:scale-110 transition-transform cursor-pointer"
+                    title="Platform Guide"
+                >
+                    <BookOpen size={24} />
+                </button>
+
+                {/* ── Video Modal ── */}
+                {isVideoModalOpen && createPortal(
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-8">
+                        <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md cursor-pointer" onClick={() => setIsVideoModalOpen(false)} />
+                        <div className="relative w-full max-w-5xl rounded-2xl overflow-hidden bg-neutral-900 shadow-2xl border border-neutral-800 animate-in zoom-in-95 duration-200">
+                            <button 
+                                onClick={() => setIsVideoModalOpen(false)}
+                                className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-neutral-950/50 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-950/80 cursor-pointer transition-all"
+                            >
+                                <X size={20} />
+                            </button>
+                            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                                <video
+                                    ref={videoRef}
+                                    playsInline
+                                    controls
+                                    autoPlay
+                                    disablePictureInPicture
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                    src="/background.mp4"
+                                    style={{ objectFit: 'cover' }}
+                                />
+                            </div>
+                        </div>
+                    </div>,
+                    document.body
+                )}
             </div>
         </>
     )
