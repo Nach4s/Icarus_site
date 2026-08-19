@@ -42,6 +42,7 @@ const upload = multer({
 app.use(helmet());                // Set secure HTTP headers
 app.use(cors());                  // Allow cross-origin requests from the Vite frontend
 app.use(express.json({ limit: '50mb' }));  // Parse incoming JSON bodies, limit size
+app.use(express.urlencoded({ limit: '50mb', extended: true })); // Parse URL-encoded bodies
 
 // ─── Rate Limiters ───────────────────────────────────────────────────
 
@@ -965,6 +966,9 @@ app.post(
 
     if (!title || !content) {
       return res.status(400).json({ error: "Fields 'title' and 'content' are required." });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: "Cover image is required." });
     }
 
     let slug = generateSlug(title);

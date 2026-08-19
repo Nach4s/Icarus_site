@@ -94,6 +94,17 @@ export default function AdminPostsManager({ showToast }) {
 
     async function handleSubmit(e) {
         e.preventDefault();
+        
+        if (!title || !content) {
+            return showToast('Title and content are required.', 'error');
+        }
+        if (!isEditing && !coverImageFile) {
+            return showToast('Cover image is required to create a post.', 'error');
+        }
+        if (isEditing && !coverImageFile && !coverImagePreview) {
+            return showToast('Cover image is required.', 'error');
+        }
+
         setIsSubmitting(true);
         try {
             const formData = new FormData();
@@ -364,8 +375,6 @@ export default function AdminPostsManager({ showToast }) {
                                         </p>
                                     </div>
                                     <div className="text-[10px] uppercase font-bold tracking-wider text-neutral-600 mt-3 flex items-center gap-2">
-                                        <span>{post.author?.name || 'Admin'}</span>
-                                        <span>•</span>
                                         <span>{new Date(post.createdAt).toLocaleDateString()}</span>
                                         <span>•</span>
                                         <span className={post.isVisible ? 'text-emerald-500/80' : 'text-neutral-500'}>

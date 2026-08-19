@@ -63,16 +63,7 @@ export default function LatestNewsBlock({ onPostClick }) {
             )}
             
             <div className="relative z-20 p-8 md:p-12 lg:p-16 h-full flex flex-col justify-end min-h-[360px] lg:min-h-[440px]">
-                <div className="mb-4 flex items-center gap-3">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-yellow-600/10 text-yellow-500 border border-yellow-600/20 backdrop-blur-sm">
-                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
-                        Latest News
-                    </span>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 flex items-center gap-1.5 bg-neutral-950/50 px-3 py-1 rounded-full backdrop-blur-sm">
-                        <Clock size={12} />
-                        {new Date(post.createdAt).toLocaleDateString()}
-                    </span>
-                </div>
+                {/* Badges removed as per user request */}
                 
                 <h3 className="text-3xl md:text-5xl lg:text-6xl font-black uppercase tracking-wide text-white mb-4 leading-tight group-hover:text-yellow-500 transition-colors duration-300 max-w-4xl">
                     {post.title}

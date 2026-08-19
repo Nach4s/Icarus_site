@@ -65,15 +65,7 @@ export default function NewsPostPage({ onBack }) {
                                 <Clock size={12} />
                                 {new Date(post.createdAt).toLocaleDateString()}
                             </span>
-                            {post.author && (
-                                <>
-                                    <span className="w-1 h-1 rounded-full bg-neutral-800" />
-                                    <span className="flex items-center gap-1.5 text-yellow-600/80">
-                                        <User size={12} />
-                                        {post.author.name}
-                                    </span>
-                                </>
-                            )}
+                            {/* Author logic removed as per user request */}
                         </div>
                         <h1 className="text-3xl md:text-5xl lg:text-6xl font-black uppercase tracking-wide text-white leading-tight mb-6">
                             {post.title}
