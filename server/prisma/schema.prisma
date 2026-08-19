@@ -225,6 +225,7 @@ model Post {
   excerpt     String?  @db.Text
   content     String   @db.Text
   coverImage  String?
+  coverFormat String   @default("landscape")
   isVisible   Boolean  @default(true) /// Used to hide/show the post publicly
   
   authorId    String

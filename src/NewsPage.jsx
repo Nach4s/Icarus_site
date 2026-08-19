@@ -49,7 +49,7 @@ export default function NewsPage({ onPostClick }) {
                                 href={`/news/${post.slug}`}
                                 className="group flex flex-col bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden hover:border-yellow-600/50 hover:shadow-[0_0_30px_rgba(202,138,4,0.1)] transition-all duration-300 cursor-pointer"
                             >
-                                <div className="relative h-48 w-full bg-neutral-950 overflow-hidden shrink-0">
+                                <div className={`relative w-full bg-neutral-950 overflow-hidden shrink-0 ${post.coverFormat === 'portrait' ? 'aspect-[9/16]' : 'h-48'}`}>
                                     {post.coverImage ? (
                                         <img 
                                             src={post.coverImage} 

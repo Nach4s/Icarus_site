@@ -962,7 +962,7 @@ app.post(
   adminMiddleware,
   upload.single("coverImage"),
   asyncHandler(async (req, res) => {
-    const { title, excerpt, content } = req.body;
+    const { title, excerpt, content, coverFormat = 'landscape' } = req.body;
 
     if (!title || !content) {
       return res.status(400).json({ error: "Fields 'title' and 'content' are required." });
@@ -1018,6 +1018,7 @@ app.post(
         excerpt: excerpt || null,
         content,
         coverImage,
+        coverFormat,
         isVisible: true,
         authorId: req.userId,
       },
@@ -1059,7 +1060,7 @@ app.patch(
   upload.single("coverImage"),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const { title, excerpt, content } = req.body;
+    const { title, excerpt, content, coverFormat } = req.body;
 
     const post = await prisma.post.findUnique({ where: { id } });
     if (!post) {
@@ -1072,6 +1073,7 @@ app.patch(
     }
     if (excerpt !== undefined) data.excerpt = excerpt || null;
     if (content) data.content = content;
+    if (coverFormat) data.coverFormat = coverFormat;
     
     if (req.body.clearCoverImage === 'true') {
       data.coverImage = null;

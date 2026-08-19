@@ -79,7 +79,7 @@ export default function NewsPostPage({ onBack }) {
 
                     {/* Cover Image */}
                     {post.coverImage && (
-                        <div className="w-full h-[320px] md:h-[460px] rounded-3xl overflow-hidden mb-16 shadow-2xl shadow-black/50 border border-neutral-800">
+                        <div className={`w-full rounded-3xl overflow-hidden mb-16 shadow-2xl shadow-black/50 border border-neutral-800 ${post.coverFormat === 'portrait' ? 'max-w-md mx-auto aspect-[9/16]' : 'h-[320px] md:h-[460px]'}`}>
                             <img 
                                 src={post.coverImage} 
                                 alt={post.title}

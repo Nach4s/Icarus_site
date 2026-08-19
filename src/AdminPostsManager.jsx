@@ -27,6 +27,7 @@ export default function AdminPostsManager({ showToast }) {
     // Image state
     const [coverImageFile, setCoverImageFile] = useState(null); // File object for upload
     const [coverImagePreview, setCoverImagePreview] = useState(null); // URL (existing or blob)
+    const [coverFormat, setCoverFormat] = useState('landscape'); // 'landscape' | 'portrait'
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -53,6 +54,7 @@ export default function AdminPostsManager({ showToast }) {
         setContent('');
         setCoverImageFile(null);
         setCoverImagePreview(null);
+        setCoverFormat('landscape');
         const fileInput = document.getElementById('cover-image-upload');
         if (fileInput) fileInput.value = '';
     }
@@ -65,6 +67,7 @@ export default function AdminPostsManager({ showToast }) {
         setContent(post.content);
         setCoverImageFile(null);
         setCoverImagePreview(post.coverImage || null);
+        setCoverFormat(post.coverFormat || 'landscape');
     }
 
     function handleImageChange(e) {
@@ -111,6 +114,7 @@ export default function AdminPostsManager({ showToast }) {
             formData.append('title', title);
             formData.append('excerpt', excerpt);
             formData.append('content', content);
+            formData.append('coverFormat', coverFormat);
             
             // Only append the file if it's a new upload
             if (coverImageFile) {
@@ -218,13 +222,31 @@ export default function AdminPostsManager({ showToast }) {
                         </div>
 
                         <div>
-                            <label className={labelClass}>Cover Image</label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className={labelClass} style={{ marginBottom: 0 }}>Cover Image</label>
+                                <div className="flex bg-neutral-900 rounded-lg p-1 border border-neutral-800">
+                                    <button
+                                        type="button"
+                                        onClick={() => setCoverFormat('landscape')}
+                                        className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-colors ${coverFormat === 'landscape' ? 'bg-neutral-700 text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                    >
+                                        16:9 Landscape
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setCoverFormat('portrait')}
+                                        className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-colors ${coverFormat === 'portrait' ? 'bg-neutral-700 text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                    >
+                                        9:16 Portrait
+                                    </button>
+                                </div>
+                            </div>
                             
                             {!coverImagePreview ? (
                                 <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-neutral-700 rounded-xl hover:border-yellow-600/50 hover:bg-neutral-950 transition-colors cursor-pointer group">
                                     <Upload size={24} className="text-neutral-500 group-hover:text-yellow-500 mb-2 transition-colors" />
                                     <span className="text-sm font-medium text-neutral-400 group-hover:text-white transition-colors">Upload cover image</span>
-                                    <span className="text-[10px] text-neutral-600 mt-1 uppercase tracking-widest">Max 5MB (16:9 recommended)</span>
+                                    <span className="text-[10px] text-neutral-600 mt-1 uppercase tracking-widest">Max 50MB</span>
                                     <input 
                                         id="cover-image-upload"
                                         type="file" 
@@ -234,20 +256,18 @@ export default function AdminPostsManager({ showToast }) {
                                     />
                                 </label>
                             ) : (
-                                <div className="relative w-full rounded-xl overflow-hidden border border-neutral-700 group bg-neutral-950">
-                                    {/* 16:9 Aspect Ratio Container for Preview */}
-                                    <div className="relative w-full pb-[56.25%]">
-                                        <img 
-                                            src={coverImagePreview} 
-                                            alt="Cover Preview" 
-                                            className="absolute inset-0 w-full h-full object-cover"
-                                        />
-                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-sm">
-                                            <label className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-black text-xs font-bold uppercase tracking-widest rounded-lg cursor-pointer transition-colors">
-                                                Replace
-                                                <input 
-                                                    id="cover-image-upload"
-                                                    type="file" 
+                                <div className={`relative rounded-xl overflow-hidden border border-neutral-700 group bg-neutral-950 ${coverFormat === 'portrait' ? 'w-[200px] mx-auto aspect-[9/16]' : 'w-full aspect-video'}`}>
+                                    <img 
+                                        src={coverImagePreview} 
+                                        alt="Cover Preview" 
+                                        className="absolute inset-0 w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-sm">
+                                        <label className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-black text-xs font-bold uppercase tracking-widest rounded-lg cursor-pointer transition-colors">
+                                            Replace
+                                            <input 
+                                                id="cover-image-upload"
+                                                type="file" 
                                                     accept="image/*" 
                                                     className="hidden" 
                                                     onChange={handleImageChange}
