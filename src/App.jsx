@@ -1132,22 +1132,22 @@ function JourneyTab() {
     return (
         <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-8 sm:py-16 md:py-24">
             {/* Cinematic Title — mobile-first font sizes */}
-            <div className="relative text-center mb-10 sm:mb-20 max-w-4xl mx-auto">
-                <div className="flex justify-center items-center gap-4 text-[10px] sm:text-xs font-bold uppercase tracking-[0.3em] text-yellow-600 mb-6">
-                    <div className="w-8 sm:w-16 h-[1px] bg-yellow-600/50"></div>
+            <div className="relative text-center mb-16 sm:mb-24 lg:mb-32 max-w-6xl mx-auto">
+                <div className="flex justify-center items-center gap-4 lg:gap-6 text-[10px] sm:text-xs lg:text-sm font-bold uppercase tracking-[0.4em] text-yellow-600 mb-8 lg:mb-10">
+                    <div className="w-8 sm:w-16 lg:w-24 h-[1px] bg-yellow-600/50"></div>
                     Welcome to ICARUS
-                    <div className="w-8 sm:w-16 h-[1px] bg-yellow-600/50"></div>
+                    <div className="w-8 sm:w-16 lg:w-24 h-[1px] bg-yellow-600/50"></div>
                 </div>
-                <h1 className="leading-tight mb-8 flex flex-col items-center">
-                    <span className="block text-3xl sm:text-5xl lg:text-6xl font-black uppercase tracking-[0.1em] text-white mb-2">
+                <h1 className="leading-tight mb-10 flex flex-col items-center">
+                    <span className="block text-3xl sm:text-5xl lg:text-7xl xl:text-8xl font-black uppercase tracking-[0.1em] text-white mb-2 lg:mb-4">
                         Aerospace Engineering
                     </span>
-                    <span className="block text-xl sm:text-3xl lg:text-4xl font-bold uppercase tracking-[0.25em] text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-yellow-500 to-yellow-600 drop-shadow-sm mt-1">
+                    <span className="block text-xl sm:text-3xl lg:text-5xl xl:text-6xl font-bold uppercase tracking-[0.25em] text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-yellow-500 to-yellow-600 drop-shadow-sm mt-1 lg:mt-2">
                         Competition Platform
                     </span>
                 </h1>
-                <div className="w-full max-w-sm mx-auto h-[1px] bg-gradient-to-r from-transparent via-neutral-800 to-transparent mb-6"></div>
-                <p className="text-sm text-neutral-400 max-w-md mx-auto leading-relaxed font-medium tracking-wide">
+                <div className="w-full max-w-sm lg:max-w-lg mx-auto h-[1px] bg-gradient-to-r from-transparent via-neutral-800 to-transparent mb-8 lg:mb-10"></div>
+                <p className="text-sm lg:text-lg text-neutral-400 max-w-md lg:max-w-2xl mx-auto leading-relaxed font-medium tracking-wide px-4">
                     Navigate the platform, build your team, and launch your journey.
                 </p>
                 

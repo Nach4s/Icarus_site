@@ -22,7 +22,7 @@ export default function LatestNewsBlock() {
 
     if (loading) {
         return (
-            <div className="relative max-w-5xl mx-auto border border-neutral-800 bg-neutral-900/50 rounded-2xl h-64 flex items-center justify-center">
+            <div className="relative max-w-6xl mx-auto border border-neutral-800 bg-neutral-900/50 rounded-2xl h-64 lg:h-80 flex items-center justify-center">
                 <div className="animate-pulse flex flex-col items-center opacity-50">
                     <div className="w-8 h-8 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin mb-4" />
                     <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">Loading feed...</span>
@@ -33,7 +33,7 @@ export default function LatestNewsBlock() {
 
     if (!post) {
         return (
-            <div className="relative max-w-5xl mx-auto border border-dashed border-neutral-800 bg-neutral-900/20 rounded-2xl h-64 flex flex-col items-center justify-center text-center px-4">
+            <div className="relative max-w-6xl mx-auto border border-dashed border-neutral-800 bg-neutral-900/20 rounded-2xl h-64 lg:h-80 flex flex-col items-center justify-center text-center px-4">
                 <FileText size={32} className="text-neutral-700 mb-4" />
                 <p className="text-sm font-semibold text-neutral-500">No news yet.</p>
                 <p className="text-[10px] text-neutral-600 uppercase tracking-widest mt-2">Check back later for updates</p>
@@ -44,7 +44,7 @@ export default function LatestNewsBlock() {
     return (
         <a 
             href={`/news/${post.slug}`} 
-            className="group relative max-w-5xl mx-auto block rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-800/80 hover:border-yellow-600/50 transition-all duration-500 shadow-2xl hover:shadow-[0_0_40px_rgba(202,138,4,0.15)]"
+            className="group relative max-w-6xl mx-auto block rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-800/80 hover:border-yellow-600/50 transition-all duration-500 shadow-2xl hover:shadow-[0_0_40px_rgba(202,138,4,0.15)]"
         >
             <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-900/90 to-transparent z-10" />
             
@@ -56,7 +56,7 @@ export default function LatestNewsBlock() {
                 />
             )}
             
-            <div className="relative z-20 p-8 md:p-12 h-full flex flex-col justify-end min-h-[360px]">
+            <div className="relative z-20 p-8 md:p-12 lg:p-16 h-full flex flex-col justify-end min-h-[360px] lg:min-h-[440px]">
                 <div className="mb-4 flex items-center gap-3">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-yellow-600/10 text-yellow-500 border border-yellow-600/20 backdrop-blur-sm">
                         <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
@@ -68,12 +68,12 @@ export default function LatestNewsBlock() {
                     </span>
                 </div>
                 
-                <h3 className="text-3xl md:text-5xl font-black uppercase tracking-wide text-white mb-4 leading-tight group-hover:text-yellow-500 transition-colors duration-300 max-w-3xl">
+                <h3 className="text-3xl md:text-5xl lg:text-6xl font-black uppercase tracking-wide text-white mb-4 leading-tight group-hover:text-yellow-500 transition-colors duration-300 max-w-4xl">
                     {post.title}
                 </h3>
                 
                 {post.excerpt && (
-                    <p className="text-neutral-400 text-sm md:text-base max-w-2xl leading-relaxed mb-8 line-clamp-2">
+                    <p className="text-neutral-400 text-sm md:text-base lg:text-lg max-w-3xl leading-relaxed mb-8 line-clamp-2">
                         {post.excerpt}
                     </p>
                 )}
