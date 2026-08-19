@@ -1138,11 +1138,9 @@ function JourneyTab() {
                     Welcome to ICARUS
                     <div className="w-8 sm:w-16 lg:w-24 h-[1px] bg-yellow-600/50"></div>
                 </div>
-                <h1 className="leading-tight mb-10 flex flex-col items-center">
-                    <span className="block text-3xl sm:text-5xl lg:text-7xl xl:text-8xl font-black uppercase tracking-[0.1em] text-white mb-2 lg:mb-4">
-                        Aerospace Engineering
-                    </span>
-                    <span className="block text-xl sm:text-3xl lg:text-5xl xl:text-6xl font-bold uppercase tracking-[0.25em] text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-yellow-500 to-yellow-600 drop-shadow-sm mt-1 lg:mt-2">
+                <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-white uppercase tracking-widest mb-6 drop-shadow-lg flex flex-col items-center justify-center gap-2 sm:gap-4 lg:gap-6">
+                    <span className="text-center">Aerospace Engineering</span>
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 to-yellow-500 text-center">
                         Competition Platform
                     </span>
                 </h1>
