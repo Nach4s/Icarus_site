@@ -1133,18 +1133,21 @@ function JourneyTab() {
         <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-8 sm:py-16 md:py-24">
             {/* Cinematic Title — mobile-first font sizes */}
             <div className="relative text-center mb-10 sm:mb-20 max-w-4xl mx-auto">
-                <p className="text-[10px] sm:text-sm font-semibold uppercase tracking-[0.4em] text-neutral-500 mb-3">
+                <div className="flex justify-center items-center gap-4 text-[10px] sm:text-xs font-bold uppercase tracking-[0.3em] text-yellow-600 mb-6">
+                    <div className="w-8 sm:w-16 h-[1px] bg-yellow-600/50"></div>
                     Welcome to ICARUS
-                </p>
-                <h1 className="leading-tight mb-4">
-                    <span className="block text-3xl sm:text-5xl lg:text-7xl font-black uppercase tracking-[0.08em] sm:tracking-[0.1em] text-white mb-1 sm:mb-2">
-                        AEROSPACE ENGINEERING
+                    <div className="w-8 sm:w-16 h-[1px] bg-yellow-600/50"></div>
+                </div>
+                <h1 className="leading-tight mb-8 flex flex-col items-center">
+                    <span className="block text-3xl sm:text-5xl lg:text-6xl font-black uppercase tracking-[0.1em] text-white mb-2">
+                        Aerospace Engineering
                     </span>
-                    <span className="block text-4xl sm:text-6xl lg:text-8xl font-black uppercase tracking-[0.08em] sm:tracking-[0.12em] text-gold-shimmer">
-                        & COMPETITION PLATFORM
+                    <span className="block text-xl sm:text-3xl lg:text-4xl font-bold uppercase tracking-[0.25em] text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-yellow-500 to-yellow-600 drop-shadow-sm mt-1">
+                        Competition Platform
                     </span>
                 </h1>
-                <p className="mt-4 text-sm sm:text-lg text-neutral-400 max-w-xl mx-auto leading-relaxed px-2">
+                <div className="w-full max-w-sm mx-auto h-[1px] bg-gradient-to-r from-transparent via-neutral-800 to-transparent mb-6"></div>
+                <p className="text-sm text-neutral-400 max-w-md mx-auto leading-relaxed font-medium tracking-wide">
                     Navigate the platform, build your team, and launch your journey.
                 </p>
                 
