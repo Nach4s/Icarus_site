@@ -36,6 +36,8 @@ export default function NewsPostPage({ onBack }) {
                 </button>
             </div>
         );
+    }
+
     if (loading) {
         return (
             <div className="w-full h-[60vh] flex flex-col items-center justify-center text-neutral-500">
