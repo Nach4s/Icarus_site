@@ -282,7 +282,6 @@ export default function AdminPostsManager({ showToast }) {
                                             </button>
                                         </div>
                                     </div>
-                                </div>
                             )}
                         </div>
 
