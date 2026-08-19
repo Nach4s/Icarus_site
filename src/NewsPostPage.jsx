@@ -53,21 +53,21 @@ export default function NewsPostPage({ onBack }) {
                 <article className="max-w-4xl mx-auto px-4 sm:px-6 py-12 md:py-20">
                     <button 
                         onClick={onBack}
-                        className="mb-8 flex items-center gap-2 text-neutral-500 hover:text-white transition-colors text-sm font-semibold cursor-pointer group"
+                        className="mb-8 flex items-center gap-2 text-neutral-400 hover:text-yellow-500 transition-colors text-sm font-bold cursor-pointer group"
                     >
-                        <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                         Back to News
                     </button>
                     {/* Header */}
                     <header className="mb-12 text-center">
-                        <div className="flex items-center justify-center gap-4 text-[10px] uppercase font-bold tracking-widest text-neutral-500 mb-6">
+                        <div className="flex items-center justify-center gap-4 text-[10px] uppercase font-bold tracking-widest text-neutral-400 mb-3">
                             <span className="flex items-center gap-1.5">
                                 <Clock size={12} />
                                 {new Date(post.createdAt).toLocaleDateString()}
                             </span>
                             {/* Author logic removed as per user request */}
                         </div>
-                        <h1 className="text-3xl md:text-5xl lg:text-6xl font-black uppercase tracking-wide text-white leading-tight mb-6">
+                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-wide text-white leading-tight mb-6">
                             {post.title}
                         </h1>
                         {post.excerpt && (
@@ -79,7 +79,7 @@ export default function NewsPostPage({ onBack }) {
 
                     {/* Cover Image */}
                     {post.coverImage && (
-                        <div className="w-full h-[400px] md:h-[500px] rounded-3xl overflow-hidden mb-16 shadow-2xl shadow-black/50 border border-neutral-800">
+                        <div className="w-full h-[320px] md:h-[460px] rounded-3xl overflow-hidden mb-16 shadow-2xl shadow-black/50 border border-neutral-800">
                             <img 
                                 src={post.coverImage} 
                                 alt={post.title}
@@ -89,9 +89,9 @@ export default function NewsPostPage({ onBack }) {
                     )}
 
                     {/* Content - Using whitespace-pre-wrap for basic text formatting. In a real app with markdown, use a markdown renderer. */}
-                    <div className="prose prose-invert prose-yellow max-w-3xl mx-auto">
+                    <div className="prose prose-invert prose-yellow w-full max-w-none">
                         <div className="text-neutral-300 leading-relaxed text-base md:text-lg whitespace-pre-wrap font-sans">
-                            {post.content}
+                            {post.content ? post.content.replace(/\\n/g, '\n') : ''}
                         </div>
                     </div>
                 </article>
