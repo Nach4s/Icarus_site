@@ -645,19 +645,22 @@ app.post(
   authMiddleware,
   asyncHandler(async (req, res) => {
     // ── Find an active competition ─────────────────────────────────
-    const now = new Date();
     const activeCompetition = await prisma.competition.findFirst({
       where: {
         isSelectionActive: true,
-        regStart: { lte: now },
-        regEnd:   { gte: now },
       },
       orderBy: { createdAt: "desc" },
     });
 
     if (!activeCompetition) {
-      return res.status(400).json({ error: "No active competition is currently open for registration." });
+      return res.status(400).json({ error: "No active competition found." });
     }
+
+    const now = new Date();
+    if (now >= new Date(activeCompetition.regEnd)) {
+      return res.status(400).json({ error: "Registration is closed for this competition." });
+    }
+
 
     // ── Individual (workshop) mode ─────────────────────────────────
     if (activeCompetition.isIndividual) {
@@ -1061,11 +1064,13 @@ app.patch(
     const data = {};
     if (title) {
       data.title = title;
-      // Re-generate slug if title changes? The user didn't ask for it, 
-      // typically changing slug breaks URLs. We'll leave slug alone.
     }
     if (excerpt !== undefined) data.excerpt = excerpt || null;
     if (content) data.content = content;
+    
+    if (req.body.clearCoverImage === 'true') {
+      data.coverImage = null;
+    }
 
     if (req.file) {
       const fileExt = req.file.originalname.split(".").pop();
@@ -1181,8 +1186,8 @@ app.get(
   "/api/posts/:slug",
   asyncHandler(async (req, res) => {
     const { slug } = req.params;
-    const post = await prisma.post.findUnique({
-      where: { slug },
+    const post = await prisma.post.findFirst({
+      where: { slug, isVisible: true },
       include: {
         author: { select: { name: true, avatarUrl: true } },
       },

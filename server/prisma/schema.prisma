@@ -234,4 +234,5 @@ model Post {
   updatedAt   DateTime @updatedAt
 
   @@index([authorId])
+  @@index([isVisible, createdAt])
 }

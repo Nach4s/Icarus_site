@@ -47,9 +47,9 @@ import {
     Loader2,
     AlertTriangle,
     Activity,
-    Maximize,
     Minimize,
-    MessageCircle
+    MessageCircle,
+    Newspaper
 } from 'lucide-react'
 import ContactUs from './ContactUs.jsx'
 
@@ -248,6 +248,7 @@ const TABS = [
     { id: 'training', label: 'TRAINING', icon: Crosshair },
     { id: 'ranking', label: 'GLOBAL RANKING', icon: Globe },
     { id: 'contact', label: 'CONTACT US', icon: MessageCircle },
+    { id: 'news', label: 'NEWS', icon: Newspaper },
 ]
 
 
@@ -1033,6 +1034,10 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
                                             <button
                                                 key={tab.id}
                                                 onClick={() => {
+                                                    if (tab.id === 'news') {
+                                                        window.location.href = '/news'
+                                                        return
+                                                    }
                                                     onNavigatePage('home')
                                                     setActiveTab(tab.id)
                                                     setIsMobileMenuOpen(false)
@@ -1091,7 +1096,14 @@ function TabNav({ activeTab, setActiveTab, onNavigatePage }) {
                         return (
                             <button
                                 key={tab.id}
-                                onClick={() => { onNavigatePage('home'); setActiveTab(tab.id) }}
+                                onClick={() => {
+                                    if (tab.id === 'news') {
+                                        window.location.href = '/news'
+                                        return
+                                    }
+                                    onNavigatePage('home')
+                                    setActiveTab(tab.id)
+                                }}
                                 className={`relative flex items-center gap-3 px-8 py-5 text-sm md:text-base font-bold uppercase tracking-[0.15em]
                            transition-all duration-300 ease-out cursor-pointer
                            ${isActive ? 'text-yellow-600' : 'text-neutral-500 hover:text-neutral-300'}`}
@@ -1122,32 +1134,21 @@ function JourneyTab() {
             {/* Cinematic Title — mobile-first font sizes */}
             <div className="relative text-center mb-10 sm:mb-20 max-w-4xl mx-auto">
                 <p className="text-[10px] sm:text-sm font-semibold uppercase tracking-[0.4em] text-neutral-500 mb-3">
-                    Platform Guide
+                    Welcome to ICARUS
                 </p>
                 <h1 className="leading-tight mb-4">
-                    <span className="block text-3xl sm:text-6xl lg:text-8xl font-black uppercase tracking-[0.08em] sm:tracking-[0.1em] text-white mb-1 sm:mb-2">
-                        GETTING STARTED
+                    <span className="block text-3xl sm:text-5xl lg:text-7xl font-black uppercase tracking-[0.08em] sm:tracking-[0.1em] text-white mb-1 sm:mb-2">
+                        AEROSPACE ENGINEERING
                     </span>
-                    <span className="block text-4xl sm:text-7xl lg:text-9xl font-black uppercase tracking-[0.08em] sm:tracking-[0.12em] text-gold-shimmer">
-                        WITH ICARUS
+                    <span className="block text-4xl sm:text-6xl lg:text-8xl font-black uppercase tracking-[0.08em] sm:tracking-[0.12em] text-gold-shimmer">
+                        & COMPETITION PLATFORM
                     </span>
                 </h1>
                 <p className="mt-4 text-sm sm:text-lg text-neutral-400 max-w-xl mx-auto leading-relaxed px-2">
                     Navigate the platform, build your team, and launch your journey.
                 </p>
                 
-                {/* Floating Video Guide Button */}
-                <button
-                    onClick={() => setIsVideoModalOpen(true)}
-                    className="absolute bottom-0 right-0 translate-x-4 sm:translate-x-12 translate-y-8 sm:translate-y-4 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center
-                               bg-yellow-600/20 border border-yellow-600/50 backdrop-blur-sm cursor-pointer hover:bg-yellow-600/30 hover:scale-110 hover:border-yellow-600 shadow-[0_0_20px_rgba(202,138,4,0.3)] transition-all duration-300 z-20 group"
-                    title="Watch Platform Guide"
-                >
-                    <Play size={20} className="text-yellow-500 ml-1 group-hover:text-yellow-400" fill="currentColor" />
-                    <span className="absolute -top-8 right-0 text-[10px] font-bold uppercase tracking-widest text-yellow-500/80 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                        Platform Guide
-                    </span>
-                </button>
+
             </div>
 
             {/* Latest News block replaces the old video block */}
@@ -1710,6 +1711,11 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                 setCompetition(data.competition)
 
                 if (data.competition.isIndividual) {
+                    const isClosed = new Date() >= new Date(data.competition.regEnd)
+                    if (isClosed) {
+                        setPhase('closed')
+                        return
+                    }
                     setPhase('ready')
                     return
                 }
@@ -1717,6 +1723,12 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                 // Team requirements
                 if (!user?.teamId) { setPhase('no_team'); return }
                 if (user.id !== user.team?.captainId) { setPhase('not_captain'); return }
+
+                const isClosed = new Date() >= new Date(data.competition.regEnd)
+                if (isClosed) {
+                    setPhase('closed')
+                    return
+                }
 
                 setPhase('ready')
             } catch {
@@ -1769,6 +1781,28 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                                bg-neutral-800 border border-neutral-700 text-white
                                hover:bg-neutral-700 transition cursor-pointer">
                     Understood
+                </button>
+            </>
+        )
+
+        if (phase === 'closed') return (
+            <>
+                <div className="w-20 h-20 rounded-full bg-red-900/20 border border-red-500/30
+                                flex items-center justify-center mx-auto mb-7
+                                shadow-[0_0_40px_rgba(239,68,68,0.15)]">
+                    <X size={36} className="text-red-500" />
+                </div>
+                <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
+                    Registration Closed
+                </h3>
+                <p className="text-neutral-400 leading-relaxed mb-8 max-w-xs mx-auto">
+                    Registration for {competition?.title || 'this competition'} has ended. You cannot register anymore.
+                </p>
+                <button onClick={onClose}
+                    className="px-10 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest
+                               bg-neutral-800 border border-neutral-700 text-white
+                               hover:bg-neutral-700 transition cursor-pointer">
+                    Close
                 </button>
             </>
         )
