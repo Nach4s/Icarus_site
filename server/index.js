@@ -34,14 +34,14 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB limit
 });
 
 // ─── Global Middleware ───────────────────────────────────────────────
 
 app.use(helmet());                // Set secure HTTP headers
 app.use(cors());                  // Allow cross-origin requests from the Vite frontend
-app.use(express.json({ limit: '1mb' }));  // Parse incoming JSON bodies, limit size
+app.use(express.json({ limit: '50mb' }));  // Parse incoming JSON bodies, limit size
 
 // ─── Rate Limiters ───────────────────────────────────────────────────
 

@@ -36,11 +36,17 @@ export default function NewsPostPage({ onBack }) {
                 </button>
             </div>
         );
+    if (loading) {
+        return (
+            <div className="w-full h-[60vh] flex flex-col items-center justify-center text-neutral-500">
+                <div className="w-8 h-8 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin mb-4" />
+                <span className="text-[10px] uppercase tracking-widest font-bold">Loading...</span>
+            </div>
+        );
     }
 
     return (
         <div className="w-full text-white relative">
-            <Preloader isVisible={loading} />
             {post && (
                 <article className="max-w-4xl mx-auto px-4 sm:px-6 py-12 md:py-20">
                     <button 
