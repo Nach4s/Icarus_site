@@ -946,10 +946,6 @@ app.get(
   })
 );
 
-    return res.json({ competition, teams, participants: [] });
-  })
-);
-
 // ═══════════════════════════════════════════════════════════════════════
 //  ADMIN POST ROUTES — Protected: ADMIN role only
 // ═══════════════════════════════════════════════════════════════════════
