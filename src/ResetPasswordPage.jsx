@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Shield, Lock, Loader2, CheckCircle2, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { api } from './api'
+import { useLang } from './LanguageContext.jsx'
 
 export default function ResetPasswordPage() {
+    const { t } = useLang()
     const [token, setToken] = useState('')
     const [newPassword, setNewPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
@@ -14,9 +16,9 @@ export default function ResetPasswordPage() {
     useEffect(() => {
         // Extract token from URL search params
         const params = new URLSearchParams(window.location.search)
-        const t = params.get('token')
-        if (t) setToken(t)
-        else setError('Invalid or missing reset token. Please request a new password reset link.')
+        const tkn = params.get('token')
+        if (tkn) setToken(tkn)
+        else setError(t('reset.invalidToken'))
     }, [])
 
     const handleSubmit = async (e) => {
@@ -24,15 +26,15 @@ export default function ResetPasswordPage() {
         setError('')
         
         if (!token) {
-            setError('Missing reset token.')
+            setError(t('reset.missingToken'))
             return
         }
         if (newPassword.length < 6) {
-            setError('Password must be at least 6 characters.')
+            setError(t('reset.minChars'))
             return
         }
         if (newPassword !== confirmPassword) {
-            setError('Passwords do not match.')
+            setError(t('reset.passwordsMismatch'))
             return
         }
 
@@ -41,7 +43,7 @@ export default function ResetPasswordPage() {
             await api.post('/auth/reset-password', { token, newPassword })
             setSuccess(true)
         } catch (err) {
-            setError(err.message || 'Failed to reset password. The link might be expired.')
+            setError(err.message || t('reset.failed'))
         } finally {
             setLoading(false)
         }
@@ -84,9 +86,9 @@ export default function ResetPasswordPage() {
                         <Lock size={24} className="text-yellow-600" />
                     </div>
 
-                    <h2 className="text-2xl font-black uppercase tracking-widest text-center mb-2">Reset Password</h2>
+                    <h2 className="text-2xl font-black uppercase tracking-widest text-center mb-2">{t('reset.title')}</h2>
                     <p className="text-sm text-neutral-500 text-center uppercase tracking-wider mb-8">
-                        Securely set a new password
+                        {t('reset.subtitle')}
                     </p>
 
                     {success ? (
@@ -94,9 +96,9 @@ export default function ResetPasswordPage() {
                             <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <CheckCircle2 size={32} className="text-emerald-400" />
                             </div>
-                            <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-2">Password Updated!</h3>
+                            <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-2">{t('reset.success')}</h3>
                             <p className="text-sm text-neutral-400 mb-8">
-                                Your account has been securely recovered out of orbit. You can now access ICARUS with your new credentials.
+                                {t('reset.successDesc')}
                             </p>
                             <button
                                 onClick={() => window.location.href = '/'}
@@ -104,7 +106,7 @@ export default function ResetPasswordPage() {
                                            bg-gradient-to-r from-yellow-700 to-yellow-600 text-black shadow-lg shadow-yellow-600/20
                                            hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30 transition-all duration-300"
                             >
-                                Return to Orbit <ArrowRight size={16} />
+                                {t('reset.returnToOrbit')} <ArrowRight size={16} />
                             </button>
                         </div>
                     ) : (
@@ -116,7 +118,7 @@ export default function ResetPasswordPage() {
                             )}
 
                             <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">New Password</label>
+                                <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">{t('reset.newPassword')}</label>
                                 <div className="relative">
                                     <input
                                         type={showPassword ? "text" : "password"}
@@ -137,7 +139,7 @@ export default function ResetPasswordPage() {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Confirm New Password</label>
+                                <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">{t('reset.confirmPassword')}</label>
                                 <div className="relative">
                                     <input
                                         type={showPassword ? "text" : "password"}
@@ -160,7 +162,7 @@ export default function ResetPasswordPage() {
                                            disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                             >
                                 {loading && <Loader2 size={16} className="animate-spin" />}
-                                {loading ? 'UPDATING...' : 'RESET PASSWORD'}
+                                {loading ? t('reset.updating') : t('reset.resetButton')}
                             </button>
                             
                             <div className="text-center mt-6">
@@ -169,7 +171,7 @@ export default function ResetPasswordPage() {
                                     onClick={() => window.location.href = '/'}
                                     className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 hover:text-white transition-colors cursor-pointer"
                                 >
-                                    Cancel & Return Home
+                                    {t('reset.cancel')}
                                 </button>
                             </div>
                         </form>

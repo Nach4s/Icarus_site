@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Clock, FileText } from 'lucide-react';
 import { api } from './api';
+import { useLang } from './LanguageContext.jsx';
 
 export default function LatestNewsBlock({ onPostClick }) {
+    const { t } = useLang();
     const [post, setPost] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -25,7 +27,7 @@ export default function LatestNewsBlock({ onPostClick }) {
             <div className="relative max-w-6xl mx-auto border border-neutral-800 bg-neutral-900/50 rounded-2xl h-64 lg:h-80 flex items-center justify-center">
                 <div className="animate-pulse flex flex-col items-center opacity-50">
                     <div className="w-8 h-8 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin mb-4" />
-                    <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">Loading feed...</span>
+                    <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">{t('news.loadingFeed')}</span>
                 </div>
             </div>
         );
@@ -35,8 +37,8 @@ export default function LatestNewsBlock({ onPostClick }) {
         return (
             <div className="relative max-w-6xl mx-auto border border-dashed border-neutral-800 bg-neutral-900/20 rounded-2xl h-64 lg:h-80 flex flex-col items-center justify-center text-center px-4">
                 <FileText size={32} className="text-neutral-700 mb-4" />
-                <p className="text-sm font-semibold text-neutral-500">No news yet.</p>
-                <p className="text-[10px] text-neutral-600 uppercase tracking-widest mt-2">Check back later for updates</p>
+                <p className="text-sm font-semibold text-neutral-500">{t('news.noNewsYet')}</p>
+                <p className="text-[10px] text-neutral-600 uppercase tracking-widest mt-2">{t('news.checkLater')}</p>
             </div>
         );
     }
@@ -64,7 +66,7 @@ export default function LatestNewsBlock({ onPostClick }) {
                             </p>
                         )}
                         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-yellow-600 group-hover:text-yellow-500 transition-colors">
-                            Read Full Article
+                            {t('news.readFullArticle')}
                             <ArrowRight size={14} className="group-hover:translate-x-2 transition-transform duration-300" />
                         </div>
                     </div>
@@ -104,7 +106,7 @@ export default function LatestNewsBlock({ onPostClick }) {
                         )}
                         
                         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-yellow-600 group-hover:text-yellow-500 transition-colors">
-                            Read Full Article
+                            {t('news.readFullArticle')}
                             <ArrowRight size={14} className="group-hover:translate-x-2 transition-transform duration-300" />
                         </div>
                     </div>

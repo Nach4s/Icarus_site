@@ -1,4 +1,7 @@
+import { useLang } from './LanguageContext.jsx'
+
 export default function Preloader({ isVisible = false }) {
+    const { t } = useLang()
     return (
         <div
             className={`fixed inset-0 z-[1000] bg-neutral-950 flex flex-col items-center justify-center
@@ -15,7 +18,7 @@ export default function Preloader({ isVisible = false }) {
                     />
                 </div>
                 <p className="text-[12px] sm:text-sm font-black uppercase tracking-[0.6em] text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600 mb-3 animate-pulse">
-                    LOADING ICARUS
+                    {t('generic.loadingIcarus')}
                 </p>
                 {/* Subtle loading bar */}
                 <div className="w-48 h-[2px] bg-neutral-800/80 rounded-full overflow-hidden mt-4 relative">

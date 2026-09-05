@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from './AuthContext.jsx'
+import { useLang } from './LanguageContext.jsx'
 import { api } from './api.js'
 import AdminPage from './AdminPage.jsx'
 import ResetPasswordPage from './ResetPasswordPage.jsx'
@@ -245,11 +246,11 @@ const trainingCategories = [
 
 
 const TABS = [
-    { id: 'journey', label: 'THE JOURNEY', icon: Compass },
-    { id: 'news', label: 'NEWS', icon: Newspaper },
-    { id: 'training', label: 'TRAINING', icon: Crosshair },
-    { id: 'ranking', label: 'GLOBAL RANKING', icon: Globe },
-    { id: 'contact', label: 'ABOUT US', icon: MessageCircle },
+    { id: 'journey', labelKey: 'nav.journey', icon: Compass },
+    { id: 'news', labelKey: 'nav.news', icon: Newspaper },
+    { id: 'training', labelKey: 'nav.training', icon: Crosshair },
+    { id: 'ranking', labelKey: 'nav.ranking', icon: Globe },
+    { id: 'contact', labelKey: 'nav.contact', icon: MessageCircle },
 ]
 
 
@@ -302,6 +303,7 @@ function RankBadge({ rank }) {
 function ProfileDropdown({ isOpen, onClose, onNavigate }) {
     const ref = useRef(null)
     const { user, logout } = useAuth()
+    const { t } = useLang()
 
     useEffect(() => {
         function handleClick(e) {
@@ -314,10 +316,10 @@ function ProfileDropdown({ isOpen, onClose, onNavigate }) {
     if (!isOpen) return null
 
     const items = [
-        { icon: UserCircle, label: 'Your Profile', id: 'profile' },
-        { icon: Users, label: 'Team Dashboard', id: 'team' },
-        { icon: Settings, label: 'Settings', id: 'settings' },
-        ...(user?.role === 'ADMIN' ? [{ icon: ShieldCheck, label: 'Admin Panel', id: 'admin' }] : []),
+        { icon: UserCircle, label: t('profile.yourProfile'), id: 'profile' },
+        { icon: Users, label: t('profile.teamDashboard'), id: 'team' },
+        { icon: Settings, label: t('profile.settings'), id: 'settings' },
+        ...(user?.role === 'ADMIN' ? [{ icon: ShieldCheck, label: t('profile.adminPanel'), id: 'admin' }] : []),
     ]
 
     return (
@@ -337,8 +339,8 @@ function ProfileDropdown({ isOpen, onClose, onNavigate }) {
                     )}
                 </div>
                 <div className="flex-1 min-w-0">
-                    <p className="text-xs text-neutral-500 font-bold uppercase tracking-wider mb-1">Signed in as</p>
-                    <p className="text-base font-black text-white truncate">{user?.name ?? 'Guest'}</p>
+                    <p className="text-xs text-neutral-500 font-bold uppercase tracking-wider mb-1">{t('profile.signedInAs')}</p>
+                    <p className="text-base font-black text-white truncate">{user?.name ?? t('generic.guest')}</p>
                     <p className="text-sm text-neutral-400 truncate">{user?.email ?? ''}</p>
                 </div>
             </div>
@@ -372,7 +374,7 @@ function ProfileDropdown({ isOpen, onClose, onNavigate }) {
                                    transition-colors duration-200 hover:bg-neutral-900 hover:text-red-400"
                 >
                     <LogOut size={18} />
-                    Sign Out
+                    {t('profile.signOut')}
                 </button>
             </div>
         </div>
@@ -384,6 +386,7 @@ function ProfileDropdown({ isOpen, onClose, onNavigate }) {
 
 function CompetitionModal({ isOpen, onClose }) {
     const { isAuthenticated, user, login, register, updateUser, verifyEmail } = useAuth()
+    const { t } = useLang()
 
     // Phase determines which view the user sees
     // 'login' | 'register' | 'verify' — unauthenticated
@@ -570,10 +573,10 @@ function CompetitionModal({ isOpen, onClose }) {
 
                 {/* Title */}
                 <h2 className="text-3xl md:text-4xl font-black uppercase tracking-widest text-white mb-2 text-center">
-                    {isAuthPhase ? 'ACCESS ICARUS' : user?.teamId ? 'ASSIGNMENT COMPLETE' : 'JOIN COMPETITION'}
+                    {isAuthPhase ? t('auth.accessIcarus') : user?.teamId ? t('auth.assignmentComplete') : t('auth.joinCompetition')}
                 </h2>
                 <p className="text-sm text-neutral-500 text-center mb-10 tracking-wider uppercase">
-                    {isAuthPhase ? 'Authenticate to continue' : `Welcome back, ${user?.name}`}
+                    {isAuthPhase ? t('auth.authenticate') : `${t('auth.welcomeBack')}, ${user?.name}`}
                 </p>
 
                 {/* Mode Toggle */}
@@ -588,7 +591,7 @@ function CompetitionModal({ isOpen, onClose }) {
                                         ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
                                         : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
                             >
-                                Sign In
+                                {t('auth.signIn')}
                             </button>
                             <button
                                 onClick={() => { setPhase('register'); setError(''); setSuccessMsg(''); }}
@@ -597,7 +600,7 @@ function CompetitionModal({ isOpen, onClose }) {
                                         ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
                                         : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
                             >
-                                Register
+                                {t('auth.register')}
                             </button>
                         </>
                     ) : (
@@ -609,7 +612,7 @@ function CompetitionModal({ isOpen, onClose }) {
                                         ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
                                         : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
                             >
-                                Create Team
+                                {t('auth.createTeam')}
                             </button>
                             <button
                                 onClick={() => { setPhase('join'); setError(''); setSuccessMsg(''); }}
@@ -618,7 +621,7 @@ function CompetitionModal({ isOpen, onClose }) {
                                         ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
                                         : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
                             >
-                                Join With Code
+                                {t('auth.joinWithCode')}
                             </button>
                         </>
                     )}
@@ -644,7 +647,7 @@ function CompetitionModal({ isOpen, onClose }) {
                                 <div className="text-center mb-6">
                                     <Shield size={32} className="text-yellow-600 mx-auto mb-3" />
                                     <p className="text-sm text-neutral-400">
-                                        We sent a 6-digit code to <strong className="text-white">{email}</strong>.
+                                        {t('auth.codeSentTo')} <strong className="text-white">{email}</strong>.
                                     </p>
                                 </div>
                                 <div>
@@ -668,14 +671,14 @@ function CompetitionModal({ isOpen, onClose }) {
                                                hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
                                                active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                                 >
-                                    {loading ? 'VERIFYING...' : 'VERIFY & ACCESS'}
+                                    {loading ? t('auth.verifying') : t('auth.verifyAccess')}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => { setPhase('login'); setError(''); setSuccessMsg(''); }}
                                     className="mt-4 w-full py-3 text-sm font-bold uppercase tracking-wider text-neutral-500 hover:text-white transition-colors cursor-pointer"
                                 >
-                                    BACK TO SIGN IN
+                                    {t('auth.backToSignIn')}
                                 </button>
                             </form>
                         )}
@@ -684,7 +687,7 @@ function CompetitionModal({ isOpen, onClose }) {
                         {phase === 'login' && (
                     <form onSubmit={handleLogin} className="space-y-4">
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Email</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">{t('auth.email')}</label>
                             <input
                                 type="email"
                                 placeholder="you@example.com"
@@ -696,7 +699,7 @@ function CompetitionModal({ isOpen, onClose }) {
                             />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Password</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">{t('auth.password')}</label>
                             <input
                                 type="password"
                                 placeholder="••••••••"
@@ -717,7 +720,7 @@ function CompetitionModal({ isOpen, onClose }) {
                                        hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
                                        active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
-                            {loading ? 'AUTHENTICATING...' : 'SIGN IN'}
+                            {loading ? t('auth.signingIn') : t('auth.signIn')}
                         </button>
                         <div className="text-center mt-4">
                             <button
@@ -725,7 +728,7 @@ function CompetitionModal({ isOpen, onClose }) {
                                 onClick={() => { setPhase('forgot'); setError(''); setSuccessMsg(''); }}
                                 className="text-xs font-bold uppercase tracking-wider text-neutral-500 hover:text-white transition-colors cursor-pointer"
                             >
-                                Forgot Password?
+                                {t('auth.forgotPassword')}
                             </button>
                         </div>
                     </form>
@@ -737,11 +740,11 @@ function CompetitionModal({ isOpen, onClose }) {
                         <div className="text-center mb-6">
                             <Shield size={32} className="text-yellow-600 mx-auto mb-3" />
                             <p className="text-sm text-neutral-400">
-                                Enter your email address and we'll send you a link to securely reset your password.
+                                {t('auth.forgotPasswordHint')}
                             </p>
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Email</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">{t('auth.email')}</label>
                             <input
                                 type="email"
                                 placeholder="you@example.com"
@@ -762,14 +765,14 @@ function CompetitionModal({ isOpen, onClose }) {
                                        hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
                                        active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
-                            {loading ? 'SENDING LINK...' : 'SEND RESET LINK'}
+                            {loading ? t('auth.sendingLink') : t('auth.sendResetLink')}
                         </button>
                         <button
                             type="button"
                             onClick={() => { setPhase('login'); setError(''); setSuccessMsg(''); }}
                             className="mt-4 w-full py-3 text-sm font-bold uppercase tracking-wider text-neutral-500 hover:text-white transition-colors cursor-pointer"
                         >
-                            BACK TO SIGN IN
+                            {t('auth.backToSignIn')}
                         </button>
                     </form>
                 )}
@@ -778,7 +781,7 @@ function CompetitionModal({ isOpen, onClose }) {
                 {phase === 'register' && (
                     <form onSubmit={handleRegister} className="space-y-4">
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Full Name</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">{t('auth.fullName')}</label>
                             <input
                                 type="text"
                                 placeholder="Alex Novak"
@@ -790,7 +793,7 @@ function CompetitionModal({ isOpen, onClose }) {
                             />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Email</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">{t('auth.email')}</label>
                             <input
                                 type="email"
                                 placeholder="you@example.com"
@@ -802,10 +805,10 @@ function CompetitionModal({ isOpen, onClose }) {
                             />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Password</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">{t('auth.password')}</label>
                             <input
                                 type="password"
-                                placeholder="Min. 6 characters"
+                                placeholder={t('auth.minPassword')}
                                 value={password}
                                 onChange={e => setPassword(e.target.value)}
                                 className={inputClass}
@@ -824,7 +827,7 @@ function CompetitionModal({ isOpen, onClose }) {
                                        hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
                                        active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
-                            {loading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
+                            {loading ? t('auth.creatingAccount') : t('auth.createAccount')}
                         </button>
                     </form>
                 )}
@@ -833,10 +836,10 @@ function CompetitionModal({ isOpen, onClose }) {
                 {phase === 'create' && (
                     <form onSubmit={handleCreateTeam} className="space-y-4">
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Team Name</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">{t('auth.teamName')}</label>
                             <input
                                 type="text"
-                                placeholder="Enter Team Name"
+                                placeholder={t('auth.enterTeamName')}
                                 value={teamName}
                                 onChange={e => setTeamName(e.target.value)}
                                 className={inputClass}
@@ -853,7 +856,7 @@ function CompetitionModal({ isOpen, onClose }) {
                                        hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
                                        active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
-                            {loading ? 'CREATING...' : 'CREATE TEAM'}
+                            {loading ? t('auth.creating') : t('auth.createTeam')}
                         </button>
                     </form>
                 )}
@@ -862,10 +865,10 @@ function CompetitionModal({ isOpen, onClose }) {
                 {phase === 'join' && (
                     <form onSubmit={handleJoinTeam} className="space-y-4">
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Invite Code</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">{t('auth.inviteCode')}</label>
                             <input
                                 type="text"
-                                placeholder="Enter 6-digit Invite Code"
+                                placeholder={t('auth.enter6digitCode')}
                                 maxLength={6}
                                 value={inviteCode}
                                 onChange={e => setInviteCode(e.target.value.toUpperCase())}
@@ -883,14 +886,14 @@ function CompetitionModal({ isOpen, onClose }) {
                                        hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
                                        active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
-                            {loading ? 'JOINING...' : 'JOIN TEAM'}
+                            {loading ? t('auth.joining') : t('auth.joinTeam')}
                         </button>
                     </form>
                 )}
                 </>
 
                 <p className="text-[10px] text-neutral-600 text-center mt-4 tracking-wide">
-                    By continuing you agree to the ICARUS competition protocol
+                    {t('auth.protocol')}
                 </p>
             </div>
         </div>
@@ -902,6 +905,7 @@ function CompetitionModal({ isOpen, onClose }) {
 
 function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActiveTab, onNavigatePage }) {
     const { user, isAuthenticated } = useAuth()
+    const { t } = useLang()
     const currentUser = isAuthenticated ? user : guestData
     const [isProfileOpen, setIsProfileOpen] = useState(false)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -938,7 +942,7 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
                         </div>
                         <div className="hidden md:block h-8 w-px bg-neutral-700" />
                         <span className="hidden md:block text-xs md:text-sm italic text-neutral-500 tracking-wide">
-                            to be is to innovate
+                            {t('header.motto')}
                         </span>
                     </div>
 
@@ -957,7 +961,7 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
                                                active:scale-100"
                                 >
                                     {isRegistered ? <CheckCircle2 size={16} /> : <Rocket size={16} />}
-                                    {isRegistered ? "Registered" : "Join Competition"}
+                                    {isRegistered ? t('header.registered') : t('header.joinCompetition')}
                                 </button>
                                 {/* Streak — smaller on mobile */}
                                 <div className="flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-full bg-yellow-600/10 border border-yellow-600/25">
@@ -1005,7 +1009,7 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
                                            hover:border-yellow-600/50 hover:text-white hover:bg-neutral-800/60"
                             >
                                 <User size={18} />
-                                Sign In
+                                {t('header.signIn')}
                             </button>
                         )}
 
@@ -1052,7 +1056,7 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
                                                     }`}
                                             >
                                                 <Icon size={15} />
-                                                {tab.label}
+                                                {t(tab.labelKey)}
                                             </button>
                                         )
                                     })}
@@ -1070,7 +1074,7 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
                                                        transition-all duration-300 hover:scale-[1.02]"
                                         >
                                             {isRegistered ? <CheckCircle2 size={14} /> : <Rocket size={14} />}
-                                            {isRegistered ? "Registered" : "Join Competition"}
+                                            {isRegistered ? t('header.registered') : t('header.joinCompetition')}
                                         </button>
                                     </div>
                                     )}
@@ -1088,6 +1092,7 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
 /* ── Tab Navigation (hidden on mobile — accessible via hamburger) ── */
 
 function TabNav({ activeTab, setActiveTab, onNavigatePage }) {
+    const { t } = useLang()
     return (
         <nav className="hidden md:block border-b border-neutral-800/50 bg-neutral-950/50 backdrop-blur-lg">
             <div className="max-w-7xl mx-auto w-full px-6">
@@ -1112,7 +1117,7 @@ function TabNav({ activeTab, setActiveTab, onNavigatePage }) {
                            ${isActive ? 'text-yellow-600' : 'text-neutral-500 hover:text-neutral-300'}`}
                             >
                                 <Icon size={18} />
-                                {tab.label}
+                                {t(tab.labelKey)}
                                 {isActive && (
                                     <div className="absolute bottom-0 left-4 right-4 h-[3px] rounded-full bg-yellow-600" />
                                 )}
@@ -1129,25 +1134,22 @@ function TabNav({ activeTab, setActiveTab, onNavigatePage }) {
 /* ── Tab 1: THE JOURNEY ──────────────────────────────────── */
 
 function JourneyTab({ onPostClick }) {
+    const { t } = useLang()
     return (
         <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-8 sm:py-16 md:py-24">
             {/* Cinematic Title — mobile-first font sizes */}
             <div className="relative text-center mb-16 sm:mb-24 lg:mb-32 max-w-6xl mx-auto">
                 <div className="flex justify-center items-center gap-4 lg:gap-6 text-[10px] sm:text-xs lg:text-sm font-bold uppercase tracking-[0.4em] text-yellow-600 mb-8 lg:mb-10">
                     <div className="w-8 sm:w-16 lg:w-24 h-[1px] bg-yellow-600/50"></div>
-                    Welcome to ICARUS
+                    {t('journey.welcomeTo')}
                     <div className="w-8 sm:w-16 lg:w-24 h-[1px] bg-yellow-600/50"></div>
                 </div>
                 <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-white uppercase tracking-widest mb-6 drop-shadow-lg flex flex-col items-center justify-center gap-2 sm:gap-4 lg:gap-6">
-                    <span className="text-center">Aerospace</span>
-                    <span className="text-center">Engineering</span>
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 to-yellow-500 text-center">
-                        Competition Platform
-                    </span>
+                    <span className="text-center">{t('journey.subtitle')}</span>
                 </h1>
                 <div className="w-full max-w-sm lg:max-w-lg mx-auto h-[1px] bg-gradient-to-r from-transparent via-neutral-800 to-transparent mb-8 lg:mb-10"></div>
                 <p className="text-sm lg:text-lg text-neutral-400 max-w-md lg:max-w-2xl mx-auto leading-relaxed font-medium tracking-wide px-4">
-                    Navigate the platform, build your team, and launch your journey.
+                    {t('journey.navigate')}
                 </p>
                 
 
@@ -1368,6 +1370,7 @@ function KhanCourseDetail({ course, onBack }) {
 }
 
 function TrainingTab() {
+    const { t } = useLang()
     return (
         <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-20 lg:py-32 flex flex-col items-center justify-center text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Glowing Icon Container */}
@@ -1381,18 +1384,18 @@ function TrainingTab() {
 
             {/* Title */}
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-white uppercase tracking-widest mb-6 drop-shadow-lg flex flex-col sm:flex-row items-center justify-center gap-3">
-                Training <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 to-yellow-500">Modules</span>
+                {t('training.modules')}
             </h1>
 
             {/* Status Badge */}
             <div className="px-6 py-2 rounded-full bg-yellow-600/10 border border-yellow-600/20 inline-flex items-center gap-2 mb-8">
                 <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
-                <span className="text-yellow-600 text-xs md:text-sm font-bold uppercase tracking-widest">Coming Soon</span>
+                <span className="text-yellow-600 text-xs md:text-sm font-bold uppercase tracking-widest">{t('training.comingSoon')}</span>
             </div>
 
             {/* Subtitle */}
             <p className="text-base sm:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed mb-14">
-                We are currently calibrating the modules and tasks for the upcoming competition phase. Prepare yourself—the challenges ahead will test your limits.
+                {t('training.description')}
             </p>
         </div>
     )
@@ -1536,7 +1539,7 @@ function TeamDetailsModal({ teamId, onClose }) {
                 const res = await api.get(`/teams/${teamId}`)
                 setTeam(res.team)
             } catch (err) {
-                setError(err.message || 'Failed to load team details')
+                setError(err.message || t('team.loadFailed'))
             } finally {
                 setLoading(false)
             }
@@ -1583,7 +1586,7 @@ function TeamDetailsModal({ teamId, onClose }) {
 
                         <div className="space-y-3">
                             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-3 px-1">
-                                Team Roster ({team.members.length}/6)
+                                {t('team.roster')} ({team.members.length}/6)
                             </p>
                             {team.members.map(member => {
                                 const isCaptain = member.id === team.captainId
@@ -1635,6 +1638,7 @@ function TeamDetailsModal({ teamId, onClose }) {
 
 function RankingTab({ onJoinClick, isRegistered }) {
     const { isAuthenticated } = useAuth()
+    const { t } = useLang()
 
     return (
         <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-20 lg:py-32 flex flex-col items-center justify-center text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -1649,18 +1653,18 @@ function RankingTab({ onJoinClick, isRegistered }) {
 
             {/* Title */}
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-white uppercase tracking-widest mb-6 drop-shadow-lg flex flex-col sm:flex-row items-center justify-center gap-3">
-                Ranking <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 to-yellow-500">System</span>
+                {t('ranking.system')}
             </h1>
 
             {/* Status Badge */}
             <div className="px-6 py-2 rounded-full bg-yellow-600/10 border border-yellow-600/20 inline-flex items-center gap-2 mb-8">
                 <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
-                <span className="text-yellow-600 text-xs md:text-sm font-bold uppercase tracking-widest">Coming Soon</span>
+                <span className="text-yellow-600 text-xs md:text-sm font-bold uppercase tracking-widest">{t('training.comingSoon')}</span>
             </div>
 
             {/* Subtitle */}
             <p className="text-base sm:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed mb-14">
-                Global leaderboards are currently being synchronized with the main competition servers. Check back once the active phase begins!
+                {t('ranking.description')}
             </p>
         </div>
     )
@@ -1734,7 +1738,7 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
         if (phase === 'loading') return (
             <div className="flex flex-col items-center gap-4 py-6">
                 <Loader2 size={36} className="text-yellow-600 animate-spin" />
-                <p className="text-sm text-neutral-400 uppercase tracking-widest">Checking status…</p>
+                <p className="text-sm text-neutral-400 uppercase tracking-widest">{t('comp.checkingStatus')}</p>
             </div>
         )
 
@@ -1746,16 +1750,16 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                     <Clock size={36} className="text-neutral-500" />
                 </div>
                 <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
-                    No Active Competition
+                    {t('comp.noActive')}
                 </h3>
                 <p className="text-neutral-400 leading-relaxed mb-8 max-w-xs mx-auto">
-                    There are no open competitions at the moment. Check back later — the next mission will be announced soon.
+                    {t('comp.noActiveDesc')}
                 </p>
                 <button onClick={onClose}
                     className="px-10 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest
                                bg-neutral-800 border border-neutral-700 text-white
                                hover:bg-neutral-700 transition cursor-pointer">
-                    Understood
+                    {t('comp.understood')}
                 </button>
             </>
         )
@@ -1768,16 +1772,16 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                     <X size={36} className="text-red-500" />
                 </div>
                 <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
-                    Registration Closed
+                    {t('comp.regClosed')}
                 </h3>
                 <p className="text-neutral-400 leading-relaxed mb-8 max-w-xs mx-auto">
-                    Registration for {competition?.title || 'this competition'} has ended. You cannot register anymore.
+                    {t('comp.regClosedDesc').replace('{competition}', competition?.title || '')}
                 </p>
                 <button onClick={onClose}
                     className="px-10 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest
                                bg-neutral-800 border border-neutral-700 text-white
                                hover:bg-neutral-700 transition cursor-pointer">
-                    Close
+                    {t('comp.close')}
                 </button>
             </>
         )
@@ -1789,16 +1793,16 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                     <Users size={36} className="text-neutral-500" />
                 </div>
                 <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
-                    Join a Team First
+                    {t('comp.joinTeamFirst')}
                 </h3>
                 <p className="text-neutral-400 leading-relaxed mb-8 max-w-xs mx-auto">
-                    You need to be part of a team before you can enter a competition. Create or join one through Team Dashboard.
+                    {t('comp.joinTeamFirstDesc')}
                 </p>
                 <button onClick={onClose}
                     className="px-10 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest
                                bg-neutral-800 border border-neutral-700 text-white
                                hover:bg-neutral-700 transition cursor-pointer">
-                    Got it
+                    {t('comp.gotIt')}
                 </button>
             </>
         )
@@ -1811,25 +1815,25 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                     <Crown size={36} className="text-yellow-600" />
                 </div>
                 <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
-                    Captain Only
+                    {t('comp.captainOnly')}
                 </h3>
                 <p className="text-neutral-400 leading-relaxed mb-3 max-w-sm mx-auto">
-                    Only the <span className="text-yellow-500 font-bold">Team Captain</span> can officially register the team for a competition.
+                    {t('comp.captainOnlyDesc1')}<span className="text-yellow-500 font-bold">{t('comp.captainOnlyDesc2')}</span>{t('comp.captainOnlyDesc3')}
                 </p>
                 {competition && (
                     <div className="mb-8 px-5 py-3 rounded-xl bg-neutral-800/60 border border-neutral-700 text-sm text-neutral-300">
                         <p className="font-bold text-white mb-1">{competition.title}</p>
                         <p className="text-xs text-neutral-500">
-                            Closes: {new Date(competition.regEnd).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}
+                            {t('comp.closes')}{new Date(competition.regEnd).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}
                         </p>
                     </div>
                 )}
-                <p className="text-xs text-neutral-600 mb-6">Ask your captain to click the Join Competition button.</p>
+                <p className="text-xs text-neutral-600 mb-6">{t('comp.askCaptain')}</p>
                 <button onClick={onClose}
                     className="px-10 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest
                                bg-neutral-800 border border-neutral-700 text-white
                                hover:bg-neutral-700 transition cursor-pointer">
-                    Close
+                    {t('comp.close')}
                 </button>
             </>
         )
@@ -1842,14 +1846,14 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                     <Trophy size={36} className="text-yellow-600" />
                 </div>
                 <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
-                    {competition?.isIndividual ? 'Join Workshop' : 'Register Your Team'}
+                    {competition?.isIndividual ? t('comp.joinWorkshop') : t('comp.regTeam')}
                 </h3>
                 {competition && (
                     <div className="mb-6 px-5 py-4 rounded-xl bg-neutral-800/60 border border-yellow-600/15 text-left">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-yellow-600/60 mb-1">Active {competition.isIndividual ? 'Workshop' : 'Competition'}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-yellow-600/60 mb-1">{competition.isIndividual ? t('comp.activeWorkshop') : t('comp.activeComp')}</p>
                         <p className="font-black text-white text-base uppercase tracking-wide">{competition.title}</p>
                         <p className="text-xs text-neutral-500 mt-2">
-                            Closes: {new Date(competition.regEnd).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}
+                            {t('comp.closes')}{new Date(competition.regEnd).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}
                         </p>
                         {competition.description && (
                             <p className="text-xs text-neutral-400 mt-3 leading-relaxed border-t border-neutral-700/60 pt-3 whitespace-pre-wrap">
@@ -1860,9 +1864,9 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                 )}
                 <p className="text-neutral-400 text-sm leading-relaxed mb-8 max-w-xs mx-auto">
                     {competition?.isIndividual ? (
-                        <>You are about to register for this individual workshop event. Prepare yourself for the mission.</>
+                        <>{t('comp.workshopDesc')}</>
                     ) : (
-                        <>As the <span className="text-yellow-500 font-bold">Team Captain</span>, you are about to officially enter your team. Make sure all members are ready.</>
+                        <>{t('comp.teamDesc1')}<span className="text-yellow-500 font-bold">{t('comp.captainOnlyDesc2')}</span>{t('comp.teamDesc2')}</>
                     )}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -1871,7 +1875,7 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                                    bg-neutral-800 border border-neutral-700 text-white
                                    hover:bg-neutral-700 transition cursor-pointer
                                    disabled:opacity-50 disabled:cursor-not-allowed">
-                        Cancel
+                        {t('comp.cancel')}
                     </button>
                     <button onClick={handleRegister} disabled={registering}
                         className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest text-black
@@ -1881,8 +1885,8 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                                    disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
                                    flex items-center justify-center gap-2">
                         {registering
-                            ? <><Loader2 size={15} className="animate-spin" />Registering…</>
-                            : 'Confirm Registration'}
+                            ? <><Loader2 size={15} className="animate-spin" />{t('comp.registering')}</>
+                            : t('comp.confirmReg')}
                     </button>
                 </div>
             </>
@@ -1896,19 +1900,19 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                     <CheckCircle2 size={36} className="text-emerald-400" />
                 </div>
                 <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
-                    {competition?.isIndividual ? 'Registered!' : 'Team Registered!'}
+                    {competition?.isIndividual ? t('comp.registeredIndiv') : t('comp.registeredTeam')}
                 </h3>
                 <p className="text-neutral-400 leading-relaxed mb-8 max-w-xs mx-auto">
                     {competition?.isIndividual 
-                        ? 'You have been officially enrolled in this event. Keep pushing for the stars!'
-                        : 'Your team has been officially entered into the competition. Keep pushing for the stars!'}
+                        ? t('comp.registeredIndivDesc')
+                        : t('comp.registeredTeamDesc')}
                 </p>
                 <button onClick={onClose}
                     className="px-10 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest text-black
                                bg-gradient-to-r from-yellow-700 to-yellow-500
                                shadow-lg shadow-yellow-600/20
                                hover:scale-[1.02] transition cursor-pointer">
-                    Continue
+                    {t('comp.continue')}
                 </button>
             </>
         )
@@ -1920,14 +1924,14 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                     <AlertTriangle size={36} className="text-red-400" />
                 </div>
                 <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
-                    Registration Failed
+                    {t('comp.regFailed')}
                 </h3>
                 <p className="text-red-400 text-sm leading-relaxed mb-8 max-w-xs mx-auto">{errMsg}</p>
                 <button onClick={onClose}
                     className="px-10 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest
                                bg-neutral-800 border border-neutral-700 text-white
                                hover:bg-neutral-700 transition cursor-pointer">
-                    Close
+                    {t('comp.close')}
                 </button>
             </>
         )
@@ -1960,6 +1964,7 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
 }
 
 function AlreadyRegisteredModal({ isOpen, onClose }) {
+    const { t } = useLang()
     if (!isOpen) return null;
     return createPortal(
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[150] px-4" onClick={onClose}>
@@ -1972,10 +1977,10 @@ function AlreadyRegisteredModal({ isOpen, onClose }) {
                     <CheckCircle2 size={36} />
                 </div>
                 <h3 className="text-xl md:text-2xl font-black uppercase tracking-widest text-white mb-4 leading-snug">
-                    Already Registered
+                    {t('modal.alreadyRegistered')}
                 </h3>
                 <p className="text-sm md:text-base text-neutral-400 mb-8 leading-relaxed max-w-sm mx-auto">
-                    Your team has successfully entered the current competition phase. Keep reaching for the stars!
+                    {t('modal.alreadyRegisteredDesc')}
                 </p>
                 <div className="flex justify-center">
                     <button
@@ -1984,7 +1989,7 @@ function AlreadyRegisteredModal({ isOpen, onClose }) {
                                    bg-gradient-to-r from-yellow-700 to-yellow-500 shadow-lg shadow-yellow-600/20
                                    hover:scale-[1.02] transition cursor-pointer"
                     >
-                        Close
+                        {t('generic.close')}
                     </button>
                 </div>
             </div>
@@ -1996,6 +2001,7 @@ function AlreadyRegisteredModal({ isOpen, onClose }) {
 /* ── Footer ──────────────────────────────────────────────── */
 
 function Footer() {
+    const { t } = useLang()
     return (
         <footer className="mt-auto border-t border-neutral-800/40 py-10 bg-neutral-950/80 backdrop-blur-sm">
             <div className="max-w-7xl mx-auto w-full px-6">
@@ -2004,9 +2010,9 @@ function Footer() {
                         <img src="/logo_white.png" alt="ICARUS" className="h-5 w-auto opacity-70" />
                         <span className="text-sm font-bold uppercase tracking-[0.15em] text-neutral-400">ICARUS</span>
                         <span className="text-neutral-700 mx-1">|</span>
-                        <span className="text-xs italic text-neutral-600">to be is to innovate</span>
+                        <span className="text-xs italic text-neutral-600">{t('footer.motto')}</span>
                     </div>
-                    <p className="text-xs text-neutral-600">© 2026 ICARUS Platform. All rights reserved.</p>
+                    <p className="text-xs text-neutral-600">{t('footer.copyright')}</p>
                 </div>
             </div>
         </footer>
@@ -2569,6 +2575,7 @@ function TeamDashboardPage({ onBack }) {
 
 function SettingsPage({ onBack }) {
     const { user, logout, updateUser } = useAuth()
+    const { lang: language, setLang: setLanguage, t } = useLang()
     const [name, setName] = useState(user?.name || '')
     const [avatarFile, setAvatarFile] = useState(null)
     const [saving, setSaving] = useState(false)
@@ -2580,17 +2587,15 @@ function SettingsPage({ onBack }) {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [deleting, setDeleting] = useState(false)
 
-    // Language preference (stored locally in browser)
+    // Language preference
     const LANGUAGES = [
         { code: 'kk', label: 'Қазақша', flag: '🇰🇿' },
         { code: 'ru', label: 'Русский', flag: '🇷🇺' },
         { code: 'en', label: 'English', flag: '🇬🇧' },
         { code: 'ro', label: 'Română', flag: '🇷🇴' },
     ]
-    const [language, setLanguage] = useState(() => localStorage.getItem('icarus_lang') || 'ru')
     const handleLanguageChange = (code) => {
         setLanguage(code)
-        localStorage.setItem('icarus_lang', code)
     }
 
     useEffect(() => {
@@ -2670,14 +2675,14 @@ function SettingsPage({ onBack }) {
 
     return (
         <div className="max-w-2xl md:max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <PageHeader title="Settings" onBack={onBack} />
+            <PageHeader title={t('settings.title')} onBack={onBack} />
 
             <form onSubmit={handleSave} className="space-y-4">
 
                 {/* ── Profile Section ─────────────────────────── */}
                 <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl overflow-hidden">
                     <div className="px-5 py-4 border-b border-neutral-800/80 bg-neutral-900/80">
-                        <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">Profile</h2>
+                        <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">{t('settings.profile')}</h2>
                     </div>
                     <div className="p-5 md:p-6 space-y-5">
 
@@ -2728,9 +2733,9 @@ function SettingsPage({ onBack }) {
                                 </div>
                                 <div className="text-center">
                                     <p className="text-sm md:text-base font-semibold text-neutral-300 group-hover:text-white transition-colors">
-                                        {avatarFile ? avatarFile.name : 'Click to upload a photo'}
+                                        {avatarFile ? avatarFile.name : t('settings.uploadPhoto')}
                                     </p>
-                                    <p className="text-xs text-neutral-600 mt-0.5">or press <span className="text-neutral-500 font-mono">Ctrl+V</span> to paste · JPG, PNG, WEBP</p>
+                                    <p className="text-xs text-neutral-600 mt-0.5" dangerouslySetInnerHTML={{ __html: t('settings.uploadDesc') }}></p>
                                 </div>
                             </div>
 
@@ -2742,7 +2747,7 @@ function SettingsPage({ onBack }) {
                                     disabled={saving}
                                     className="text-xs font-bold uppercase tracking-widest text-red-500/40 hover:text-red-400 transition-colors cursor-pointer disabled:opacity-40"
                                 >
-                                    Remove photo
+                                    {t('settings.removePhoto')}
                                 </button>
                             )}
                         </div>
@@ -2750,20 +2755,20 @@ function SettingsPage({ onBack }) {
 
                         {/* Display Name */}
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Display Name</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">{t('settings.displayName')}</label>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 className="w-full bg-neutral-950/60 border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-600/50 font-medium transition-colors placeholder:text-neutral-600"
-                                placeholder="Your display name"
+                                placeholder={t('settings.displayNamePlaceholder')}
                             />
                         </div>
 
                         {/* Email (read-only) */}
                         <div>
                             <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">
-                                Email <span className="text-neutral-700 normal-case tracking-normal font-normal ml-1">— read only</span>
+                                Email <span className="text-neutral-700 normal-case tracking-normal font-normal ml-1">— {t('settings.emailReadOnly')}</span>
                             </label>
                             <input
                                 type="text"
@@ -2796,7 +2801,7 @@ function SettingsPage({ onBack }) {
                                shadow-lg shadow-yellow-600/20 hover:scale-[1.01] active:scale-100 transition-all
                                disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
-                    {saving ? 'Saving…' : 'Save Changes'}
+                    {saving ? t('settings.saving') : t('settings.saveChanges')}
                 </button>
 
             </form>
@@ -2804,7 +2809,7 @@ function SettingsPage({ onBack }) {
             {/* ── Language Section ─────────────────────────────── */}
             <div className="mt-4 bg-neutral-900/60 border border-neutral-800 rounded-2xl overflow-hidden">
                 <div className="px-5 py-4 border-b border-neutral-800/80 bg-neutral-900/80">
-                    <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">Interface Language</h2>
+                    <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">{t('settings.language')}</h2>
                 </div>
                 <div className="p-5 md:p-6">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -2827,21 +2832,21 @@ function SettingsPage({ onBack }) {
                             </button>
                         ))}
                     </div>
-                    <p className="mt-3 text-[10px] text-neutral-600 uppercase tracking-wider">Language preference is saved in your browser</p>
+                    <p className="mt-3 text-[10px] text-neutral-600 uppercase tracking-wider">{t('settings.languageDesc')}</p>
                 </div>
             </div>
 
             {/* ── Danger Zone ──────────────────────────────────── */}
             <div className="mt-6 bg-red-950/20 border border-red-500/15 rounded-2xl p-5 md:p-6 flex items-center justify-between gap-4">
                 <div>
-                    <h3 className="text-sm font-bold text-red-400 uppercase tracking-[0.1em] mb-1">Danger Zone</h3>
-                    <p className="text-xs text-neutral-600">Permanently delete your account and all data.</p>
+                    <h3 className="text-sm font-bold text-red-400 uppercase tracking-[0.1em] mb-1">{t('settings.dangerZone')}</h3>
+                    <p className="text-xs text-neutral-600">{t('settings.dangerZoneHint')}</p>
                 </div>
                 <button
                     onClick={() => setShowDeleteConfirm(true)}
                     className="shrink-0 px-4 py-2 rounded-lg border border-red-500/25 text-red-400/70 text-xs font-bold uppercase tracking-widest hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/40 transition-all cursor-pointer"
                 >
-                    Delete
+                    {t('settings.deleteAccount')}
                 </button>
             </div>
 
@@ -2856,9 +2861,9 @@ function SettingsPage({ onBack }) {
                         <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/30 text-red-500 flex items-center justify-center mx-auto mb-6">
                             <LogOut size={28} />
                         </div>
-                        <h3 className="text-xl font-bold text-white mb-2 uppercase tracking-widest">Delete Account?</h3>
+                        <h3 className="text-xl font-bold text-white mb-2 uppercase tracking-widest">{t('settings.deleteTitle')}</h3>
                         <p className="text-sm text-neutral-400 mb-8">
-                            This action is <span className="text-red-400 font-bold">permanent</span> and cannot be undone. All your progress, XP, and team affiliations will be lost entirely.
+                            {t('settings.deleteWarning')}
                         </p>
                         <div className="flex gap-4">
                             <button
@@ -2867,7 +2872,7 @@ function SettingsPage({ onBack }) {
                                            bg-neutral-800 border border-neutral-700 text-white
                                            hover:bg-neutral-700 transition cursor-pointer"
                             >
-                                Cancel
+                                {t('settings.cancel')}
                             </button>
                             <button
                                 onClick={async () => {
@@ -2888,7 +2893,7 @@ function SettingsPage({ onBack }) {
                                            bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20
                                            transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {deleting ? 'Deleting...' : 'Delete'}
+                                {deleting ? t('settings.deleting') : t('settings.deleteAccount')}
                             </button>
                         </div>
                     </div>

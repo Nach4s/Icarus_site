@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Clock, FileText } from 'lucide-react';
 import { api } from './api';
 import Preloader from './Preloader';
+import { useLang } from './LanguageContext.jsx';
 
 export default function NewsPage({ onPostClick }) {
+    const { t } = useLang();
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -27,15 +29,15 @@ export default function NewsPage({ onPostClick }) {
             {/* Content */}
             <div className="max-w-7xl mx-auto px-6 py-12 md:py-20">
                 <div className="mb-12">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-yellow-600 mb-2">Platform Updates</p>
-                    <h1 className="text-4xl md:text-6xl font-black uppercase tracking-widest text-white">Latest News</h1>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-yellow-600 mb-2">{t('news.platformUpdates')}</p>
+                    <h1 className="text-4xl md:text-6xl font-black uppercase tracking-widest text-white">{t('news.latestNews')}</h1>
                 </div>
 
                 {!loading && posts.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-neutral-800 bg-neutral-900/20 rounded-2xl">
                         <FileText size={48} className="text-neutral-700 mb-6" />
-                        <h2 className="text-xl font-bold text-white mb-2">No news yet</h2>
-                        <p className="text-neutral-500 text-sm">Check back later for platform updates and announcements.</p>
+                        <h2 className="text-xl font-bold text-white mb-2">{t('news.noNews')}</h2>
+                        <p className="text-neutral-500 text-sm">{t('news.checkBack')}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -71,10 +73,10 @@ export default function NewsPage({ onPostClick }) {
                                         {post.title}
                                     </h2>
                                     <p className="text-sm text-neutral-400 line-clamp-3 mb-6 flex-1">
-                                        {post.excerpt || "Click to read more about this update."}
+                                        {post.excerpt || t('news.clickToRead')}
                                     </p>
                                     <div className="text-[10px] font-bold uppercase tracking-widest text-yellow-600 flex items-center gap-2">
-                                        Read Article
+                                        {t('news.readArticle')}
                                         <span className="group-hover:translate-x-1 transition-transform">→</span>
                                     </div>
                                 </div>

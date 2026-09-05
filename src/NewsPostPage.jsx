@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Clock, User } from 'lucide-react';
 import { api } from './api';
 import Preloader from './Preloader';
+import { useLang } from './LanguageContext.jsx';
 
 export default function NewsPostPage({ onBack }) {
+    const { t } = useLang();
     const [post, setPost] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -32,7 +34,7 @@ export default function NewsPostPage({ onBack }) {
                 <h1 className="text-4xl font-black uppercase tracking-widest text-white mb-4">404</h1>
                 <p className="text-neutral-500 mb-8">{error}</p>
                 <button onClick={onBack} className="px-6 py-3 rounded-full bg-yellow-600 text-black font-bold uppercase tracking-widest text-xs hover:bg-yellow-500 transition-colors cursor-pointer">
-                    Back to News
+                    {t('post.backToNews')}
                 </button>
             </div>
         );
@@ -42,7 +44,7 @@ export default function NewsPostPage({ onBack }) {
         return (
             <div className="w-full h-[60vh] flex flex-col items-center justify-center text-neutral-500">
                 <div className="w-8 h-8 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin mb-4" />
-                <span className="text-[10px] uppercase tracking-widest font-bold">Loading...</span>
+                <span className="text-[10px] uppercase tracking-widest font-bold">{t('post.loading')}</span>
             </div>
         );
     }
@@ -56,7 +58,7 @@ export default function NewsPostPage({ onBack }) {
                         className="mb-8 flex items-center gap-2 text-neutral-400 hover:text-yellow-500 transition-colors text-sm font-bold cursor-pointer group"
                     >
                         <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                        Back to News
+                        {t('post.backToNews')}
                     </button>
                     {/* Header */}
                     <header className="mb-12 text-center">
