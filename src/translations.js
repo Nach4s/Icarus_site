@@ -944,6 +944,20 @@ const translations = {
     ro: 'Parola trebuie să aibă cel puțin 6 caractere.',
   },
 
+  // ── Footer ────────────────────────────────────────────────────────────────
+  'footer.motto': {
+    kk: 'болу - бұл инновация',
+    ru: 'быть значит создавать инновации',
+    en: 'to be is to innovate',
+    ro: 'a fi înseamnă a inova',
+  },
+  'footer.copyright': {
+    kk: '© 2026 ICARUS. Барлық құқықтар қорғалған.',
+    ru: '© 2026 ICARUS. Все права защищены.',
+    en: '© 2026 ICARUS. All rights reserved.',
+    ro: '© 2026 ICARUS. Toate drepturile rezervate.',
+  },
+
   // ── Generic ───────────────────────────────────────────────────────────────
   'generic.guest': {
     kk: 'Қонақ',
