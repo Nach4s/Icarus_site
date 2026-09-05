@@ -1610,33 +1610,50 @@ app.post(
   asyncHandler(async (req, res) => {
     const { phone, interest } = req.body;
 
-    // Check if user already has a club registration
-    const existing = await prisma.clubRegistration.findUnique({
-      where: { userId: req.userId },
-    });
+    try {
+      // Check if user already has a club registration
+      const existing = await prisma.clubRegistration.findUnique({
+        where: { userId: req.userId },
+      });
 
-    if (existing) {
-      return res.status(400).json({ error: "You are already registered for the club." });
-    }
+      if (existing) {
+        return res.status(400).json({ error: "You are already registered for the club." });
+      }
 
-    // Create club registration
-    const registration = await prisma.clubRegistration.create({
-      data: {
-        phone,
-        interest,
-        userId: req.userId,
-      },
-      include: {
-        user: {
-          select: { id: true, name: true, email: true },
+      // Create club registration
+      const registration = await prisma.clubRegistration.create({
+        data: {
+          phone,
+          interest,
+          userId: req.userId,
         },
-      },
-    });
+        include: {
+          user: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+      });
 
-    return res.status(201).json({
-      message: "Club registration successful.",
-      registration,
-    });
+      return res.status(201).json({
+        message: "Club registration successful.",
+        registration,
+      });
+    } catch (error) {
+      console.error("Club registration error:", error);
+      
+      // Handle specific Prisma errors
+      if (error.code === 'P2002') {
+        return res.status(400).json({ error: "You are already registered for the club." });
+      }
+      
+      // Handle other database errors
+      if (error.code?.startsWith('P')) {
+        return res.status(500).json({ error: "Database error. Please try again later." });
+      }
+      
+      // Generic error
+      return res.status(500).json({ error: "Internal server error. Please try again later." });
+    }
   })
 );
 
@@ -1649,19 +1666,24 @@ app.get(
   "/api/club/status",
   authMiddleware,
   asyncHandler(async (req, res) => {
-    const registration = await prisma.clubRegistration.findUnique({
-      where: { userId: req.userId },
-      include: {
-        user: {
-          select: { id: true, name: true, email: true },
+    try {
+      const registration = await prisma.clubRegistration.findUnique({
+        where: { userId: req.userId },
+        include: {
+          user: {
+            select: { id: true, name: true, email: true },
+          },
         },
-      },
-    });
+      });
 
-    return res.json({
-      isRegistered: !!registration,
-      registration: registration || null,
-    });
+      return res.json({
+        isRegistered: !!registration,
+        registration: registration || null,
+      });
+    } catch (error) {
+      console.error("Club status check error:", error);
+      return res.status(500).json({ error: "Failed to check club status. Please try again later." });
+    }
   })
 );
 

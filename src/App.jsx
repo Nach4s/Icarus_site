@@ -1408,7 +1408,14 @@ function TrainingTab() {
             setPhone('')
             setInterest('')
         } catch (err) {
-            setError(err.message || 'Registration failed.')
+            console.error('Club registration error:', err)
+            if (err.response?.data?.error) {
+                setError(err.response.data.error)
+            } else if (err.message) {
+                setError(err.message)
+            } else {
+                setError('Registration failed. Please try again later.')
+            }
         } finally {
             setLoading(false)
         }
