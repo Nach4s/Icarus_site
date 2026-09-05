@@ -658,6 +658,114 @@ function TeamDetailsModal({ team, onClose }) {
     )
 }
 
+// ─── ClubMembersSection ───────────────────────────────────────────────
+
+function ClubMembersSection() {
+    const [registrations, setRegistrations] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState('')
+
+    useEffect(() => {
+        fetchClubMembers()
+    }, [])
+
+    async function fetchClubMembers() {
+        setLoading(true)
+        setError('')
+        try {
+            const data = await api.get('/admin/club')
+            setRegistrations(data.registrations || [])
+        } catch (err) {
+            setError(err.message || 'Failed to load club members.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center gap-3 px-6 py-5 border-b border-neutral-800">
+                <div className="w-9 h-9 rounded-xl bg-yellow-600/15 border border-yellow-600/30
+                                flex items-center justify-center">
+                    <Users size={16} className="text-yellow-500" />
+                </div>
+                <div>
+                    <h2 className="text-sm font-black uppercase tracking-widest text-white leading-tight">
+                        Club Members
+                    </h2>
+                    <p className="text-[10px] text-neutral-500 mt-0.5">
+                        Users registered for the club
+                    </p>
+                </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+                {loading && (
+                    <div className="flex items-center justify-center gap-3 py-12 text-neutral-600">
+                        <Loader2 size={18} className="animate-spin" />
+                        <span className="text-sm">Loading data…</span>
+                    </div>
+                )}
+                {error && (
+                    <div className="flex items-center gap-2 py-8 px-4 rounded-xl bg-red-500/10
+                                    border border-red-500/20 text-red-400 text-sm">
+                        <AlertTriangle size={16} className="shrink-0" />
+                        {error}
+                    </div>
+                )}
+                {!loading && !error && registrations.length === 0 && (
+                    <div className="text-center py-12">
+                        <Users size={32} className="text-neutral-700 mx-auto mb-3" />
+                        <p className="text-sm text-neutral-500">No club registrations yet.</p>
+                    </div>
+                )}
+                {!loading && !error && registrations.length > 0 && (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-neutral-800">
+                                    <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">#</th>
+                                    <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">Name</th>
+                                    <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">Email</th>
+                                    <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">Phone</th>
+                                    <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">Interest</th>
+                                    <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">Registration Date</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-neutral-800/50">
+                                {registrations.map((reg, i) => (
+                                    <tr key={reg.id} className="group hover:bg-neutral-800/60 transition-colors">
+                                        <td className="py-3.5 pr-4 text-neutral-600 font-mono text-xs">
+                                            {String(i + 1).padStart(2, '0')}
+                                        </td>
+                                        <td className="py-3.5 pr-4">
+                                            <span className="font-bold text-white">{reg.user.name}</span>
+                                        </td>
+                                        <td className="py-3.5 pr-4 text-neutral-400 text-xs">
+                                            {reg.user.email}
+                                        </td>
+                                        <td className="py-3.5 pr-4 text-neutral-400 text-xs">
+                                            {reg.phone}
+                                        </td>
+                                        <td className="py-3.5 pr-4 text-neutral-400 text-xs">
+                                            {reg.interest}
+                                        </td>
+                                        <td className="py-3.5 text-neutral-400 text-xs">
+                                            {fmt(reg.createdAt)}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}
+
 // ─── TeamViewer ───────────────────────────────────────────────────────
 
 function TeamViewer({ competition }) {
@@ -945,7 +1053,7 @@ function EditDescriptionPanel({ competition, onUpdated, showToast }) {
 
 export default function AdminPage({ onBack }) {
     const { user } = useAuth()
-    const [adminTab, setAdminTab] = useState('competitions') // 'competitions' | 'posts'
+    const [adminTab, setAdminTab] = useState('competitions') // 'competitions' | 'posts' | 'club'
     
     // ─── Competitions State ──────────────────────────────────────────────
     const [competitions, setCompetitions] = useState([])
@@ -1118,10 +1226,23 @@ export default function AdminPage({ onBack }) {
                             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-yellow-500" />
                         )}
                     </button>
+                    <button
+                        onClick={() => setAdminTab('club')}
+                        className={`pb-4 text-sm font-bold uppercase tracking-widest transition-colors cursor-pointer relative ${
+                            adminTab === 'club' ? 'text-yellow-500' : 'text-neutral-500 hover:text-neutral-300'
+                        }`}
+                    >
+                        Club Members
+                        {adminTab === 'club' && (
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-yellow-500" />
+                        )}
+                    </button>
                 </div>
 
                 {adminTab === 'posts' ? (
                     <AdminPostsManager showToast={showToast} />
+                ) : adminTab === 'club' ? (
+                    <ClubMembersSection />
                 ) : (
                     <>
                         <div className="mb-10">

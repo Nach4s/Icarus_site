@@ -1371,6 +1371,53 @@ function KhanCourseDetail({ course, onBack }) {
 
 function TrainingTab() {
     const { t } = useLang()
+    const { isAuthenticated, user } = useAuth()
+    const [showForm, setShowForm] = useState(false)
+    const [phone, setPhone] = useState('')
+    const [interest, setInterest] = useState('')
+    const [loading, setLoading] = useState(false)
+    const [registrationStatus, setRegistrationStatus] = useState(null)
+    const [error, setError] = useState('')
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchClubStatus()
+        }
+    }, [isAuthenticated])
+
+    async function fetchClubStatus() {
+        try {
+            const data = await api.get('/club/status')
+            setRegistrationStatus(data)
+        } catch (err) {
+            console.error('Failed to fetch club status:', err)
+        }
+    }
+
+    async function handleRegister(e) {
+        e.preventDefault()
+        setError('')
+        if (!phone.trim()) { setError('Phone number is required.'); return }
+        if (!interest.trim()) { setError('Area of interest is required.'); return }
+        setLoading(true)
+        try {
+            const data = await api.post('/club/register', { phone, interest })
+            setRegistrationStatus({ isRegistered: true, registration: data.registration })
+            setShowForm(false)
+            setPhone('')
+            setInterest('')
+        } catch (err) {
+            setError(err.message || 'Registration failed.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const inputClass = `w-full px-5 py-4 rounded-2xl text-base text-white placeholder-neutral-500
+        bg-neutral-950 border border-neutral-700
+        focus:border-yellow-600 focus:ring-1 focus:ring-yellow-600 focus:outline-none
+        transition-all duration-300`
+
     return (
         <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-20 lg:py-32 flex flex-col items-center justify-center text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Glowing Icon Container */}
@@ -1394,9 +1441,121 @@ function TrainingTab() {
             </div>
 
             {/* Subtitle */}
-            <p className="text-base sm:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed mb-14">
+            <p className="text-base sm:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed mb-8">
                 {t('training.description')}
             </p>
+
+            {/* Club Registration Section */}
+            {isAuthenticated && (
+                <div className="w-full max-w-md mt-8">
+                    {!registrationStatus?.isRegistered && !showForm && (
+                        <button
+                            onClick={() => setShowForm(true)}
+                            className="w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
+                                       bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
+                                       shadow-lg shadow-yellow-600/20
+                                       transition-all duration-300 ease-out
+                                       hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
+                                       active:scale-100"
+                        >
+                            {t('club.join')}
+                        </button>
+                    )}
+
+                    {showForm && (
+                        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6">
+                            <h3 className="text-lg font-bold text-white uppercase tracking-widest mb-4">
+                                {t('club.joinTitle')}
+                            </h3>
+                            {error && (
+                                <div className="mb-4 px-4 py-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold tracking-wide">
+                                    {error}
+                                </div>
+                            )}
+                            <form onSubmit={handleRegister} className="space-y-4">
+                                <div>
+                                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">
+                                        {t('club.phone')}
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        placeholder="+7 777 123 4567"
+                                        value={phone}
+                                        onChange={e => setPhone(e.target.value)}
+                                        className={inputClass}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">
+                                        {t('club.interest')}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder={t('club.interestPlaceholder')}
+                                        value={interest}
+                                        onChange={e => setInterest(e.target.value)}
+                                        className={inputClass}
+                                        required
+                                    />
+                                </div>
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setShowForm(false); setError(''); }}
+                                        className="flex-1 py-3 rounded-xl text-sm font-bold uppercase tracking-widest
+                                                   bg-neutral-800 text-white hover:bg-neutral-700 transition-colors cursor-pointer"
+                                    >
+                                        {t('generic.cancel')}
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="flex-1 py-3 rounded-xl text-sm font-bold uppercase tracking-widest
+                                                   bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
+                                                   shadow-lg shadow-yellow-600/20
+                                                   transition-all duration-300 ease-out
+                                                   hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
+                                                   active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 cursor-pointer"
+                                    >
+                                        {loading ? t('club.submitting') : t('club.submit')}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+
+                    {registrationStatus?.isRegistered && (
+                        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-6">
+                            <div className="flex items-center justify-center gap-3 mb-4">
+                                <CheckCircle2 size={24} className="text-emerald-400" />
+                                <h3 className="text-lg font-bold text-emerald-400 uppercase tracking-widest">
+                                    {t('club.registered')}
+                                </h3>
+                            </div>
+                            <p className="text-sm text-neutral-300 mb-4">
+                                {t('club.successMessage')}
+                            </p>
+                            <a
+                                href="https://chat.whatsapp.com/placeholder"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold uppercase tracking-widest
+                                          bg-green-600 text-white hover:bg-green-700 transition-colors cursor-pointer"
+                            >
+                                <MessageCircle size={16} />
+                                {t('club.whatsappLink')}
+                            </a>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {!isAuthenticated && (
+                <div className="mt-8 text-sm text-neutral-500">
+                    {t('club.signInToJoin')}
+                </div>
+            )}
         </div>
     )
 }

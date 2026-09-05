@@ -1340,7 +1340,75 @@ const translations = {
     ru: 'Соревнуйтесь с командами со всего мира, зарабатывайте XP и поднимайтесь в таблице лидеров. Раздел будет доступен совсем скоро.',
     en: 'Compete with teams globally, earn XP, and climb the leaderboard. Will be available very soon.',
     ro: 'Concurați cu echipe la nivel global, câștigați XP și urcați în clasament. Va fi disponibil foarte curând.',
-  }
+  },
+
+  // ── Club Registration ─────────────────────────────────────────────────────
+  'club.join': {
+    kk: 'КЛУБҚА ҚОСЫЛУ',
+    ru: 'ПРИСОЕДИНИТЬСЯ К КЛУБУ',
+    en: 'JOIN THE CLUB',
+    ro: 'ALĂTURAȚI-VĂ CLUBULUI',
+  },
+  'club.joinTitle': {
+    kk: 'Клубқа тіркелу',
+    ru: 'Регистрация в клубе',
+    en: 'Club Registration',
+    ro: 'Înregistrare în club',
+  },
+  'club.phone': {
+    kk: 'Телефон нөмірі',
+    ru: 'Номер телефона',
+    en: 'Phone Number',
+    ro: 'Număr de telefon',
+  },
+  'club.interest': {
+    kk: 'Қызығушылық аймағы',
+    ru: 'Область интересов',
+    en: 'Area of Interest',
+    ro: 'Domeniul de interes',
+  },
+  'club.interestPlaceholder': {
+    kk: 'Аэродинамика, орбитальды механика және т.б.',
+    ru: 'Аэродинамика, орбитальная механика и т.д.',
+    en: 'Aerodynamics, orbital mechanics, etc.',
+    ro: 'Aerodinamică, mecanică orbitală, etc.',
+  },
+  'club.submit': {
+    kk: 'Тіркелу',
+    ru: 'Зарегистрироваться',
+    en: 'Register',
+    ro: 'Înregistrați',
+  },
+  'club.submitting': {
+    kk: 'Тіркелуде...',
+    ru: 'Регистрация...',
+    en: 'Registering...',
+    ro: 'Se înregistrează...',
+  },
+  'club.registered': {
+    kk: 'Тіркелді!',
+    ru: 'Зарегистрировано!',
+    en: 'Registered!',
+    ro: 'Înregistrat!',
+  },
+  'club.successMessage': {
+    kk: 'Сіз клубқа сәтті тіркелдіңіз. WhatsApp тобына қосылыңыз!',
+    ru: 'Вы успешно зарегистрировались в клубе. Присоединяйтесь к группе WhatsApp!',
+    en: 'You have successfully registered for the club. Join the WhatsApp group!',
+    ro: 'V-ați înregistrat cu succes în club. Alăturați-vă grupului WhatsApp!',
+  },
+  'club.whatsappLink': {
+    kk: 'WhatsApp тобына қосылу',
+    ru: 'Присоединиться к группе WhatsApp',
+    en: 'Join WhatsApp Group',
+    ro: 'Alăturați-vă grupului WhatsApp',
+  },
+  'club.signInToJoin': {
+    kk: 'Клубқа қосылу үшін жүйеге кіріңіз',
+    ru: 'Войдите в систему, чтобы присоединиться к клубу',
+    en: 'Sign in to join the club',
+    ro: 'Conectați-vă pentru a vă alătura clubului',
+  },
 }
 
 export default translations

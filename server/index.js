@@ -1589,6 +1589,106 @@ app.get(
 );
 
 // ═══════════════════════════════════════════════════════════════════════
+//  CLUB REGISTRATION ROUTES
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * POST /api/club/register
+ * ───────────────────────
+ * Register the authenticated user for the club.
+ *
+ * Body: { phone: string, interest: string }
+ * Returns: the created club registration.
+ */
+app.post(
+  "/api/club/register",
+  authMiddleware,
+  validate({
+    phone:    { required: true, type: 'string', maxLength: 20 },
+    interest: { required: true, type: 'string', maxLength: 200 },
+  }),
+  asyncHandler(async (req, res) => {
+    const { phone, interest } = req.body;
+
+    // Check if user already has a club registration
+    const existing = await prisma.clubRegistration.findUnique({
+      where: { userId: req.userId },
+    });
+
+    if (existing) {
+      return res.status(400).json({ error: "You are already registered for the club." });
+    }
+
+    // Create club registration
+    const registration = await prisma.clubRegistration.create({
+      data: {
+        phone,
+        interest,
+        userId: req.userId,
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+
+    return res.status(201).json({
+      message: "Club registration successful.",
+      registration,
+    });
+  })
+);
+
+/**
+ * GET /api/club/status
+ * ─────────────────────
+ * Returns whether the authenticated user is already registered for the club.
+ */
+app.get(
+  "/api/club/status",
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const registration = await prisma.clubRegistration.findUnique({
+      where: { userId: req.userId },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+
+    return res.json({
+      isRegistered: !!registration,
+      registration: registration || null,
+    });
+  })
+);
+
+/**
+ * GET /api/admin/club
+ * ───────────────────
+ * Admin-only endpoint that returns a list of all club registrations.
+ */
+app.get(
+  "/api/admin/club",
+  authMiddleware,
+  adminMiddleware,
+  asyncHandler(async (req, res) => {
+    const registrations = await prisma.clubRegistration.findMany({
+      include: {
+        user: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return res.json({ registrations });
+  })
+);
+
+// ═══════════════════════════════════════════════════════════════════════
 //  HEALTH CHECK
 // ═══════════════════════════════════════════════════════════════════════
 

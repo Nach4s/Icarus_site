@@ -46,6 +46,9 @@ model User {
   // ── Captain relation (reverse — a user can captain at most one team)
   captainedTeam Team?     @relation("TeamCaptain")
 
+  // ── Club Registration ─────────────────────────────────────────────
+  clubRegistration ClubRegistration?
+
   // ── Learning progress ─────────────────────────────────────────────
   progress      UserProgress[]
 
@@ -237,3 +240,18 @@ model Post {
   @@index([authorId])
   @@index([isVisible, createdAt])
 }
+
+// ─── ClubRegistration ────────────────────────────────────────────────
+
+/// User registration for the special Club feature in Training Modules
+model ClubRegistration {
+  id        String   @id @default(uuid())
+  phone     String
+  interest  String
+  
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+}
+
