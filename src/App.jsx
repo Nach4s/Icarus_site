@@ -52,7 +52,9 @@ import {
     MessageCircle,
     Newspaper,
     Maximize,
-    Phone
+    Phone,
+    Flask,
+    Dna
 } from 'lucide-react'
 import ContactUs from './ContactUs.jsx'
 
@@ -1380,6 +1382,14 @@ function TrainingTab() {
     const [registrationStatus, setRegistrationStatus] = useState(null)
     const [error, setError] = useState('')
 
+    const interestOptions = [
+        { id: 'chemistry', label: 'Chemistry & Materials Science', icon: Flask },
+        { id: 'biotechnology', label: 'Biotechnology & Genetics', icon: Dna },
+        { id: 'aerospace', label: 'Aerospace Engineering', icon: Rocket },
+        { id: 'physics', label: 'Applied Physics', icon: Atom },
+        { id: 'computer-science', label: 'Computer Science', icon: Terminal },
+    ]
+
     useEffect(() => {
         if (isAuthenticated) {
             fetchClubStatus()
@@ -1513,18 +1523,33 @@ function TrainingTab() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2 flex items-center gap-2">
+                                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-3 flex items-center gap-2">
                                         <Target size={12} className="text-yellow-600" />
                                         {t('club.interest')}
                                     </label>
-                                    <input
-                                        type="text"
-                                        placeholder={t('club.interestPlaceholder')}
-                                        value={interest}
-                                        onChange={e => setInterest(e.target.value)}
-                                        className={inputClass}
-                                        required
-                                    />
+                                    <div className="grid grid-cols-1 gap-3">
+                                        {interestOptions.map((option) => {
+                                            const Icon = option.icon
+                                            const isSelected = interest === option.id
+                                            return (
+                                                <button
+                                                    key={option.id}
+                                                    type="button"
+                                                    onClick={() => setInterest(option.id)}
+                                                    className={`flex items-center gap-3 p-4 rounded-xl border transition-all duration-200 cursor-pointer
+                                                        ${isSelected
+                                                            ? 'bg-yellow-600/20 border-yellow-600/50 text-yellow-500'
+                                                            : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:bg-neutral-850'}`}
+                                                >
+                                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isSelected ? 'bg-yellow-600/30' : 'bg-neutral-800'}`}>
+                                                        <Icon size={20} className={isSelected ? 'text-yellow-500' : 'text-neutral-500'} />
+                                                    </div>
+                                                    <span className="font-medium text-sm">{option.label}</span>
+                                                    {isSelected && <CheckCircle2 size={18} className="ml-auto text-yellow-500" />}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
                                 </div>
                                 <div className="flex gap-3 pt-2">
                                     <button
@@ -1537,7 +1562,7 @@ function TrainingTab() {
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={loading}
+                                        disabled={loading || !interest}
                                         className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest
                                                    bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
                                                    shadow-lg shadow-yellow-600/20

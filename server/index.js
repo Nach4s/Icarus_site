@@ -1605,7 +1605,7 @@ app.post(
   authMiddleware,
   validate({
     phone:    { required: true, type: 'string', maxLength: 20 },
-    interest: { required: true, type: 'string', maxLength: 200 },
+    interest: { required: true, type: 'string', maxLength: 50 },
   }),
   asyncHandler(async (req, res) => {
     const { phone, interest } = req.body;
@@ -1620,11 +1620,22 @@ app.post(
         return res.status(400).json({ error: "You are already registered for the club." });
       }
 
+      // Map interest ID to display name
+      const interestMap = {
+        'chemistry': 'Chemistry & Materials Science',
+        'biotechnology': 'Biotechnology & Genetics',
+        'aerospace': 'Aerospace Engineering',
+        'physics': 'Applied Physics',
+        'computer-science': 'Computer Science',
+      };
+
+      const interestDisplay = interestMap[interest] || interest;
+
       // Create club registration
       const registration = await prisma.clubRegistration.create({
         data: {
           phone,
-          interest,
+          interest: interestDisplay,
           userId: req.userId,
         },
         include: {

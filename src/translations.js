@@ -1373,6 +1373,12 @@ const translations = {
     en: 'Aerodynamics, orbital mechanics, etc.',
     ro: 'Aerodinamică, mecanică orbitală, etc.',
   },
+  'club.selectInterest': {
+    kk: 'Қызығушылық аймағын таңдаңыз',
+    ru: 'Выберите область интересов',
+    en: 'Select your area of interest',
+    ro: 'Selectați domeniul de interes',
+  },
   'club.submit': {
     kk: 'Тіркелу',
     ru: 'Зарегистрироваться',
