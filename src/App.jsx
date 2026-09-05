@@ -53,8 +53,8 @@ import {
     Newspaper,
     Maximize,
     Phone,
-    Flask,
-    Dna
+    Beaker,
+    Microscope
 } from 'lucide-react'
 import ContactUs from './ContactUs.jsx'
 
@@ -1383,8 +1383,8 @@ function TrainingTab() {
     const [error, setError] = useState('')
 
     const interestOptions = [
-        { id: 'chemistry', label: 'Chemistry & Materials Science', icon: Flask },
-        { id: 'biotechnology', label: 'Biotechnology & Genetics', icon: Dna },
+        { id: 'chemistry', label: 'Chemistry & Materials Science', icon: Beaker },
+        { id: 'biotechnology', label: 'Biotechnology & Genetics', icon: Microscope },
         { id: 'aerospace', label: 'Aerospace Engineering', icon: Rocket },
         { id: 'physics', label: 'Applied Physics', icon: Atom },
         { id: 'computer-science', label: 'Computer Science', icon: Terminal },
