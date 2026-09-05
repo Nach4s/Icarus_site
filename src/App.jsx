@@ -1529,6 +1529,7 @@ function PodiumBar({ entry, theme }) {
 }
 
 function TeamDetailsModal({ teamId, onClose }) {
+    const { t } = useLang()
     const [team, setTeam] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
@@ -1672,6 +1673,7 @@ function RankingTab({ onJoinClick, isRegistered }) {
 
 function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
     const { user } = useAuth()
+    const { t } = useLang()
     const [phase, setPhase] = useState('loading') // 'loading' | 'no_competition' | 'no_team' | 'not_captain' | 'ready' | 'success' | 'error'
     const [competition, setCompetition] = useState(null)
     const [registering, setRegistering] = useState(false)

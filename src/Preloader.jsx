@@ -18,7 +18,7 @@ export default function Preloader({ isVisible = false }) {
                     />
                 </div>
                 <p className="text-[12px] sm:text-sm font-black uppercase tracking-[0.6em] text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600 mb-3 animate-pulse">
-                    {t('generic.loadingIcarus')}
+                    LOADING ICARUS
                 </p>
                 {/* Subtle loading bar */}
                 <div className="w-48 h-[2px] bg-neutral-800/80 rounded-full overflow-hidden mt-4 relative">
