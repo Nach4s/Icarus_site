@@ -2279,12 +2279,12 @@ function TeamDashboardPage({ onBack }) {
 
     return (
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <PageHeader title="Team Dashboard" onBack={onBack} />
+            <PageHeader title={t('team.dashboardTitle')} onBack={onBack} />
             
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-20">
                     <Loader2 size={32} className="text-yellow-600 animate-spin mb-4" />
-                    <p className="text-neutral-500 font-mono tracking-widest uppercase text-xs">Loading team data...</p>
+                    <p className="text-neutral-500 font-mono tracking-widest uppercase text-xs">{t('team.loading')}</p>
                 </div>
             ) : error || !team ? (
                 <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-8 md:p-12 max-w-2xl mx-auto backdrop-blur-sm text-center">
@@ -2292,9 +2292,9 @@ function TeamDashboardPage({ onBack }) {
                         <Users size={32} className="text-neutral-500" />
                     </div>
                     
-                    <h2 className="text-2xl font-black uppercase tracking-widest text-white mb-2">JOIN A TEAM FIRST</h2>
+                    <h2 className="text-2xl font-black uppercase tracking-widest text-white mb-2">{t('team.joinFirst')}</h2>
                     <p className="text-sm text-neutral-400 mb-8 max-w-md mx-auto leading-relaxed">
-                        You need to be part of a team before you can enter a competition. Create a new team or join an existing one.
+                        {t('team.joinFirstDesc')}
                     </p>
 
                     {actionPhase === 'choice' && (
@@ -2305,7 +2305,7 @@ function TeamDashboardPage({ onBack }) {
                                            bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
                                            shadow-lg shadow-yellow-600/20 hover:scale-[1.02] transition-transform"
                             >
-                                Create New Team
+                                {t('team.createNew')}
                             </button>
                             <button
                                 onClick={() => { setActionPhase('join'); setActionError(''); }}
@@ -2313,18 +2313,18 @@ function TeamDashboardPage({ onBack }) {
                                            bg-neutral-800 border border-neutral-700 text-white
                                            hover:bg-neutral-700 transition-colors"
                             >
-                                Join With Code
+                                {t('team.joinWithCode')}
                             </button>
                         </div>
                     )}
 
                     {actionPhase === 'create' && (
                         <form onSubmit={handleCreateTeam} className="text-left max-w-sm mx-auto animate-in fade-in zoom-in-95 duration-300">
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Team Name</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">{t('team.nameLabel')}</label>
                             <input
                                 autoFocus
                                 type="text"
-                                placeholder="Enter Team Name"
+                                placeholder={t('team.namePlaceholder')}
                                 value={teamName}
                                 onChange={e => setTeamName(e.target.value)}
                                 className={inputClass}
@@ -2332,9 +2332,9 @@ function TeamDashboardPage({ onBack }) {
                             />
                             {actionError && <p className="text-red-400 text-xs mt-2 font-semibold">{actionError}</p>}
                             <div className="flex gap-3 mt-4">
-                                <button type="button" onClick={() => setActionPhase('choice')} className="px-4 py-3 rounded-xl border border-neutral-800 text-neutral-400 text-xs font-bold uppercase hover:bg-neutral-800 transition">Back</button>
+                                <button type="button" onClick={() => setActionPhase('choice')} className="px-4 py-3 rounded-xl border border-neutral-800 text-neutral-400 text-xs font-bold uppercase hover:bg-neutral-800 transition">{t('team.back')}</button>
                                 <button type="submit" disabled={actionLoading} className="flex-1 py-3 rounded-xl bg-yellow-600 text-black text-xs font-bold uppercase tracking-wider hover:bg-yellow-500 transition disabled:opacity-50">
-                                    {actionLoading ? 'Creating...' : 'Create Team'}
+                                    {actionLoading ? t('team.creating') : t('team.createBtn')}
                                 </button>
                             </div>
                         </form>
@@ -2342,11 +2342,11 @@ function TeamDashboardPage({ onBack }) {
 
                     {actionPhase === 'join' && (
                         <form onSubmit={handleJoinTeam} className="text-left max-w-sm mx-auto animate-in fade-in zoom-in-95 duration-300">
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Invite Code</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">{t('team.inviteCode')}</label>
                             <input
                                 autoFocus
                                 type="text"
-                                placeholder="6-digit code"
+                                placeholder={t('team.codePlaceholder')}
                                 maxLength={6}
                                 value={inviteCode}
                                 onChange={e => setInviteCode(e.target.value.toUpperCase())}
@@ -2355,9 +2355,9 @@ function TeamDashboardPage({ onBack }) {
                             />
                             {actionError && <p className="text-red-400 text-xs mt-2 font-semibold">{actionError}</p>}
                             <div className="flex gap-3 mt-4">
-                                <button type="button" onClick={() => setActionPhase('choice')} className="px-4 py-3 rounded-xl border border-neutral-800 text-neutral-400 text-xs font-bold uppercase hover:bg-neutral-800 transition">Back</button>
+                                <button type="button" onClick={() => setActionPhase('choice')} className="px-4 py-3 rounded-xl border border-neutral-800 text-neutral-400 text-xs font-bold uppercase hover:bg-neutral-800 transition">{t('team.back')}</button>
                                 <button type="submit" disabled={actionLoading} className="flex-1 py-3 rounded-xl bg-yellow-600 text-black text-xs font-bold uppercase tracking-wider hover:bg-yellow-500 transition disabled:opacity-50">
-                                    {actionLoading ? 'Joining...' : 'Join Team'}
+                                    {actionLoading ? t('team.joining') : t('team.joinBtn')}
                                 </button>
                             </div>
                         </form>
@@ -2372,26 +2372,26 @@ function TeamDashboardPage({ onBack }) {
                                     {team.name}
                                 </h2>
                                 <p className="text-neutral-500 text-sm tracking-wide mb-1">
-                                    Team Status: <span className="text-emerald-400 font-semibold">ACTIVE</span>
+                                    {t('team.statusLabel')}<span className="text-emerald-400 font-semibold">{t('team.active')}</span>
                                 </p>
                                 <p className="text-neutral-500 text-sm tracking-wide mb-4">
-                                    Captain: <span className="text-yellow-600 font-semibold">{team.members.find(m => m.id === team.captainId)?.name || '—'}</span>
+                                    {t('team.captain')}<span className="text-yellow-600 font-semibold">{team.members.find(m => m.id === team.captainId)?.name || '—'}</span>
                                 </p>
                                 
                                 {team.isRegisteredForCompetition ? (
                                     <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-emerald-500/50 bg-emerald-500/10 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.15)] mt-1 mb-2">
                                         <CheckCircle2 size={16} className="text-emerald-400" />
-                                        <span className="text-[11px] font-black uppercase tracking-widest text-emerald-400">Registered For Competition</span>
+                                        <span className="text-[11px] font-black uppercase tracking-widest text-emerald-400">{t('team.regForComp')}</span>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-start gap-1.5 mt-1 mb-2">
                                         <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-yellow-500/50 bg-yellow-500/10 rounded-lg shadow-[0_0_15px_rgba(234,179,8,0.05)]">
                                             <AlertTriangle size={15} className="text-yellow-400" />
-                                            <span className="text-[11px] font-black uppercase tracking-widest text-yellow-400">Pending Registration</span>
+                                            <span className="text-[11px] font-black uppercase tracking-widest text-yellow-400">{t('team.pendingReg')}</span>
                                         </div>
                                         {user?.id === team.captainId && (
                                             <p className="text-[10px] text-yellow-600/80 font-bold uppercase tracking-wider mt-0.5">
-                                                * Don't forget to register via the Join Competition button!
+                                                {t('team.dontForgetReg')}
                                             </p>
                                         )}
                                     </div>
@@ -2402,18 +2402,18 @@ function TeamDashboardPage({ onBack }) {
                             </div>
                         </div>
                         <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 md:p-8 flex flex-col justify-center">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Invite Code</p>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">{t('team.inviteCode')}</p>
                             <div className="text-3xl font-mono text-yellow-600 tracking-[0.3em] font-bold">
                                 {team.inviteCode}
                             </div>
-                            <p className="text-xs text-neutral-500 mt-3">Share this code with your team members.</p>
+                            <p className="text-xs text-neutral-500 mt-3">{t('team.shareCode')}</p>
                         </div>
                     </div>
                     
                     <div className="bg-neutral-900/40 border border-neutral-800 rounded-2xl overflow-hidden">
                         <div className="px-6 py-5 border-b border-neutral-800 bg-neutral-900/80 flex items-center justify-between">
-                            <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-white">Team Members</h3>
-                            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{team.members.length} members</span>
+                            <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-white">{t('team.membersTitle')}</h3>
+                            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{team.members.length}{t('team.membersCount')}</span>
                         </div>
 
                         {/* ── Desktop layout (md+) ── */}
@@ -2442,19 +2442,19 @@ function TeamDashboardPage({ onBack }) {
                                                 </span>
                                             )}
                                             {member.id === user?.id && (
-                                                <span className="px-2.5 py-1 rounded-lg bg-neutral-800 border border-neutral-700 text-neutral-400 text-[10px] font-bold uppercase shrink-0">You</span>
+                                                <span className="px-2.5 py-1 rounded-lg bg-neutral-800 border border-neutral-700 text-neutral-400 text-[10px] font-bold uppercase shrink-0">{t('team.you')}</span>
                                             )}
                                         </div>
                                         <p className="text-sm text-neutral-500">{member.email}</p>
                                     </div>
                                     {/* Streak */}
                                     <div className="text-center px-6 border-l border-neutral-800">
-                                        <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest mb-1">Streak</p>
+                                        <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest mb-1">{t('team.streak')}</p>
                                         <p className="font-mono text-yellow-600 font-black text-xl">{member.currentStreak ?? 0}<span className="text-sm">d</span></p>
                                     </div>
                                     {/* XP */}
                                     <div className="text-center px-6 border-l border-neutral-800">
-                                        <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest mb-1">XP</p>
+                                        <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest mb-1">{t('team.xp')}</p>
                                         <p className="font-mono text-white font-black text-xl">{(member.xp || 0).toLocaleString()}</p>
                                     </div>
                                 </div>
@@ -2488,14 +2488,14 @@ function TeamDashboardPage({ onBack }) {
                                                     </span>
                                                 )}
                                                 {member.id === user?.id && (
-                                                    <span className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-neutral-400 text-[9px] font-bold uppercase">You</span>
+                                                    <span className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-neutral-400 text-[9px] font-bold uppercase">{t('team.you')}</span>
                                                 )}
                                             </div>
                                             <p className="text-[11px] text-neutral-500 mt-0.5 truncate">{member.email}</p>
                                         </div>
                                         {/* XP — right side */}
                                         <div className="text-right shrink-0 ml-2">
-                                            <p className="text-[9px] font-bold text-neutral-600 uppercase tracking-widest mb-0.5">XP</p>
+                                            <p className="text-[9px] font-bold text-neutral-600 uppercase tracking-widest mb-0.5">{t('team.xp')}</p>
                                             <p className="font-mono text-white font-black text-base">{(member.xp || 0).toLocaleString()}</p>
                                         </div>
                                     </div>
@@ -2512,7 +2512,7 @@ function TeamDashboardPage({ onBack }) {
                                        bg-red-500/10 border border-red-500/30 text-red-400
                                        hover:bg-red-500/20 hover:border-red-500/50 transition-all cursor-pointer"
                         >
-                            Leave Team
+                            {t('team.leaveBtn')}
                         </button>
                     </div>
                 </>
@@ -2529,11 +2529,11 @@ function TeamDashboardPage({ onBack }) {
                         <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 flex items-center justify-center mx-auto mb-5">
                             <LogOut size={24} />
                         </div>
-                        <h3 className="text-lg font-bold text-white mb-2">Leave Team?</h3>
+                        <h3 className="text-lg font-bold text-white mb-2">{t('team.leaveConfirm')}</h3>
                         <p className="text-sm text-neutral-400 mb-6">
-                            Are you sure you want to leave <span className="text-white font-semibold">{team?.name}</span>?
+                            {t('team.leaveSure')}<span className="text-white font-semibold">{team?.name}</span>?
                             {user?.id === team?.captainId && (
-                                <span className="block mt-2 text-yellow-600">You are the captain. Leadership will transfer to the next highest-XP member.</span>
+                                <span className="block mt-2 text-yellow-600">{t('team.leaveCaptain')}</span>
                             )}
                         </p>
                         <div className="flex gap-3">
@@ -2543,7 +2543,7 @@ function TeamDashboardPage({ onBack }) {
                                            bg-neutral-800 border border-neutral-700 text-white
                                            hover:bg-neutral-700 transition cursor-pointer"
                             >
-                                Cancel
+                                {t('team.cancel')}
                             </button>
                             <button
                                 onClick={async () => {
@@ -2553,7 +2553,7 @@ function TeamDashboardPage({ onBack }) {
                                         if (data.user) updateUser(data.user)
                                         onBack()
                                     } catch (err) {
-                                        setError(err.message || 'Failed to leave team.')
+                                        setError(err.message || t('team.leaveFailed'))
                                         setShowLeaveConfirm(false)
                                     } finally {
                                         setLeaving(false)
@@ -2565,7 +2565,7 @@ function TeamDashboardPage({ onBack }) {
                                            hover:bg-red-500/30 transition cursor-pointer
                                            disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {leaving ? 'Leaving...' : 'Leave'}
+                                {leaving ? t('team.leaving') : t('team.leaveSubmit')}
                             </button>
                         </div>
                     </div>
