@@ -2580,6 +2580,19 @@ function SettingsPage({ onBack }) {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [deleting, setDeleting] = useState(false)
 
+    // Language preference (stored locally in browser)
+    const LANGUAGES = [
+        { code: 'kk', label: 'Қазақша', flag: '🇰🇿' },
+        { code: 'ru', label: 'Русский', flag: '🇷🇺' },
+        { code: 'en', label: 'English', flag: '🇬🇧' },
+        { code: 'ro', label: 'Română', flag: '🇷🇴' },
+    ]
+    const [language, setLanguage] = useState(() => localStorage.getItem('icarus_lang') || 'ru')
+    const handleLanguageChange = (code) => {
+        setLanguage(code)
+        localStorage.setItem('icarus_lang', code)
+    }
+
     useEffect(() => {
         const handlePaste = (e) => {
             const items = e.clipboardData?.items;
@@ -2787,6 +2800,36 @@ function SettingsPage({ onBack }) {
                 </button>
 
             </form>
+
+            {/* ── Language Section ─────────────────────────────── */}
+            <div className="mt-4 bg-neutral-900/60 border border-neutral-800 rounded-2xl overflow-hidden">
+                <div className="px-5 py-4 border-b border-neutral-800/80 bg-neutral-900/80">
+                    <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">Interface Language</h2>
+                </div>
+                <div className="p-5 md:p-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {LANGUAGES.map(lang => (
+                            <button
+                                key={lang.code}
+                                type="button"
+                                onClick={() => handleLanguageChange(lang.code)}
+                                className={`flex flex-col items-center gap-2 py-4 px-3 rounded-xl border text-center transition-all duration-200 cursor-pointer ${
+                                    language === lang.code
+                                        ? 'bg-yellow-600/10 border-yellow-600/50 text-yellow-500 shadow-[0_0_16px_rgba(202,138,4,0.1)]'
+                                        : 'bg-neutral-950/40 border-neutral-800 text-neutral-500 hover:border-neutral-700 hover:text-neutral-300'
+                                }`}
+                            >
+                                <span className="text-2xl">{lang.flag}</span>
+                                <span className="text-xs font-bold uppercase tracking-wider">{lang.label}</span>
+                                {language === lang.code && (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                    <p className="mt-3 text-[10px] text-neutral-600 uppercase tracking-wider">Language preference is saved in your browser</p>
+                </div>
+            </div>
 
             {/* ── Danger Zone ──────────────────────────────────── */}
             <div className="mt-6 bg-red-950/20 border border-red-500/15 rounded-2xl p-5 md:p-6 flex items-center justify-between gap-4">
