@@ -48,10 +48,10 @@ const translations = {
     ro: 'Înregistrat',
   },
   'header.joinCompetition': {
-    kk: 'Жарысқа қосылу',
-    ru: 'Вступить в олимпиаду',
-    en: 'Join Competition',
-    ro: 'Alătură-te Competiției',
+    kk: 'Қосылу',
+    ru: 'Вступить',
+    en: 'Join',
+    ro: 'Alătură-te',
   },
   'header.motto': {
     kk: 'болу — жаңалық жасау',
@@ -234,10 +234,10 @@ const translations = {
 
   // ── Team ──────────────────────────────────────────────────────────────────
   'team.joinCompetition': {
-    kk: 'ЖАРЫСҚА ҚОСЫЛУ',
-    ru: 'ВСТУПИТЬ В ОЛИМПИАДУ',
-    en: 'JOIN COMPETITION',
-    ro: 'ALĂTURĂ-TE COMPETIȚIEI',
+    kk: 'ҚОСЫЛУ',
+    ru: 'ВСТУПИТЬ',
+    en: 'JOIN',
+    ro: 'ALĂTURĂ-TE',
   },
   'team.assignmentComplete': {
     kk: 'ТАПСЫРМА ОРЫНДАЛДЫ',
@@ -520,10 +520,10 @@ const translations = {
 
   // ── Auth Modal – Team phase aliases ─────────────────────────────────────
   'auth.joinCompetition': {
-    kk: 'ЖАРЫСҚА ҚОСЫЛУ',
-    ru: 'ВСТУПИТЬ В ОЛИМПИАДУ',
-    en: 'JOIN COMPETITION',
-    ro: 'ALĂTURĂ-TE COMPETIȚIEI',
+    kk: 'ҚОСЫЛУ',
+    ru: 'ВСТУПИТЬ',
+    en: 'JOIN',
+    ro: 'ALĂTURĂ-TE',
   },
   'auth.assignmentComplete': {
     kk: 'ТАПСЫРМА ОРЫНДАЛДЫ',
@@ -1309,6 +1309,38 @@ const translations = {
     en: 'Reach us quickly through our Telegram channel',
     ro: 'Contactați-ne rapid prin canalul nostru de Telegram',
   },
+
+  // ── Training & Ranking Placeholders ──────────────────────────────────────────
+  'training.modules': {
+    kk: 'ОҚУ МОДУЛЬДЕРІ',
+    ru: 'ОБУЧАЮЩИЕ МОДУЛИ',
+    en: 'TRAINING MODULES',
+    ro: 'MODULE DE INSTRUIRE',
+  },
+  'training.comingSoon': {
+    kk: 'Жақында',
+    ru: 'Скоро',
+    en: 'Coming Soon',
+    ro: 'În Curând',
+  },
+  'training.description': {
+    kk: 'Интерактивті модульдер арқылы аэроғарыш инженериясының негіздерін меңгеріңіз. Платформаның бұл бөлімі әзірленуде.',
+    ru: 'Освойте концепции аэрокосмической инженерии с помощью интерактивных модулей. Этот раздел платформы находится в разработке.',
+    en: 'Master aerospace engineering concepts with interactive modules. This section of the platform is currently under development.',
+    ro: 'Stăpâniți conceptele ingineriei aerospațiale cu module interactive. Această secțiune a platformei este în curs de dezvoltare.',
+  },
+  'ranking.system': {
+    kk: 'ГЛОБАЛДЫҚ РЕЙТИНГ',
+    ru: 'ГЛОБАЛЬНЫЙ РЕЙТИНГ',
+    en: 'GLOBAL RANKING',
+    ro: 'CLASAMENT GLOBAL',
+  },
+  'ranking.description': {
+    kk: 'Әлемнің түкпір-түкпірінен келген командалармен бақ сынасып, XP жинап, көшбасшылар тақтасында жоғарылаңыз. Көп ұзамай қолжетімді болады.',
+    ru: 'Соревнуйтесь с командами со всего мира, зарабатывайте XP и поднимайтесь в таблице лидеров. Раздел будет доступен совсем скоро.',
+    en: 'Compete with teams globally, earn XP, and climb the leaderboard. Will be available very soon.',
+    ro: 'Concurați cu echipe la nivel global, câștigați XP și urcați în clasament. Va fi disponibil foarte curând.',
+  }
 }
 
 export default translations

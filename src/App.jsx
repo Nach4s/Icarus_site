@@ -1383,7 +1383,7 @@ function TrainingTab() {
             </div>
 
             {/* Title */}
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-white uppercase tracking-widest mb-6 drop-shadow-lg flex flex-col sm:flex-row items-center justify-center gap-3">
+            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black text-white uppercase tracking-widest mb-6 drop-shadow-lg flex flex-col sm:flex-row items-center justify-center gap-3 break-words w-full">
                 {t('training.modules')}
             </h1>
 
@@ -1653,7 +1653,7 @@ function RankingTab({ onJoinClick, isRegistered }) {
             </div>
 
             {/* Title */}
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-white uppercase tracking-widest mb-6 drop-shadow-lg flex flex-col sm:flex-row items-center justify-center gap-3">
+            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black text-white uppercase tracking-widest mb-6 drop-shadow-lg flex flex-col sm:flex-row items-center justify-center gap-3 break-words w-full">
                 {t('ranking.system')}
             </h1>
 
