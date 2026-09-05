@@ -1409,6 +1409,24 @@ const translations = {
     en: 'Sign in to join the club',
     ro: 'Conectați-vă pentru a vă alătura clubului',
   },
+  'club.welcome': {
+    kk: 'Клубқа қош келдіңіз!',
+    ru: 'Добро пожаловать в клуб!',
+    en: 'Welcome to the club!',
+    ro: 'Bine ați venit în club!',
+  },
+  'club.community': {
+    kk: 'ICARUS қауымдастығы',
+    ru: 'Сообщество ICARUS',
+    en: 'ICARUS Community',
+    ro: 'Comunitatea ICARUS',
+  },
+  'club.joinCommunity': {
+    kk: 'Қауымдастыққа қосылыңыз',
+    ru: 'Присоединяйтесь к сообществу',
+    en: 'Join the community',
+    ro: 'Alăturați-vă comunității',
+  },
 }
 
 export default translations

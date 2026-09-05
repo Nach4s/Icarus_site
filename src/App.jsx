@@ -51,7 +51,8 @@ import {
     Minimize,
     MessageCircle,
     Newspaper,
-    Maximize
+    Maximize,
+    Phone
 } from 'lucide-react'
 import ContactUs from './ContactUs.jsx'
 
@@ -1447,34 +1448,52 @@ function TrainingTab() {
 
             {/* Club Registration Section */}
             {isAuthenticated && (
-                <div className="w-full max-w-md mt-8">
+                <div className="w-full max-w-lg mt-12">
                     {!registrationStatus?.isRegistered && !showForm && (
-                        <button
-                            onClick={() => setShowForm(true)}
-                            className="w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
-                                       bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
-                                       shadow-lg shadow-yellow-600/20
-                                       transition-all duration-300 ease-out
-                                       hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
-                                       active:scale-100"
-                        >
-                            {t('club.join')}
-                        </button>
+                        <div className="group relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/20 to-green-600/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500" />
+                            <button
+                                onClick={() => setShowForm(true)}
+                                className="relative w-full py-5 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
+                                           bg-gradient-to-r from-yellow-700 via-yellow-600 to-green-600 text-black
+                                           shadow-lg shadow-yellow-600/20
+                                           transition-all duration-300 ease-out
+                                           hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
+                                           active:scale-100 flex items-center justify-center gap-3"
+                            >
+                                <Users size={20} />
+                                {t('club.join')}
+                            </button>
+                        </div>
                     )}
 
                     {showForm && (
-                        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6">
-                            <h3 className="text-lg font-bold text-white uppercase tracking-widest mb-4">
-                                {t('club.joinTitle')}
-                            </h3>
+                        <div className="bg-neutral-900/80 backdrop-blur-xl border border-neutral-800 rounded-3xl p-8 shadow-2xl shadow-black/50">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-600/20 to-green-600/20 border border-yellow-600/30 flex items-center justify-center">
+                                    <Users size={24} className="text-yellow-500" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-white uppercase tracking-widest">
+                                        {t('club.joinTitle')}
+                                    </h3>
+                                    <p className="text-xs text-neutral-500 mt-1">
+                                        {t('club.joinCommunity')}
+                                    </p>
+                                </div>
+                            </div>
+
                             {error && (
-                                <div className="mb-4 px-4 py-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold tracking-wide">
+                                <div className="mb-6 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold tracking-wide flex items-center gap-2">
+                                    <AlertTriangle size={16} />
                                     {error}
                                 </div>
                             )}
-                            <form onSubmit={handleRegister} className="space-y-4">
+
+                            <form onSubmit={handleRegister} className="space-y-5">
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">
+                                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2 flex items-center gap-2">
+                                        <Phone size={12} className="text-yellow-600" />
                                         {t('club.phone')}
                                     </label>
                                     <input
@@ -1487,7 +1506,8 @@ function TrainingTab() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">
+                                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2 flex items-center gap-2">
+                                        <Target size={12} className="text-yellow-600" />
                                         {t('club.interest')}
                                     </label>
                                     <input
@@ -1499,11 +1519,11 @@ function TrainingTab() {
                                         required
                                     />
                                 </div>
-                                <div className="flex gap-3">
+                                <div className="flex gap-3 pt-2">
                                     <button
                                         type="button"
                                         onClick={() => { setShowForm(false); setError(''); }}
-                                        className="flex-1 py-3 rounded-xl text-sm font-bold uppercase tracking-widest
+                                        className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest
                                                    bg-neutral-800 text-white hover:bg-neutral-700 transition-colors cursor-pointer"
                                     >
                                         {t('generic.cancel')}
@@ -1511,13 +1531,14 @@ function TrainingTab() {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="flex-1 py-3 rounded-xl text-sm font-bold uppercase tracking-widest
+                                        className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest
                                                    bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
                                                    shadow-lg shadow-yellow-600/20
                                                    transition-all duration-300 ease-out
                                                    hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
-                                                   active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 cursor-pointer"
+                                                   active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 cursor-pointer flex items-center justify-center gap-2"
                                     >
+                                        {loading ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
                                         {loading ? t('club.submitting') : t('club.submit')}
                                     </button>
                                 </div>
@@ -1526,26 +1547,54 @@ function TrainingTab() {
                     )}
 
                     {registrationStatus?.isRegistered && (
-                        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-6">
-                            <div className="flex items-center justify-center gap-3 mb-4">
-                                <CheckCircle2 size={24} className="text-emerald-400" />
-                                <h3 className="text-lg font-bold text-emerald-400 uppercase tracking-widest">
-                                    {t('club.registered')}
-                                </h3>
+                        <div className="bg-gradient-to-br from-emerald-500/10 to-green-600/10 backdrop-blur-xl border border-emerald-500/30 rounded-3xl p-8 shadow-2xl shadow-emerald-500/10">
+                            <div className="flex items-center justify-center gap-4 mb-6">
+                                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-green-600/20 border border-emerald-500/30 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                                    <CheckCircle2 size={32} className="text-emerald-400" />
+                                </div>
+                                <div className="text-left">
+                                    <h3 className="text-2xl font-bold text-emerald-400 uppercase tracking-widest">
+                                        {t('club.registered')}
+                                    </h3>
+                                    <p className="text-sm text-neutral-400 mt-1">
+                                        {t('club.welcome')}
+                                    </p>
+                                </div>
                             </div>
-                            <p className="text-sm text-neutral-300 mb-4">
+
+                            <p className="text-base text-neutral-300 mb-6 leading-relaxed text-center">
                                 {t('club.successMessage')}
                             </p>
-                            <a
-                                href="https://chat.whatsapp.com/placeholder"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold uppercase tracking-widest
-                                          bg-green-600 text-white hover:bg-green-700 transition-colors cursor-pointer"
-                            >
-                                <MessageCircle size={16} />
-                                {t('club.whatsappLink')}
-                            </a>
+
+                            <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-10 h-10 rounded-xl bg-green-600/20 border border-green-600/30 flex items-center justify-center">
+                                        <MessageCircle size={20} className="text-green-500" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                                            WhatsApp Group
+                                        </p>
+                                        <p className="text-sm text-neutral-400">
+                                            {t('club.joinCommunity')}
+                                        </p>
+                                    </div>
+                                </div>
+                                <a
+                                    href="https://chat.whatsapp.com/CAuuHtcTiD50bCtA013yeI?s=cl&p=i&mlu=4&ilr=4"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-3 w-full px-6 py-4 rounded-2xl text-sm font-bold uppercase tracking-widest
+                                              bg-gradient-to-r from-green-600 to-green-500 text-white
+                                              shadow-lg shadow-green-600/20
+                                              transition-all duration-300 ease-out
+                                              hover:scale-[1.02] hover:shadow-xl hover:shadow-green-600/30
+                                              active:scale-100 cursor-pointer justify-center"
+                                >
+                                    <MessageCircle size={20} />
+                                    {t('club.whatsappLink')}
+                                </a>
+                            </div>
                         </div>
                     )}
                 </div>
