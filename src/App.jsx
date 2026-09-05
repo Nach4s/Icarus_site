@@ -2210,6 +2210,7 @@ function ProfilePage({ onBack }) {
 
 function TeamDashboardPage({ onBack }) {
     const { user, updateUser } = useAuth()
+    const { t } = useLang()
     const [team, setTeam] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
