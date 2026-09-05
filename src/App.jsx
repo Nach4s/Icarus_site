@@ -54,7 +54,8 @@ import {
     Maximize,
     Phone,
     Beaker,
-    Microscope
+    Microscope,
+    Mail
 } from 'lucide-react'
 import ContactUs from './ContactUs.jsx'
 
@@ -2920,44 +2921,50 @@ function SettingsPage({ onBack }) {
         <div className="max-w-2xl md:max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <PageHeader title={t('settings.title')} onBack={onBack} />
 
-            <form onSubmit={handleSave} className="space-y-4">
+            <form onSubmit={handleSave} className="space-y-6">
 
                 {/* ── Profile Section ─────────────────────────── */}
-                <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl overflow-hidden">
-                    <div className="px-5 py-4 border-b border-neutral-800/80 bg-neutral-900/80">
-                        <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">{t('settings.profile')}</h2>
+                <div className="bg-gradient-to-br from-neutral-900/80 to-neutral-900/60 backdrop-blur-xl border border-neutral-800/50 rounded-3xl overflow-hidden shadow-2xl shadow-black/30">
+                    <div className="px-6 py-5 border-b border-neutral-800/50 bg-gradient-to-r from-yellow-600/5 to-transparent">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-yellow-600/15 border border-yellow-600/30 flex items-center justify-center">
+                                <User size={18} className="text-yellow-500" />
+                            </div>
+                            <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-white">{t('settings.profile')}</h2>
+                        </div>
                     </div>
-                    <div className="p-5 md:p-6 space-y-5">
+                    <div className="p-6 md:p-8 space-y-6">
 
                         {/* Avatar section — large, centered */}
-                        <div className="flex flex-col items-center gap-4 py-2">
-                            {/* Big avatar with edit badge */}
-                            <div className="relative">
-                                <div className="w-24 h-24 md:w-36 md:h-36 rounded-full bg-neutral-800 border-2 border-neutral-700 flex items-center justify-center overflow-hidden shadow-xl ring-2 ring-yellow-600/20">
+                        <div className="flex flex-col items-center gap-6 py-4">
+                            {/* Big avatar with enhanced design */}
+                            <div className="relative group">
+                                <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/30 to-green-600/30 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500" />
+                                <div className="relative w-28 h-28 md:w-40 md:h-40 rounded-full bg-neutral-800 border-4 border-neutral-700 flex items-center justify-center overflow-hidden shadow-2xl ring-4 ring-yellow-600/20 group-hover:ring-yellow-600/40 transition-all duration-300">
                                     {avatarFile ? (
                                         <img src={URL.createObjectURL(avatarFile)} alt="Preview" className="w-full h-full object-cover" />
                                     ) : user?.avatarUrl ? (
                                         <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                                     ) : (
-                                        <User size={38} className="text-neutral-500 md:w-14 md:h-14" />
+                                        <User size={48} className="text-neutral-500 md:w-20 md:h-20" />
                                     )}
                                 </div>
-                                {/* Edit badge */}
+                                {/* Enhanced edit badge */}
                                 <button
                                     type="button"
                                     onClick={() => dropzoneRef.current?.click()}
-                                    className="absolute bottom-0 right-0 w-8 h-8 md:w-10 md:h-10 rounded-full bg-yellow-600 hover:bg-yellow-500 border-2 border-neutral-900 flex items-center justify-center cursor-pointer transition-colors shadow-lg"
+                                    className="absolute bottom-2 right-2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 border-4 border-neutral-900 flex items-center justify-center cursor-pointer transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110"
                                 >
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-black">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-black">
                                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                                     </svg>
                                 </button>
                             </div>
 
-                            {/* Dropzone */}
+                            {/* Enhanced dropzone */}
                             <div
-                                className="w-full border-2 border-dashed border-neutral-700 hover:border-yellow-600/50 bg-neutral-950/30 hover:bg-neutral-800/20 rounded-2xl p-5 md:p-8 flex flex-col items-center gap-2 md:gap-3 cursor-pointer transition-all duration-200 group"
+                                className="w-full border-2 border-dashed border-neutral-700/50 hover:border-yellow-600/50 bg-gradient-to-br from-neutral-950/50 to-neutral-900/30 hover:from-yellow-600/5 hover:to-green-600/5 rounded-2xl p-6 md:p-8 flex flex-col items-center gap-3 md:gap-4 cursor-pointer transition-all duration-300 group"
                                 onClick={() => dropzoneRef.current?.click()}
                             >
                                 <input
@@ -2967,151 +2974,168 @@ function SettingsPage({ onBack }) {
                                     ref={dropzoneRef}
                                     onChange={(e) => { if (e.target.files?.[0]) setAvatarFile(e.target.files[0]) }}
                                 />
-                                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-neutral-800 border border-neutral-700 group-hover:border-yellow-600/30 group-hover:bg-neutral-700 flex items-center justify-center transition-colors">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-400 group-hover:text-yellow-600 transition-colors">
+                                <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-neutral-800 to-neutral-900 border border-neutral-700 group-hover:border-yellow-600/30 group-hover:from-yellow-600/10 group-hover:to-green-600/10 flex items-center justify-center transition-all duration-300">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-400 group-hover:text-yellow-500 transition-colors">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                                         <polyline points="17 8 12 3 7 8"/>
                                         <line x1="12" y1="3" x2="12" y2="15"/>
                                     </svg>
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-sm md:text-base font-semibold text-neutral-300 group-hover:text-white transition-colors">
+                                    <p className="text-base md:text-lg font-semibold text-neutral-300 group-hover:text-white transition-colors">
                                         {avatarFile ? avatarFile.name : t('settings.uploadPhoto')}
                                     </p>
-                                    <p className="text-xs text-neutral-600 mt-0.5" dangerouslySetInnerHTML={{ __html: t('settings.uploadDesc') }}></p>
+                                    <p className="text-xs text-neutral-500 mt-1" dangerouslySetInnerHTML={{ __html: t('settings.uploadDesc') }}></p>
                                 </div>
                             </div>
 
-                            {/* Remove link */}
+                            {/* Enhanced remove link */}
                             {(avatarFile || user?.avatarUrl) && (
                                 <button
                                     type="button"
                                     onClick={handleRemovePhoto}
                                     disabled={saving}
-                                    className="text-xs font-bold uppercase tracking-widest text-red-500/40 hover:text-red-400 transition-colors cursor-pointer disabled:opacity-40"
+                                    className="text-xs font-bold uppercase tracking-widest text-red-400/60 hover:text-red-400 transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-2"
                                 >
+                                    <X size={14} />
                                     {t('settings.removePhoto')}
                                 </button>
                             )}
                         </div>
 
 
-                        {/* Display Name */}
+                        {/* Enhanced Display Name */}
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">{t('settings.displayName')}</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-3 flex items-center gap-2">
+                                <User size={12} className="text-yellow-600" />
+                                {t('settings.displayName')}
+                            </label>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full bg-neutral-950/60 border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-600/50 font-medium transition-colors placeholder:text-neutral-600"
+                                className="w-full bg-neutral-950/60 border border-neutral-800/50 rounded-xl px-5 py-4 text-white text-sm focus:outline-none focus:border-yellow-600/50 focus:ring-2 focus:ring-yellow-600/20 font-medium transition-all duration-300 placeholder:text-neutral-600"
                                 placeholder={t('settings.displayNamePlaceholder')}
                             />
                         </div>
 
-                        {/* Email (read-only) */}
+                        {/* Enhanced Email (read-only) */}
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">
-                                Email <span className="text-neutral-700 normal-case tracking-normal font-normal ml-1">— {t('settings.emailReadOnly')}</span>
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-3 flex items-center gap-2">
+                                <Mail size={12} className="text-yellow-600" />
+                                Email <span className="text-neutral-600 normal-case tracking-normal font-normal ml-1">— {t('settings.emailReadOnly')}</span>
                             </label>
                             <input
                                 type="text"
                                 value={user?.email || ''}
                                 disabled
-                                className="w-full bg-neutral-950/20 border border-neutral-800/40 rounded-xl px-4 py-3 text-neutral-600 text-sm focus:outline-none cursor-not-allowed"
+                                className="w-full bg-neutral-950/30 border border-neutral-800/30 rounded-xl px-5 py-4 text-neutral-500 text-sm focus:outline-none cursor-not-allowed"
                             />
                         </div>
 
                     </div>
                 </div>
 
-                {/* ── Status message ───────────────────────────── */}
+                {/* ── Enhanced Status message ───────────────────────────── */}
                 {status && (
-                    <div className={`px-4 py-3 rounded-xl text-sm font-semibold border ${
+                    <div className={`px-5 py-4 rounded-2xl text-sm font-semibold border flex items-center gap-3 ${
                         status.type === 'success'
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
-                            : 'bg-red-500/10 text-red-400 border-red-500/25'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-lg shadow-emerald-500/10'
+                            : 'bg-red-500/10 text-red-400 border-red-500/30 shadow-lg shadow-red-500/10'
                     }`}>
+                        {status.type === 'success' ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
                         {status.msg}
                     </div>
                 )}
 
-                {/* ── Save button ──────────────────────────────── */}
+                {/* ── Enhanced Save button ──────────────────────────────── */}
                 <button
                     type="submit"
                     disabled={saving}
-                    className="w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
-                               bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
-                               shadow-lg shadow-yellow-600/20 hover:scale-[1.01] active:scale-100 transition-all
-                               disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    className="w-full py-4 rounded-2xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
+                               bg-gradient-to-r from-yellow-700 via-yellow-600 to-green-600 text-black
+                               shadow-lg shadow-yellow-600/20 hover:shadow-xl hover:shadow-yellow-600/30 hover:scale-[1.02] active:scale-100 transition-all duration-300
+                               disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                 >
+                    {saving ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
                     {saving ? t('settings.saving') : t('settings.saveChanges')}
                 </button>
 
             </form>
 
-            {/* ── Language Section ─────────────────────────────── */}
-            <div className="mt-4 bg-neutral-900/60 border border-neutral-800 rounded-2xl overflow-hidden">
-                <div className="px-5 py-4 border-b border-neutral-800/80 bg-neutral-900/80">
-                    <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">{t('settings.language')}</h2>
+            {/* ── Enhanced Language Section ─────────────────────────────── */}
+            <div className="mt-6 bg-gradient-to-br from-neutral-900/80 to-neutral-900/60 backdrop-blur-xl border border-neutral-800/50 rounded-3xl overflow-hidden shadow-2xl shadow-black/30">
+                <div className="px-6 py-5 border-b border-neutral-800/50 bg-gradient-to-r from-blue-600/5 to-transparent">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-600/15 border border-blue-600/30 flex items-center justify-center">
+                            <Globe size={18} className="text-blue-500" />
+                        </div>
+                        <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-white">{t('settings.language')}</h2>
+                    </div>
                 </div>
-                <div className="p-5 md:p-6">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-6 md:p-8">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         {LANGUAGES.map(lang => (
                             <button
                                 key={lang.code}
                                 type="button"
                                 onClick={() => handleLanguageChange(lang.code)}
-                                className={`flex flex-col items-center gap-2 py-4 px-3 rounded-xl border text-center transition-all duration-200 cursor-pointer ${
+                                className={`flex flex-col items-center gap-3 py-5 px-4 rounded-2xl border text-center transition-all duration-300 cursor-pointer ${
                                     language === lang.code
-                                        ? 'bg-yellow-600/10 border-yellow-600/50 text-yellow-500 shadow-[0_0_16px_rgba(202,138,4,0.1)]'
-                                        : 'bg-neutral-950/40 border-neutral-800 text-neutral-500 hover:border-neutral-700 hover:text-neutral-300'
+                                        ? 'bg-gradient-to-br from-blue-600/10 to-blue-600/5 border-blue-600/50 text-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.15)] scale-105'
+                                        : 'bg-neutral-950/40 border-neutral-800/50 text-neutral-500 hover:border-neutral-700 hover:text-neutral-300 hover:bg-neutral-900/60'
                                 }`}
                             >
-                                <span className="text-2xl">{lang.flag}</span>
+                                <span className="text-3xl filter drop-shadow-lg">{lang.flag}</span>
                                 <span className="text-xs font-bold uppercase tracking-wider">{lang.label}</span>
                                 {language === lang.code && (
-                                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+                                    <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(37,99,235,0.5)]" />
                                 )}
                             </button>
                         ))}
                     </div>
-                    <p className="mt-3 text-[10px] text-neutral-600 uppercase tracking-wider">{t('settings.languageDesc')}</p>
+                    <p className="mt-4 text-[10px] text-neutral-600 uppercase tracking-wider text-center">{t('settings.languageDesc')}</p>
                 </div>
             </div>
 
-            {/* ── Danger Zone ──────────────────────────────────── */}
-            <div className="mt-6 bg-red-950/20 border border-red-500/15 rounded-2xl p-5 md:p-6 flex items-center justify-between gap-4">
-                <div>
-                    <h3 className="text-sm font-bold text-red-400 uppercase tracking-[0.1em] mb-1">{t('settings.dangerZone')}</h3>
-                    <p className="text-xs text-neutral-600">{t('settings.dangerZoneHint')}</p>
+            {/* ── Enhanced Danger Zone ──────────────────────────────────── */}
+            <div className="mt-6 bg-gradient-to-br from-red-950/30 to-red-950/10 backdrop-blur-xl border border-red-500/20 rounded-3xl p-6 md:p-8 flex items-center justify-between gap-6 shadow-2xl shadow-red-500/10">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center shrink-0">
+                        <AlertTriangle size={24} className="text-red-500" />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-bold text-red-400 uppercase tracking-[0.1em] mb-1">{t('settings.dangerZone')}</h3>
+                        <p className="text-xs text-neutral-500">{t('settings.dangerZoneHint')}</p>
+                    </div>
                 </div>
                 <button
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="shrink-0 px-4 py-2 rounded-lg border border-red-500/25 text-red-400/70 text-xs font-bold uppercase tracking-widest hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/40 transition-all cursor-pointer"
+                    className="shrink-0 px-6 py-3 rounded-xl border border-red-500/30 text-red-400/80 text-xs font-bold uppercase tracking-widest hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/50 transition-all cursor-pointer"
                 >
                     {t('settings.deleteAccount')}
                 </button>
             </div>
 
-            {/* Delete Confirmation Modal */}
+            {/* Enhanced Delete Confirmation Modal */}
             {showDeleteConfirm && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[80] px-4" onClick={() => setShowDeleteConfirm(false)}>
+                <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[80] px-4" onClick={() => setShowDeleteConfirm(false)}>
                     <div
-                        className="bg-neutral-900 border border-red-500/30 rounded-2xl w-full max-w-sm p-8 text-center shadow-2xl shadow-red-500/10"
+                        className="bg-gradient-to-br from-neutral-900 to-neutral-950 border border-red-500/40 rounded-3xl w-full max-w-sm p-8 text-center shadow-2xl shadow-red-500/20"
                         onClick={e => e.stopPropagation()}
                         style={{ animation: 'fadeSlideIn 0.2s ease-out' }}
                     >
-                        <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/30 text-red-500 flex items-center justify-center mx-auto mb-6">
-                            <LogOut size={28} />
+                        <div className="w-20 h-20 rounded-full bg-red-500/10 border-2 border-red-500/30 text-red-500 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-red-500/20">
+                            <LogOut size={32} />
                         </div>
-                        <h3 className="text-xl font-bold text-white mb-2 uppercase tracking-widest">{t('settings.deleteTitle')}</h3>
-                        <p className="text-sm text-neutral-400 mb-8">
+                        <h3 className="text-2xl font-bold text-white mb-3 uppercase tracking-widest">{t('settings.deleteTitle')}</h3>
+                        <p className="text-sm text-neutral-400 mb-8 leading-relaxed">
                             {t('settings.deleteWarning')}
                         </p>
                         <div className="flex gap-4">
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
-                                className="flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest
+                                className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest
                                            bg-neutral-800 border border-neutral-700 text-white
                                            hover:bg-neutral-700 transition cursor-pointer"
                             >
@@ -3132,10 +3156,10 @@ function SettingsPage({ onBack }) {
                                     }
                                 }}
                                 disabled={deleting}
-                                className="flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest
-                                           bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20
-                                           transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest
+                                           bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/30 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
+                                {deleting ? <Loader2 size={16} className="animate-spin" /> : <AlertTriangle size={16} />}
                                 {deleting ? t('settings.deleting') : t('settings.deleteAccount')}
                             </button>
                         </div>
