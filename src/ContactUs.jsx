@@ -123,7 +123,7 @@ export default function ContactUs() {
 
                             {/* CTA row */}
                             <div className="mt-7 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-neutral-500 group-hover:text-white transition-colors duration-300">
-                                <span>{t('contact.openLink')} {label}</span>
+                                <span>{label}</span>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
                                     className="w-4 h-4 translate-x-0 group-hover:translate-x-1 transition-transform duration-300">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
