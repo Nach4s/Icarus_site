@@ -3378,7 +3378,7 @@ export default function App() {
 
                 {/* ── Language Selection Modal ── */}
                 {isLanguageModalOpen && createPortal(
-                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-8">
+                    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 sm:p-8">
                         <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md cursor-pointer" onClick={() => setIsLanguageModalOpen(false)} />
                         <div className="relative w-full max-w-md rounded-2xl overflow-hidden bg-neutral-900 shadow-2xl border border-neutral-800 animate-in zoom-in-95 duration-200 p-8">
                             <button
@@ -3396,7 +3396,11 @@ export default function App() {
                                 </h3>
                                 <div className="flex flex-col gap-3 w-full">
                                     <button
-                                        onClick={() => { setSelectedGuideLanguage('rus'); setIsLanguageModalOpen(false); setIsVideoModalOpen(true); }}
+                                        onClick={() => {
+                                            setSelectedGuideLanguage('rus');
+                                            setIsLanguageModalOpen(false);
+                                            setTimeout(() => setIsVideoModalOpen(true), 100);
+                                        }}
                                         className="px-6 py-4 rounded-xl text-base font-bold uppercase tracking-widest
                                                    bg-gradient-to-r from-yellow-600 to-yellow-800 text-white
                                                    hover:from-yellow-500 hover:to-yellow-700 transition cursor-pointer
@@ -3405,7 +3409,11 @@ export default function App() {
                                         {t('guide.russian')}
                                     </button>
                                     <button
-                                        onClick={() => { setSelectedGuideLanguage('eng'); setIsLanguageModalOpen(false); setIsVideoModalOpen(true); }}
+                                        onClick={() => {
+                                            setSelectedGuideLanguage('eng');
+                                            setIsLanguageModalOpen(false);
+                                            setTimeout(() => setIsVideoModalOpen(true), 100);
+                                        }}
                                         className="px-6 py-4 rounded-xl text-base font-bold uppercase tracking-widest
                                                    bg-gradient-to-r from-yellow-600 to-yellow-800 text-white
                                                    hover:from-yellow-500 hover:to-yellow-700 transition cursor-pointer
@@ -3422,7 +3430,7 @@ export default function App() {
 
                 {/* ── Video Modal ── */}
                 {isVideoModalOpen && selectedGuideLanguage && createPortal(
-                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-8">
+                    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 sm:p-8">
                         <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md cursor-pointer" onClick={() => { setIsVideoModalOpen(false); setSelectedGuideLanguage(null); }} />
                         <div className="relative w-full max-w-5xl rounded-2xl overflow-hidden bg-neutral-900 shadow-2xl border border-neutral-800 animate-in zoom-in-95 duration-200">
                             <button
@@ -3438,9 +3446,8 @@ export default function App() {
                                     controls
                                     autoPlay
                                     disablePictureInPicture
-                                    className="absolute inset-0 w-full h-full object-cover"
+                                    className="absolute inset-0 w-full h-full object-contain bg-black"
                                     src={selectedGuideLanguage === 'rus' ? '/rus.mp4' : '/eng.mp4'}
-                                    style={{ objectFit: 'cover' }}
                                 />
                             </div>
                         </div>
