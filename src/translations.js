@@ -893,6 +893,24 @@ const translations = {
     en: 'Join the Club',
     ro: 'Alătură-te clubului',
   },
+  'guide.selectLanguage': {
+    kk: 'Тілді таңдаңыз',
+    ru: 'Выберите язык',
+    en: 'Select Language',
+    ro: 'Selectați limba',
+  },
+  'guide.russian': {
+    kk: 'Орысша',
+    ru: 'Русский',
+    en: 'Russian',
+    ro: 'Rusă',
+  },
+  'guide.english': {
+    kk: 'Ағылшынша',
+    ru: 'Английский',
+    en: 'English',
+    ro: 'Engleză',
+  },
   'comp.regClosed': {
     kk: 'Тіркелу жабық',
     ru: 'Регистрация закрыта',

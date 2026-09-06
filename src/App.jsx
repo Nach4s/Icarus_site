@@ -3224,12 +3224,21 @@ export default function App() {
     const [isRegistered, setIsRegistered] = useState(false)
     const [isAlreadyRegisteredModalOpen, setIsAlreadyRegisteredModalOpen] = useState(false)
     const [isVideoModalOpen, setIsVideoModalOpen] = useState(false)
+    const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false)
+    const [selectedGuideLanguage, setSelectedGuideLanguage] = useState(null)
     const videoRef = useRef(null)
 
     // Synchronize global registration status on page load or user change
     useEffect(() => {
         setIsRegistered(!!user?.team?.isRegisteredForCompetition)
     }, [user])
+
+    // Reset guide language when video modal closes
+    useEffect(() => {
+        if (!isVideoModalOpen) {
+            setSelectedGuideLanguage(null)
+        }
+    }, [isVideoModalOpen])
 
     const handleGlobalJoinClick = () => {
         if (isRegistered) {
@@ -3358,7 +3367,7 @@ export default function App() {
                 {/* ── Guide Button ── */}
                 {createPortal(
                     <button
-                        onClick={() => setIsVideoModalOpen(true)}
+                        onClick={() => setIsLanguageModalOpen(true)}
                         className="fixed z-[150] right-4 bottom-4 md:right-6 md:bottom-6 w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center shadow-2xl shadow-yellow-600/30 border border-yellow-500/30 text-black hover:scale-110 transition-transform cursor-pointer"
                         title="Platform Guide"
                     >
@@ -3367,13 +3376,57 @@ export default function App() {
                     document.body
                 )}
 
-                {/* ── Video Modal ── */}
-                {isVideoModalOpen && createPortal(
+                {/* ── Language Selection Modal ── */}
+                {isLanguageModalOpen && createPortal(
                     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-8">
-                        <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md cursor-pointer" onClick={() => setIsVideoModalOpen(false)} />
+                        <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md cursor-pointer" onClick={() => setIsLanguageModalOpen(false)} />
+                        <div className="relative w-full max-w-md rounded-2xl overflow-hidden bg-neutral-900 shadow-2xl border border-neutral-800 animate-in zoom-in-95 duration-200 p-8">
+                            <button
+                                onClick={() => setIsLanguageModalOpen(false)}
+                                className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-neutral-950/50 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-950/80 cursor-pointer transition-all"
+                            >
+                                <X size={20} />
+                            </button>
+                            <div className="flex flex-col items-center gap-6">
+                                <div className="w-16 h-16 rounded-full bg-yellow-600/20 border border-yellow-600/30 flex items-center justify-center">
+                                    <BookOpen size={32} className="text-yellow-600" />
+                                </div>
+                                <h3 className="text-2xl font-black uppercase tracking-widest text-white text-center">
+                                    {t('guide.selectLanguage')}
+                                </h3>
+                                <div className="flex flex-col gap-3 w-full">
+                                    <button
+                                        onClick={() => { setSelectedGuideLanguage('rus'); setIsLanguageModalOpen(false); setIsVideoModalOpen(true); }}
+                                        className="px-6 py-4 rounded-xl text-base font-bold uppercase tracking-widest
+                                                   bg-gradient-to-r from-yellow-600 to-yellow-800 text-white
+                                                   hover:from-yellow-500 hover:to-yellow-700 transition cursor-pointer
+                                                   shadow-lg shadow-yellow-600/20"
+                                    >
+                                        {t('guide.russian')}
+                                    </button>
+                                    <button
+                                        onClick={() => { setSelectedGuideLanguage('eng'); setIsLanguageModalOpen(false); setIsVideoModalOpen(true); }}
+                                        className="px-6 py-4 rounded-xl text-base font-bold uppercase tracking-widest
+                                                   bg-gradient-to-r from-yellow-600 to-yellow-800 text-white
+                                                   hover:from-yellow-500 hover:to-yellow-700 transition cursor-pointer
+                                                   shadow-lg shadow-yellow-600/20"
+                                    >
+                                        {t('guide.english')}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>,
+                    document.body
+                )}
+
+                {/* ── Video Modal ── */}
+                {isVideoModalOpen && selectedGuideLanguage && createPortal(
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-8">
+                        <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md cursor-pointer" onClick={() => { setIsVideoModalOpen(false); setSelectedGuideLanguage(null); }} />
                         <div className="relative w-full max-w-5xl rounded-2xl overflow-hidden bg-neutral-900 shadow-2xl border border-neutral-800 animate-in zoom-in-95 duration-200">
-                            <button 
-                                onClick={() => setIsVideoModalOpen(false)}
+                            <button
+                                onClick={() => { setIsVideoModalOpen(false); setSelectedGuideLanguage(null); }}
                                 className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-neutral-950/50 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-950/80 cursor-pointer transition-all"
                             >
                                 <X size={20} />
@@ -3386,7 +3439,7 @@ export default function App() {
                                     autoPlay
                                     disablePictureInPicture
                                     className="absolute inset-0 w-full h-full object-cover"
-                                    src="/background.mp4"
+                                    src={selectedGuideLanguage === 'rus' ? '/rus.mp4' : '/eng.mp4'}
                                     style={{ objectFit: 'cover' }}
                                 />
                             </div>
