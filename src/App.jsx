@@ -396,6 +396,7 @@ function CompetitionModal({ isOpen, onClose }) {
     // 'login' | 'register' | 'verify' | 'language' — unauthenticated
     // 'create' | 'join'               — authenticated
     const [phase, setPhase] = useState('login')
+    const [registrationEmail, setRegistrationEmail] = useState('') // Store email during registration flow
 
     // ── Form state ──────────────────────────────────────────
     const [email, setEmail] = useState('')
@@ -410,8 +411,6 @@ function CompetitionModal({ isOpen, onClose }) {
     const [loading, setLoading] = useState(false)
     const [successMsg, setSuccessMsg] = useState('')
     const [selectedLanguage, setSelectedLanguage] = useState('en')
-    const [isNewRegistration, setIsNewRegistration] = useState(false)
-    const [isLanguageSelecting, setIsLanguageSelecting] = useState(false)
 
     // When auth state changes, auto-advance to team phase (or close if already in a team)
     useEffect(() => {
@@ -419,15 +418,14 @@ function CompetitionModal({ isOpen, onClose }) {
             if (user?.teamId) {
                 // Already in a team — no need to show team creation, just close
                 onClose()
-            } else if (isNewRegistration && !isLanguageSelecting) {
-                // New registration - show language selection
+            } else if (phase === 'verify') {
+                // After verification, go to language selection
                 setPhase('language')
-            } else if (user?.language === 'en' && !isLanguageSelecting) {
-                // User has default language - treat as new registration
-                setIsNewRegistration(true)
-                setPhase('language')
+            } else if (phase === 'language') {
+                // User is on language selection phase, stay there
+                // Will move to team creation after language is selected
             } else {
-                // Existing user with custom language - go to team creation
+                // Login phase - go to team creation
                 if (user?.language) {
                     setLang(user.language)
                 }
@@ -435,14 +433,7 @@ function CompetitionModal({ isOpen, onClose }) {
             }
             setError('')
         }
-    }, [isAuthenticated, user, phase, onClose, setLang, isNewRegistration, isLanguageSelecting])
-
-    // Reset new registration flag when language is selected
-    useEffect(() => {
-        if (phase === 'create' && user?.language && user?.language !== 'en') {
-            setIsNewRegistration(false)
-        }
-    }, [phase, user?.language])
+    }, [isAuthenticated, user, phase, onClose, setLang])
 
     // Reset state when modal opens/closes
     useEffect(() => {
@@ -462,8 +453,7 @@ function CompetitionModal({ isOpen, onClose }) {
             setError('')
             setSuccessMsg('')
             setSelectedLanguage('en')
-            setIsNewRegistration(false)
-            setIsLanguageSelecting(false)
+            setRegistrationEmail('')
         }
     }, [isOpen, isAuthenticated, user, onClose])
 
@@ -502,6 +492,7 @@ function CompetitionModal({ isOpen, onClose }) {
         setLoading(true)
         try {
             await register(email, password, name)
+            setRegistrationEmail(email) // Store email for verification
             setPhase('verify')
             setSuccessMsg('Account created! Please check your email for the verification code.')
         } catch (err) {
@@ -517,14 +508,11 @@ function CompetitionModal({ isOpen, onClose }) {
         if (otpCode.length !== 6) { setError('Please enter a 6-digit code.'); return }
         setLoading(true)
         try {
-            const data = await verifyEmail(email, otpCode)
+            const data = await verifyEmail(registrationEmail, otpCode)
             setSuccessMsg('Email verified successfully! Welcome to ICARUS.')
 
-            // Check if this is a new registration (user has default language)
-            if (data.user.language === 'en') {
-                setIsNewRegistration(true)
-                setPhase('language')
-            }
+            // Always go to language selection after verification
+            setPhase('language')
         } catch (err) {
             setError(err.message || 'Verification failed. Invalid code.')
         } finally {
@@ -586,7 +574,6 @@ function CompetitionModal({ isOpen, onClose }) {
     async function handleLanguageSelection() {
         setError('')
         setLoading(true)
-        setIsLanguageSelecting(true)
         try {
             const data = await api.put('/user/language', { language: selectedLanguage })
             if (data.user) updateUser(data.user)
@@ -594,15 +581,10 @@ function CompetitionModal({ isOpen, onClose }) {
             setSuccessMsg('Language selected successfully!')
 
             // After language is set, proceed to team creation
-            setIsNewRegistration(false)
-            setTimeout(() => {
-                setPhase('create')
-                setSuccessMsg('')
-                setIsLanguageSelecting(false)
-            }, 500)
+            setPhase('create')
+            setSuccessMsg('')
         } catch (err) {
             setError(err.message || 'Failed to save language preference.')
-            setIsLanguageSelecting(false)
         } finally {
             setLoading(false)
         }
@@ -610,6 +592,7 @@ function CompetitionModal({ isOpen, onClose }) {
 
     // ── Determine which tabs to show ────────────────────────
     const isAuthPhase = phase === 'login' || phase === 'register' || phase === 'verify' || phase === 'forgot' || phase === 'language'
+    const isLanguagePhase = phase === 'language'
 
     return (
         <div
@@ -632,14 +615,14 @@ function CompetitionModal({ isOpen, onClose }) {
 
                 {/* Title */}
                 <h2 className="text-3xl md:text-4xl font-black uppercase tracking-widest text-white mb-2 text-center">
-                    {phase === 'language' ? t('onboarding.selectLanguage') : isAuthPhase ? t('auth.accessIcarus') : user?.teamId ? t('auth.assignmentComplete') : t('auth.joinCompetition')}
+                    {isLanguagePhase ? t('onboarding.selectLanguage') : isAuthPhase ? t('auth.accessIcarus') : user?.teamId ? t('auth.assignmentComplete') : t('auth.joinCompetition')}
                 </h2>
                 <p className="text-sm text-neutral-500 text-center mb-10 tracking-wider uppercase">
-                    {phase === 'language' ? t('onboarding.languageDesc') : isAuthPhase ? t('auth.authenticate') : `${t('auth.welcomeBack')}, ${user?.name}`}
+                    {isLanguagePhase ? t('onboarding.languageDesc') : isAuthPhase ? t('auth.authenticate') : `${t('auth.welcomeBack')}, ${user?.name}`}
                 </p>
 
                 {/* Mode Toggle */}
-                {!(!isAuthPhase && user?.teamId) && phase !== 'verify' && phase !== 'forgot' && phase !== 'language' && (
+                {!(!isAuthPhase && user?.teamId) && phase !== 'verify' && phase !== 'forgot' && !isLanguagePhase && (
                     <div className="flex rounded-xl bg-neutral-950 border border-neutral-800 p-1 mb-6">
                     {isAuthPhase ? (
                         <>
@@ -706,7 +689,7 @@ function CompetitionModal({ isOpen, onClose }) {
                                 <div className="text-center mb-6">
                                     <Shield size={32} className="text-yellow-600 mx-auto mb-3" />
                                     <p className="text-sm text-neutral-400">
-                                        {t('auth.codeSentTo')} <strong className="text-white">{email}</strong>.
+                                        {t('auth.codeSentTo')} <strong className="text-white">{registrationEmail}</strong>.
                                     </p>
                                 </div>
                                 <div>
@@ -743,7 +726,7 @@ function CompetitionModal({ isOpen, onClose }) {
                         )}
 
                         {/* ═════════ PHASE: LANGUAGE SELECTION ═════════ */}
-                        {phase === 'language' && (
+                        {isLanguagePhase && (
                             <div className="space-y-6">
                                 <div className="text-center mb-6">
                                     <Globe size={32} className="text-yellow-600 mx-auto mb-3" />
