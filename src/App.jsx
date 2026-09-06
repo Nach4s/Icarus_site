@@ -3216,6 +3216,7 @@ function SettingsPage({ onBack }) {
 
 export default function App() {
     const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth()
+    const { t } = useLang()
     const [activeTab, setActiveTab] = useState('journey')
     const [activePage, setActivePage] = useState('home')
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -3365,20 +3366,20 @@ export default function App() {
                 />
 
                 {/* ── Guide Button ── */}
-                <button
-                    onClick={() => {
-                        console.log('Guide button clicked');
-                        setIsLanguageModalOpen(true);
-                    }}
-                    className="fixed z-[999] right-4 bottom-4 md:right-6 md:bottom-6 w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center shadow-2xl shadow-yellow-600/30 border border-yellow-500/30 text-black hover:scale-110 transition-transform cursor-pointer"
-                    title="Platform Guide"
-                >
-                    <BookOpen size={24} />
-                </button>
+                {createPortal(
+                    <button
+                        onClick={() => setIsLanguageModalOpen(true)}
+                        className="fixed z-[9999] right-4 bottom-4 md:right-6 md:bottom-6 w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center shadow-2xl shadow-yellow-600/30 border border-yellow-500/30 text-black hover:scale-110 transition-transform cursor-pointer"
+                        title="Platform Guide"
+                    >
+                        <BookOpen size={24} />
+                    </button>,
+                    document.body
+                )}
 
                 {/* ── Language Selection Modal ── */}
                 {isLanguageModalOpen && createPortal(
-                    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 sm:p-8">
+                    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-8">
                         <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md cursor-pointer" onClick={() => setIsLanguageModalOpen(false)} />
                         <div className="relative w-full max-w-md rounded-2xl overflow-hidden bg-neutral-900 shadow-2xl border border-neutral-800 animate-in zoom-in-95 duration-200 p-8">
                             <button
@@ -3430,7 +3431,7 @@ export default function App() {
 
                 {/* ── Video Modal ── */}
                 {isVideoModalOpen && createPortal(
-                    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 sm:p-8">
+                    <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4 sm:p-8">
                         <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md cursor-pointer" onClick={() => { setIsVideoModalOpen(false); setSelectedGuideLanguage(null); }} />
                         <div className="relative w-full max-w-5xl rounded-2xl overflow-hidden bg-neutral-900 shadow-2xl border border-neutral-800 animate-in zoom-in-95 duration-200">
                             <button
