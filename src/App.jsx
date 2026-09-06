@@ -3399,7 +3399,7 @@ export default function App() {
                                         onClick={() => {
                                             setSelectedGuideLanguage('rus');
                                             setIsLanguageModalOpen(false);
-                                            setTimeout(() => setIsVideoModalOpen(true), 100);
+                                            setIsVideoModalOpen(true);
                                         }}
                                         className="px-6 py-4 rounded-xl text-base font-bold uppercase tracking-widest
                                                    bg-gradient-to-r from-yellow-600 to-yellow-800 text-white
@@ -3412,7 +3412,7 @@ export default function App() {
                                         onClick={() => {
                                             setSelectedGuideLanguage('eng');
                                             setIsLanguageModalOpen(false);
-                                            setTimeout(() => setIsVideoModalOpen(true), 100);
+                                            setIsVideoModalOpen(true);
                                         }}
                                         className="px-6 py-4 rounded-xl text-base font-bold uppercase tracking-widest
                                                    bg-gradient-to-r from-yellow-600 to-yellow-800 text-white
@@ -3429,7 +3429,7 @@ export default function App() {
                 )}
 
                 {/* ── Video Modal ── */}
-                {isVideoModalOpen && selectedGuideLanguage && createPortal(
+                {isVideoModalOpen && createPortal(
                     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 sm:p-8">
                         <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md cursor-pointer" onClick={() => { setIsVideoModalOpen(false); setSelectedGuideLanguage(null); }} />
                         <div className="relative w-full max-w-5xl rounded-2xl overflow-hidden bg-neutral-900 shadow-2xl border border-neutral-800 animate-in zoom-in-95 duration-200">
