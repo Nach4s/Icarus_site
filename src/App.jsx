@@ -411,6 +411,7 @@ function CompetitionModal({ isOpen, onClose }) {
     const [successMsg, setSuccessMsg] = useState('')
     const [selectedLanguage, setSelectedLanguage] = useState('en')
     const [isNewRegistration, setIsNewRegistration] = useState(false)
+    const [isLanguageSelecting, setIsLanguageSelecting] = useState(false)
 
     // When auth state changes, auto-advance to team phase (or close if already in a team)
     useEffect(() => {
@@ -418,10 +419,10 @@ function CompetitionModal({ isOpen, onClose }) {
             if (user?.teamId) {
                 // Already in a team — no need to show team creation, just close
                 onClose()
-            } else if (isNewRegistration) {
+            } else if (isNewRegistration && !isLanguageSelecting) {
                 // New registration - show language selection
                 setPhase('language')
-            } else if (user?.language === 'en') {
+            } else if (user?.language === 'en' && !isLanguageSelecting) {
                 // User has default language - treat as new registration
                 setIsNewRegistration(true)
                 setPhase('language')
@@ -434,7 +435,7 @@ function CompetitionModal({ isOpen, onClose }) {
             }
             setError('')
         }
-    }, [isAuthenticated, user, phase, onClose, setLang, isNewRegistration])
+    }, [isAuthenticated, user, phase, onClose, setLang, isNewRegistration, isLanguageSelecting])
 
     // Reset new registration flag when language is selected
     useEffect(() => {
@@ -462,6 +463,7 @@ function CompetitionModal({ isOpen, onClose }) {
             setSuccessMsg('')
             setSelectedLanguage('en')
             setIsNewRegistration(false)
+            setIsLanguageSelecting(false)
         }
     }, [isOpen, isAuthenticated, user, onClose])
 
@@ -584,6 +586,7 @@ function CompetitionModal({ isOpen, onClose }) {
     async function handleLanguageSelection() {
         setError('')
         setLoading(true)
+        setIsLanguageSelecting(true)
         try {
             const data = await api.put('/user/language', { language: selectedLanguage })
             if (data.user) updateUser(data.user)
@@ -591,12 +594,15 @@ function CompetitionModal({ isOpen, onClose }) {
             setSuccessMsg('Language selected successfully!')
 
             // After language is set, proceed to team creation
+            setIsNewRegistration(false)
             setTimeout(() => {
                 setPhase('create')
                 setSuccessMsg('')
+                setIsLanguageSelecting(false)
             }, 500)
         } catch (err) {
             setError(err.message || 'Failed to save language preference.')
+            setIsLanguageSelecting(false)
         } finally {
             setLoading(false)
         }
