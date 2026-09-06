@@ -1382,29 +1382,52 @@ function TrainingTab() {
     const [loading, setLoading] = useState(false)
     const [registrationStatus, setRegistrationStatus] = useState(null)
     const [error, setError] = useState('')
+    const [statusLoading, setStatusLoading] = useState(false)
+    const [isInitialized, setIsInitialized] = useState(false)
 
     const interestOptions = [
-        { id: 'chemistry', label: 'Chemistry & Materials Science', icon: Beaker },
-        { id: 'biotechnology', label: 'Biotechnology & Genetics', icon: Microscope },
         { id: 'aerospace', label: 'Aerospace Engineering', icon: Rocket },
         { id: 'physics', label: 'Applied Physics', icon: Atom },
         { id: 'computer-science', label: 'Computer Science', icon: Terminal },
+        { id: 'chemistry', label: 'Chemistry & Materials Science', icon: Beaker },
+        { id: 'biotechnology', label: 'Biotechnology & Genetics', icon: Microscope },
     ]
 
     useEffect(() => {
-        if (isAuthenticated) {
-            fetchClubStatus()
+        let isMounted = true
+        
+        const fetchClubStatus = async () => {
+            if (!isAuthenticated) {
+                setRegistrationStatus(null)
+                setIsInitialized(true)
+                return
+            }
+            
+            setStatusLoading(true)
+            try {
+                const data = await api.get('/club/status')
+                if (isMounted) {
+                    setRegistrationStatus(data)
+                }
+            } catch (err) {
+                console.error('Failed to fetch club status:', err)
+                if (isMounted) {
+                    setRegistrationStatus({ isRegistered: false, registration: null })
+                }
+            } finally {
+                if (isMounted) {
+                    setStatusLoading(false)
+                    setIsInitialized(true)
+                }
+            }
+        }
+
+        fetchClubStatus()
+
+        return () => {
+            isMounted = false
         }
     }, [isAuthenticated])
-
-    async function fetchClubStatus() {
-        try {
-            const data = await api.get('/club/status')
-            setRegistrationStatus(data)
-        } catch (err) {
-            console.error('Failed to fetch club status:', err)
-        }
-    }
 
     async function handleRegister(e) {
         e.preventDefault()
@@ -1467,23 +1490,34 @@ function TrainingTab() {
             {/* Club Registration Section */}
             {isAuthenticated && (
                 <div className="w-full max-w-lg mt-12">
-                    {!registrationStatus?.isRegistered && !showForm && (
-                        <div className="group relative">
-                            <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/20 to-green-600/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500" />
-                            <button
-                                onClick={() => setShowForm(true)}
-                                className="relative w-full py-5 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
-                                           bg-gradient-to-r from-yellow-700 via-yellow-600 to-green-600 text-black
-                                           shadow-lg shadow-yellow-600/20
-                                           transition-all duration-300 ease-out
-                                           hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
-                                           active:scale-100 flex items-center justify-center gap-3"
-                            >
-                                <Users size={20} />
-                                {t('club.join')}
-                            </button>
+                    {/* Show loading state while fetching status */}
+                    {statusLoading && !isInitialized && (
+                        <div className="flex items-center justify-center gap-3 py-8">
+                            <Loader2 size={20} className="animate-spin text-neutral-500" />
+                            <span className="text-sm text-neutral-500">Loading...</span>
                         </div>
                     )}
+
+                    {/* Show content when loaded or cached */}
+                    {isInitialized && (
+                        <>
+                            {!registrationStatus?.isRegistered && !showForm && (
+                                <div className="group relative">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/20 to-green-600/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500" />
+                                    <button
+                                        onClick={() => setShowForm(true)}
+                                        className="relative w-full py-5 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
+                                                   bg-gradient-to-r from-yellow-700 via-yellow-600 to-green-600 text-black
+                                                   shadow-lg shadow-yellow-600/20
+                                                   transition-all duration-300 ease-out
+                                                   hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
+                                                   active:scale-100 flex items-center justify-center gap-3"
+                                    >
+                                        <Users size={20} />
+                                        {t('club.join')}
+                                    </button>
+                                </div>
+                            )}
 
                     {showForm && (
                         <div className="bg-neutral-900/80 backdrop-blur-xl border border-neutral-800 rounded-3xl p-8 shadow-2xl shadow-black/50">
@@ -1629,6 +1663,8 @@ function TrainingTab() {
                                 </a>
                             </div>
                         </div>
+                    )}
+                        </>
                     )}
                 </div>
             )}

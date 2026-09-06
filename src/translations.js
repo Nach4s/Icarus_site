@@ -1187,6 +1187,12 @@ const translations = {
     en: 'Loading...',
     ro: 'Se încarcă...',
   },
+  'generic.cancel': {
+    kk: 'Бас тарту',
+    ru: 'Отмена',
+    en: 'Cancel',
+    ro: 'Anulare',
+  },
   'generic.leaving': {
     kk: 'Шығу...',
     ru: 'Выход...',
