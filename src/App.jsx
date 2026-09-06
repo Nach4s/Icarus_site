@@ -418,19 +418,14 @@ function CompetitionModal({ isOpen, onClose }) {
             if (user?.teamId) {
                 // Already in a team — no need to show team creation, just close
                 onClose()
-            } else if (phase === 'verify') {
-                // After verification, go to language selection
-                setPhase('language')
-            } else if (phase === 'language') {
-                // User is on language selection phase, stay there
-                // Will move to team creation after language is selected
-            } else {
+            } else if (phase === 'login') {
                 // Login phase - go to team creation
                 if (user?.language) {
                     setLang(user.language)
                 }
                 setPhase('create')
             }
+            // For verify and language phases, don't auto-advance - let the user complete the flow
             setError('')
         }
     }, [isAuthenticated, user, phase, onClose, setLang])
@@ -511,8 +506,14 @@ function CompetitionModal({ isOpen, onClose }) {
             const data = await verifyEmail(registrationEmail, otpCode)
             setSuccessMsg('Email verified successfully! Welcome to ICARUS.')
 
+            console.log('Verification successful, user:', data.user)
+            console.log('Current phase before switch:', phase)
+            console.log('Setting phase to language')
+
             // Always go to language selection after verification
             setPhase('language')
+            console.log('Phase set to language')
+
         } catch (err) {
             setError(err.message || 'Verification failed. Invalid code.')
         } finally {
@@ -574,16 +575,20 @@ function CompetitionModal({ isOpen, onClose }) {
     async function handleLanguageSelection() {
         setError('')
         setLoading(true)
+        console.log('Language selection clicked, selected language:', selectedLanguage)
         try {
             const data = await api.put('/user/language', { language: selectedLanguage })
             if (data.user) updateUser(data.user)
             setLang(selectedLanguage) // Update LanguageContext
             setSuccessMsg('Language selected successfully!')
 
+            console.log('Language saved, setting phase to create')
+
             // After language is set, proceed to team creation
             setPhase('create')
             setSuccessMsg('')
         } catch (err) {
+            console.error('Language selection error:', err)
             setError(err.message || 'Failed to save language preference.')
         } finally {
             setLoading(false)
@@ -728,6 +733,7 @@ function CompetitionModal({ isOpen, onClose }) {
                         {/* ═════════ PHASE: LANGUAGE SELECTION ═════════ */}
                         {isLanguagePhase && (
                             <div className="space-y-6">
+                                {console.log('Language selection UI rendering, phase:', phase)}
                                 <div className="text-center mb-6">
                                     <Globe size={32} className="text-yellow-600 mx-auto mb-3" />
                                     <h3 className="text-xl font-bold text-white mb-2">{t('onboarding.selectLanguage')}</h3>
@@ -742,7 +748,10 @@ function CompetitionModal({ isOpen, onClose }) {
                                     ].map((lang) => (
                                         <button
                                             key={lang.code}
-                                            onClick={() => setSelectedLanguage(lang.code)}
+                                            onClick={() => {
+                                                console.log('Language selected:', lang.code)
+                                                setSelectedLanguage(lang.code)
+                                            }}
                                             className={`p-4 rounded-xl text-center transition-all cursor-pointer
                                                 ${selectedLanguage === lang.code
                                                     ? 'bg-yellow-600/20 border-2 border-yellow-600 text-yellow-600'
