@@ -390,10 +390,10 @@ function ProfileDropdown({ isOpen, onClose, onNavigate }) {
 
 function CompetitionModal({ isOpen, onClose }) {
     const { isAuthenticated, user, login, register, updateUser, verifyEmail } = useAuth()
-    const { t } = useLang()
+    const { t, setLang } = useLang()
 
     // Phase determines which view the user sees
-    // 'login' | 'register' | 'verify' — unauthenticated
+    // 'login' | 'register' | 'verify' | 'language' — unauthenticated
     // 'create' | 'join'               — authenticated
     const [phase, setPhase] = useState('login')
 
@@ -409,19 +409,35 @@ function CompetitionModal({ isOpen, onClose }) {
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const [successMsg, setSuccessMsg] = useState('')
+    const [selectedLanguage, setSelectedLanguage] = useState('en')
+    const [isNewRegistration, setIsNewRegistration] = useState(false)
 
     // When auth state changes, auto-advance to team phase (or close if already in a team)
     useEffect(() => {
-        if (isAuthenticated && (phase === 'login' || phase === 'register' || phase === 'verify')) {
+        if (isAuthenticated && (phase === 'login' || phase === 'register' || phase === 'verify' || phase === 'language')) {
             if (user?.teamId) {
                 // Already in a team — no need to show team creation, just close
                 onClose()
+            } else if (isNewRegistration) {
+                // New registration - show language selection
+                setPhase('language')
             } else {
+                // Existing user or user with language set - go to team creation
+                if (user?.language) {
+                    setLang(user.language)
+                }
                 setPhase('create')
             }
             setError('')
         }
-    }, [isAuthenticated, user, phase, onClose])
+    }, [isAuthenticated, user, phase, onClose, setLang, isNewRegistration])
+
+    // Reset new registration flag when language is selected
+    useEffect(() => {
+        if (phase === 'create' && user?.language) {
+            setIsNewRegistration(false)
+        }
+    }, [phase, user?.language])
 
     // Reset state when modal opens/closes
     useEffect(() => {
@@ -440,6 +456,8 @@ function CompetitionModal({ isOpen, onClose }) {
             setOtpCode('')
             setError('')
             setSuccessMsg('')
+            setSelectedLanguage('en')
+            setIsNewRegistration(false)
         }
     }, [isOpen, isAuthenticated, user, onClose])
 
@@ -493,8 +511,14 @@ function CompetitionModal({ isOpen, onClose }) {
         if (otpCode.length !== 6) { setError('Please enter a 6-digit code.'); return }
         setLoading(true)
         try {
-            await verifyEmail(email, otpCode)
+            const data = await verifyEmail(email, otpCode)
             setSuccessMsg('Email verified successfully! Welcome to ICARUS.')
+
+            // Check if this is a new registration (user has no language set)
+            if (!data.user.language) {
+                setIsNewRegistration(true)
+                setPhase('language')
+            }
         } catch (err) {
             setError(err.message || 'Verification failed. Invalid code.')
         } finally {
@@ -553,8 +577,29 @@ function CompetitionModal({ isOpen, onClose }) {
         }
     }
 
+    async function handleLanguageSelection() {
+        setError('')
+        setLoading(true)
+        try {
+            const data = await api.put('/user/language', { language: selectedLanguage })
+            if (data.user) updateUser(data.user)
+            setLang(selectedLanguage) // Update LanguageContext
+            setSuccessMsg('Language selected successfully!')
+
+            // After language is set, proceed to team creation
+            setTimeout(() => {
+                setPhase('create')
+                setSuccessMsg('')
+            }, 500)
+        } catch (err) {
+            setError(err.message || 'Failed to save language preference.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
     // ── Determine which tabs to show ────────────────────────
-    const isAuthPhase = phase === 'login' || phase === 'register' || phase === 'verify' || phase === 'forgot'
+    const isAuthPhase = phase === 'login' || phase === 'register' || phase === 'verify' || phase === 'forgot' || phase === 'language'
 
     return (
         <div
@@ -577,14 +622,14 @@ function CompetitionModal({ isOpen, onClose }) {
 
                 {/* Title */}
                 <h2 className="text-3xl md:text-4xl font-black uppercase tracking-widest text-white mb-2 text-center">
-                    {isAuthPhase ? t('auth.accessIcarus') : user?.teamId ? t('auth.assignmentComplete') : t('auth.joinCompetition')}
+                    {phase === 'language' ? t('onboarding.selectLanguage') : isAuthPhase ? t('auth.accessIcarus') : user?.teamId ? t('auth.assignmentComplete') : t('auth.joinCompetition')}
                 </h2>
                 <p className="text-sm text-neutral-500 text-center mb-10 tracking-wider uppercase">
-                    {isAuthPhase ? t('auth.authenticate') : `${t('auth.welcomeBack')}, ${user?.name}`}
+                    {phase === 'language' ? t('onboarding.languageDesc') : isAuthPhase ? t('auth.authenticate') : `${t('auth.welcomeBack')}, ${user?.name}`}
                 </p>
 
                 {/* Mode Toggle */}
-                {!(!isAuthPhase && user?.teamId) && phase !== 'verify' && phase !== 'forgot' && (
+                {!(!isAuthPhase && user?.teamId) && phase !== 'verify' && phase !== 'forgot' && phase !== 'language' && (
                     <div className="flex rounded-xl bg-neutral-950 border border-neutral-800 p-1 mb-6">
                     {isAuthPhase ? (
                         <>
@@ -685,6 +730,49 @@ function CompetitionModal({ isOpen, onClose }) {
                                     {t('auth.backToSignIn')}
                                 </button>
                             </form>
+                        )}
+
+                        {/* ═════════ PHASE: LANGUAGE SELECTION ═════════ */}
+                        {phase === 'language' && (
+                            <div className="space-y-6">
+                                <div className="text-center mb-6">
+                                    <Globe size={32} className="text-yellow-600 mx-auto mb-3" />
+                                    <h3 className="text-xl font-bold text-white mb-2">{t('onboarding.selectLanguage')}</h3>
+                                    <p className="text-sm text-neutral-400">{t('onboarding.languageDesc')}</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {[
+                                        { code: 'kk', label: 'Қазақша', flag: '🇰🇿' },
+                                        { code: 'ru', label: 'Русский', flag: '🇷🇺' },
+                                        { code: 'en', label: 'English', flag: '🇬🇧' },
+                                        { code: 'ro', label: 'Română', flag: '🇷🇴' }
+                                    ].map((lang) => (
+                                        <button
+                                            key={lang.code}
+                                            onClick={() => setSelectedLanguage(lang.code)}
+                                            className={`p-4 rounded-xl text-center transition-all cursor-pointer
+                                                ${selectedLanguage === lang.code
+                                                    ? 'bg-yellow-600/20 border-2 border-yellow-600 text-yellow-600'
+                                                    : 'bg-neutral-800 border border-neutral-700 text-neutral-400 hover:border-neutral-600'}`}
+                                        >
+                                            <div className="text-2xl mb-2">{lang.flag}</div>
+                                            <div className="text-sm font-semibold">{lang.label}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={handleLanguageSelection}
+                                    disabled={loading}
+                                    className="mt-6 w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
+                                               bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
+                                               shadow-lg shadow-yellow-600/20
+                                               transition-all duration-300 ease-out
+                                               hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
+                                               active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                                >
+                                    {loading ? t('generic.loading') : t('onboarding.continue')}
+                                </button>
+                            </div>
                         )}
 
                         {/* ═════════ PHASE: LOGIN ═════════ */}

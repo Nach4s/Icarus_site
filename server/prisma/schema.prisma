@@ -33,6 +33,7 @@ model User {
   name          String
   avatarUrl     String?   /// URL to the user's avatar image
   role          Role      @default(STUDENT)
+  language      String    @default("en") /// User's preferred language (kk, ru, en, ro)
 
   // ── Gamification ──────────────────────────────────────────────────
   xp            Int       @default(0)       /// Lifetime experience points

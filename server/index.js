@@ -1286,6 +1286,35 @@ app.put(
 );
 
 /**
+ * PUT /api/user/language
+ * ───────────────────────
+ * Update the authenticated user's language preference.
+ *
+ * Body: { language: string } (kk, ru, en, ro)
+ */
+app.put(
+  "/api/user/language",
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const { language } = req.body;
+    const validLanguages = ['kk', 'ru', 'en', 'ro'];
+
+    if (!language || !validLanguages.includes(language)) {
+      return res.status(400).json({ error: "Invalid language. Must be one of: kk, ru, en, ro" });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: { language },
+      include: { team: true },
+    });
+
+    const { passwordHash: _, ...safeUser } = user;
+    return res.json({ message: "Language updated.", user: safeUser });
+  })
+);
+
+/**
  * POST /api/user/avatar
  * ──────────────────────
  * Uploads an avatar image to Supabase Storage and updates the user profile.

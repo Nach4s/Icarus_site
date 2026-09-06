@@ -911,6 +911,24 @@ const translations = {
     en: 'English',
     ro: 'Engleză',
   },
+  'onboarding.selectLanguage': {
+    kk: 'Тілді таңдаңыз',
+    ru: 'Выберите язык',
+    en: 'Select Language',
+    ro: 'Selectați limba',
+  },
+  'onboarding.languageDesc': {
+    kk: 'Тілді таңдаңыз - бұл тіл бүкіл платформада қолданылады',
+    ru: 'Выберите язык - этот язык будет использоваться на всей платформе',
+    en: 'Select language - this language will be used throughout the platform',
+    ro: 'Selectați limba - această limbă va fi utilizată pe întreaga platformă',
+  },
+  'onboarding.continue': {
+    kk: 'Жалғастыру',
+    ru: 'Продолжить',
+    en: 'Continue',
+    ro: 'Continuare',
+  },
   'comp.regClosed': {
     kk: 'Тіркелу жабық',
     ru: 'Регистрация закрыта',
