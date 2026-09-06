@@ -421,8 +421,12 @@ function CompetitionModal({ isOpen, onClose }) {
             } else if (isNewRegistration) {
                 // New registration - show language selection
                 setPhase('language')
+            } else if (user?.language === 'en') {
+                // User has default language - treat as new registration
+                setIsNewRegistration(true)
+                setPhase('language')
             } else {
-                // Existing user or user with language set - go to team creation
+                // Existing user with custom language - go to team creation
                 if (user?.language) {
                     setLang(user.language)
                 }
@@ -434,7 +438,7 @@ function CompetitionModal({ isOpen, onClose }) {
 
     // Reset new registration flag when language is selected
     useEffect(() => {
-        if (phase === 'create' && user?.language) {
+        if (phase === 'create' && user?.language && user?.language !== 'en') {
             setIsNewRegistration(false)
         }
     }, [phase, user?.language])
@@ -514,8 +518,8 @@ function CompetitionModal({ isOpen, onClose }) {
             const data = await verifyEmail(email, otpCode)
             setSuccessMsg('Email verified successfully! Welcome to ICARUS.')
 
-            // Check if this is a new registration (user has no language set)
-            if (!data.user.language) {
+            // Check if this is a new registration (user has default language)
+            if (data.user.language === 'en') {
                 setIsNewRegistration(true)
                 setPhase('language')
             }
