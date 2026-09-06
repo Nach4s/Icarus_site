@@ -412,23 +412,12 @@ function CompetitionModal({ isOpen, onClose }) {
     const [successMsg, setSuccessMsg] = useState('')
     const [selectedLanguage, setSelectedLanguage] = useState('en')
 
-    // When auth state changes, auto-advance to team phase (or close if already in a team)
+    // When auth state changes, only close modal if user already has a team
     useEffect(() => {
-        if (isAuthenticated && (phase === 'login' || phase === 'register' || phase === 'verify' || phase === 'language')) {
-            if (user?.teamId) {
-                // Already in a team — no need to show team creation, just close
-                onClose()
-            } else if (phase === 'login') {
-                // Login phase - go to team creation
-                if (user?.language) {
-                    setLang(user.language)
-                }
-                setPhase('create')
-            }
-            // For verify and language phases, don't auto-advance - let the user complete the flow
-            setError('')
+        if (isAuthenticated && user?.teamId) {
+            onClose()
         }
-    }, [isAuthenticated, user, phase, onClose, setLang])
+    }, [isAuthenticated, user?.teamId, onClose])
 
     // Reset state when modal opens/closes
     useEffect(() => {
@@ -438,6 +427,8 @@ function CompetitionModal({ isOpen, onClose }) {
                 onClose()
                 return
             }
+            // For existing users without team, go to team creation
+            // For new users, start at login
             setPhase(isAuthenticated ? 'create' : 'login')
             setEmail('')
             setPassword('')
@@ -450,7 +441,7 @@ function CompetitionModal({ isOpen, onClose }) {
             setSelectedLanguage('en')
             setRegistrationEmail('')
         }
-    }, [isOpen, isAuthenticated, user, onClose])
+    }, [isOpen, isAuthenticated, user?.teamId, onClose])
 
     if (!isOpen) return null
 
@@ -487,7 +478,7 @@ function CompetitionModal({ isOpen, onClose }) {
         setLoading(true)
         try {
             await register(email, password, name)
-            setRegistrationEmail(email) // Store email for verification
+            setRegistrationEmail(email)
             setPhase('verify')
             setSuccessMsg('Account created! Please check your email for the verification code.')
         } catch (err) {
@@ -506,14 +497,13 @@ function CompetitionModal({ isOpen, onClose }) {
             const data = await verifyEmail(registrationEmail, otpCode)
             setSuccessMsg('Email verified successfully! Welcome to ICARUS.')
 
-            console.log('Verification successful, user:', data.user)
-            console.log('Current phase before switch:', phase)
-            console.log('Setting phase to language')
+            console.log('DEBUG: Before phase change, current phase:', phase)
+            console.log('DEBUG: Setting phase to language')
 
             // Always go to language selection after verification
             setPhase('language')
-            console.log('Phase set to language')
 
+            console.log('DEBUG: After phase change, current phase:', phase)
         } catch (err) {
             setError(err.message || 'Verification failed. Invalid code.')
         } finally {
@@ -575,20 +565,16 @@ function CompetitionModal({ isOpen, onClose }) {
     async function handleLanguageSelection() {
         setError('')
         setLoading(true)
-        console.log('Language selection clicked, selected language:', selectedLanguage)
         try {
             const data = await api.put('/user/language', { language: selectedLanguage })
             if (data.user) updateUser(data.user)
-            setLang(selectedLanguage) // Update LanguageContext
+            setLang(selectedLanguage)
             setSuccessMsg('Language selected successfully!')
-
-            console.log('Language saved, setting phase to create')
 
             // After language is set, proceed to team creation
             setPhase('create')
             setSuccessMsg('')
         } catch (err) {
-            console.error('Language selection error:', err)
             setError(err.message || 'Failed to save language preference.')
         } finally {
             setLoading(false)
@@ -625,6 +611,11 @@ function CompetitionModal({ isOpen, onClose }) {
                 <p className="text-sm text-neutral-500 text-center mb-10 tracking-wider uppercase">
                     {isLanguagePhase ? t('onboarding.languageDesc') : isAuthPhase ? t('auth.authenticate') : `${t('auth.welcomeBack')}, ${user?.name}`}
                 </p>
+
+                {/* Debug: Show current phase */}
+                <div className="text-xs text-red-500 text-center mb-4">
+                    DEBUG: Phase = {phase}, Auth = {isAuthenticated ? 'yes' : 'no'}
+                </div>
 
                 {/* Mode Toggle */}
                 {!(!isAuthPhase && user?.teamId) && phase !== 'verify' && phase !== 'forgot' && !isLanguagePhase && (
@@ -733,7 +724,6 @@ function CompetitionModal({ isOpen, onClose }) {
                         {/* ═════════ PHASE: LANGUAGE SELECTION ═════════ */}
                         {isLanguagePhase && (
                             <div className="space-y-6">
-                                {console.log('Language selection UI rendering, phase:', phase)}
                                 <div className="text-center mb-6">
                                     <Globe size={32} className="text-yellow-600 mx-auto mb-3" />
                                     <h3 className="text-xl font-bold text-white mb-2">{t('onboarding.selectLanguage')}</h3>
@@ -748,10 +738,7 @@ function CompetitionModal({ isOpen, onClose }) {
                                     ].map((lang) => (
                                         <button
                                             key={lang.code}
-                                            onClick={() => {
-                                                console.log('Language selected:', lang.code)
-                                                setSelectedLanguage(lang.code)
-                                            }}
+                                            onClick={() => setSelectedLanguage(lang.code)}
                                             className={`p-4 rounded-xl text-center transition-all cursor-pointer
                                                 ${selectedLanguage === lang.code
                                                     ? 'bg-yellow-600/20 border-2 border-yellow-600 text-yellow-600'
