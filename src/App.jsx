@@ -1948,7 +1948,7 @@ function RankingTab({ onJoinClick, isRegistered }) {
     )
 }
 
-function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
+function CompetitionJoinModal({ isOpen, onClose, onRegistered, onNavigateToTraining }) {
     const { user } = useAuth()
     const { t } = useLang()
     const [phase, setPhase] = useState('loading') // 'loading' | 'no_competition' | 'no_team' | 'not_captain' | 'ready' | 'success' | 'error'
@@ -2037,8 +2037,14 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered }) {
                 <button onClick={onClose}
                     className="px-10 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest
                                bg-neutral-800 border border-neutral-700 text-white
-                               hover:bg-neutral-700 transition cursor-pointer">
+                               hover:bg-neutral-700 transition cursor-pointer mb-3">
                     {t('comp.understood')}
+                </button>
+                <button onClick={() => { onClose(); onNavigateToTraining(); }}
+                    className="px-10 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest
+                               bg-yellow-600 border border-yellow-500 text-white
+                               hover:bg-yellow-500 transition cursor-pointer">
+                    {t('comp.joinClub')}
                 </button>
             </>
         )
@@ -3233,6 +3239,11 @@ export default function App() {
         setIsJoinModalOpen(true)
     }
 
+    const handleNavigateToTraining = () => {
+        setActivePage('home')
+        setActiveTab('training')
+    }
+
     const handleRegistered = () => {
         setIsRegistered(true)
     }
@@ -3337,6 +3348,7 @@ export default function App() {
                     isOpen={isJoinModalOpen}
                     onClose={() => setIsJoinModalOpen(false)}
                     onRegistered={handleRegistered}
+                    onNavigateToTraining={handleNavigateToTraining}
                 />
                 <AlreadyRegisteredModal
                     isOpen={isAlreadyRegisteredModalOpen}

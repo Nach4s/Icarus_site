@@ -887,6 +887,12 @@ const translations = {
     en: 'Understood',
     ro: 'Am înțeles',
   },
+  'comp.joinClub': {
+    kk: 'Клубқа қосылу',
+    ru: 'Присоединиться к клубу',
+    en: 'Join the Club',
+    ro: 'Alătură-te clubului',
+  },
   'comp.regClosed': {
     kk: 'Тіркелу жабық',
     ru: 'Регистрация закрыта',
