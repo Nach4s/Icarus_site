@@ -1751,6 +1751,109 @@ app.get(
 );
 
 // ═══════════════════════════════════════════════════════════════════════
+//  ADMIN USER MANAGEMENT ROUTES — Protected: ADMIN role only
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/admin/users?email=...
+ * ──────────────────────────────
+ * Search users by email (partial, case-insensitive).
+ * Returns: { users } — array of matching users (without passwordHash).
+ */
+app.get(
+  "/api/admin/users",
+  authMiddleware,
+  adminMiddleware,
+  asyncHandler(async (req, res) => {
+    const { email } = req.query;
+
+    const where = email
+      ? { email: { contains: email.trim(), mode: "insensitive" } }
+      : {};
+
+    const users = await prisma.user.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        language: true,
+        xp: true,
+        createdAt: true,
+        teamId: true,
+        team: { select: { id: true, name: true, inviteCode: true } },
+        avatarUrl: true,
+      },
+    });
+
+    return res.json({ users });
+  })
+);
+
+/**
+ * DELETE /api/admin/users/:id
+ * ────────────────────────────
+ * Permanently delete a user account by ID.
+ * Cascades: progress, clubRegistration, competitionParticipations (via DB cascade).
+ * Also handles captain/team cleanup:
+ *   - If user is the only member → delete the team entirely.
+ *   - If user is captain with other members → promote highest-XP member.
+ */
+app.delete(
+  "/api/admin/users/:id",
+  authMiddleware,
+  adminMiddleware,
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    // Prevent self-deletion
+    if (id === req.userId) {
+      return res.status(400).json({ error: "You cannot delete your own account." });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: { team: { include: { members: { select: { id: true, xp: true } } } } },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    // ── Team cleanup before deleting user ─────────────────────────────
+    if (user.teamId) {
+      const team = user.team;
+      const remaining = team.members.filter((m) => m.id !== id);
+
+      if (remaining.length === 0) {
+        // Last member — delete the whole team
+        await prisma.team.delete({ where: { id: team.id } });
+      } else {
+        // Detach user from team first
+        await prisma.user.update({ where: { id }, data: { teamId: null } });
+
+        // If this user was captain, promote highest-XP remaining member
+        if (team.captainId === id) {
+          const newCaptain = remaining.sort((a, b) => b.xp - a.xp)[0];
+          await prisma.team.update({
+            where: { id: team.id },
+            data: { captainId: newCaptain.id },
+          });
+        }
+      }
+    }
+
+    // ── Delete the user (cascades handle progress, club reg, etc.) ────
+    await prisma.user.delete({ where: { id } });
+
+    return res.json({ message: `User "${user.name}" (${user.email}) deleted successfully.` });
+  })
+);
+
+// ═══════════════════════════════════════════════════════════════════════
 //  HEALTH CHECK
 // ═══════════════════════════════════════════════════════════════════════
 

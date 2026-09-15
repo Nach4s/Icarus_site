@@ -412,6 +412,10 @@ function CompetitionModal({ isOpen, onClose }) {
     const [successMsg, setSuccessMsg] = useState('')
     const [selectedLanguage, setSelectedLanguage] = useState(null) // null = not chosen yet (mandatory)
 
+    // Ref to prevent the isAuthenticated-triggered useEffect from overriding the phase
+    // during the registration flow: register → verify → language → create
+    const inRegistrationFlow = useRef(false)
+
     // When auth state changes, only close modal if user already has a team
     useEffect(() => {
         if (isAuthenticated && user?.teamId) {
@@ -421,26 +425,32 @@ function CompetitionModal({ isOpen, onClose }) {
 
     // Reset state when modal opens/closes
     useEffect(() => {
-        if (isOpen) {
-            // If user opens this modal while already authenticated with a team, close it immediately
-            if (isAuthenticated && user?.teamId) {
-                onClose()
-                return
-            }
-            // For existing users without team, go to team creation
-            // For new users, start at login
-            setPhase(isAuthenticated ? 'create' : 'login')
-            setEmail('')
-            setPassword('')
-            setName('')
-            setTeamName('')
-            setInviteCode('')
-            setOtpCode('')
-            setError('')
-            setSuccessMsg('')
-            setSelectedLanguage(null)
-            setRegistrationEmail('')
+        if (!isOpen) {
+            // Reset registration flow flag when modal closes
+            inRegistrationFlow.current = false
+            return
         }
+        // If user opens this modal while already authenticated with a team, close it immediately
+        if (isAuthenticated && user?.teamId) {
+            onClose()
+            return
+        }
+        // During the registration flow (verify→language→create), isAuthenticated
+        // can flip to true — do NOT override the phase in that case
+        if (inRegistrationFlow.current) return
+        // For existing users without team, go to team creation
+        // For new users, start at login
+        setPhase(isAuthenticated ? 'create' : 'login')
+        setEmail('')
+        setPassword('')
+        setName('')
+        setTeamName('')
+        setInviteCode('')
+        setOtpCode('')
+        setError('')
+        setSuccessMsg('')
+        setSelectedLanguage(null)
+        setRegistrationEmail('')
     }, [isOpen, isAuthenticated, user?.teamId, onClose])
 
     if (!isOpen) return null
@@ -479,6 +489,7 @@ function CompetitionModal({ isOpen, onClose }) {
         try {
             await register(email, password, name)
             setRegistrationEmail(email)
+            inRegistrationFlow.current = true // lock phase against isAuthenticated side-effects
             setPhase('verify')
             setSuccessMsg('Account created! Please check your email for the verification code.')
         } catch (err) {
@@ -564,7 +575,9 @@ function CompetitionModal({ isOpen, onClose }) {
             const data = await api.put('/user/language', { language: selectedLanguage })
             if (data.user) updateUser(data.user)
             setLang(selectedLanguage)
-            // After language is set, proceed to team creation
+            // Registration flow complete — allow future isAuthenticated effects to work normally
+            inRegistrationFlow.current = false
+            // Proceed to team creation
             setPhase('create')
         } catch (err) {
             setError(err.message || 'Failed to save language preference.')

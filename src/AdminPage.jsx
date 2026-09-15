@@ -7,7 +7,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import {
     ShieldCheck, Plus, Square, Users, Trophy, Calendar,
     ArrowLeft, Loader2, AlertTriangle, CheckCircle2,
-    ChevronRight, X, Clock, Ban, Activity, Trash2, Pencil, FileText
+    ChevronRight, X, Clock, Ban, Activity, Trash2, Pencil, FileText,
+    UserX, Search, UserCircle
 } from 'lucide-react'
 import { api } from './api'
 import { useAuth } from './AuthContext'
@@ -1049,11 +1050,263 @@ function EditDescriptionPanel({ competition, onUpdated, showToast }) {
     )
 }
 
+// ─── UserDeleteSection ───────────────────────────────────────────────
+
+function UserDeleteSection({ showToast }) {
+    const [query, setQuery] = useState('')
+    const [users, setUsers] = useState([])
+    const [loading, setLoading] = useState(false)
+    const [searched, setSearched] = useState(false)
+    const [userToDelete, setUserToDelete] = useState(null)
+    const [deleting, setDeleting] = useState(false)
+
+    async function handleSearch(e) {
+        e.preventDefault()
+        setLoading(true)
+        setSearched(true)
+        try {
+            const params = query.trim() ? `?email=${encodeURIComponent(query.trim())}` : ''
+            const data = await api.get(`/admin/users${params}`)
+            setUsers(data.users || [])
+        } catch (err) {
+            showToast(err.message || 'Search failed.', 'error')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    async function handleDeleteConfirm() {
+        if (!userToDelete) return
+        setDeleting(true)
+        try {
+            const data = await api.delete(`/admin/users/${userToDelete.id}`)
+            setUsers(prev => prev.filter(u => u.id !== userToDelete.id))
+            showToast(data.message || 'User deleted.', 'success')
+            setUserToDelete(null)
+        } catch (err) {
+            showToast(err.message || 'Failed to delete user.', 'error')
+        } finally {
+            setDeleting(false)
+        }
+    }
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="mb-4">
+                <h1 className="text-3xl font-black uppercase tracking-widest text-white mb-2">User Management</h1>
+                <p className="text-neutral-500 text-sm">Search users by email and permanently delete accounts for testing purposes.</p>
+            </div>
+
+            {/* Search form */}
+            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-5">
+                    <div className="w-9 h-9 rounded-xl bg-yellow-600/15 border border-yellow-600/30 flex items-center justify-center">
+                        <Search size={16} className="text-yellow-500" />
+                    </div>
+                    <div>
+                        <h2 className="text-sm font-black uppercase tracking-widest text-white leading-tight">Find User</h2>
+                        <p className="text-[10px] text-neutral-500 mt-0.5">Search by email address (partial match)</p>
+                    </div>
+                </div>
+                <form onSubmit={handleSearch} className="flex gap-3">
+                    <input
+                        type="text"
+                        value={query}
+                        onChange={e => setQuery(e.target.value)}
+                        placeholder="user@example.com"
+                        className={inputClass + ' flex-1'}
+                    />
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="px-6 py-3 rounded-xl text-sm font-bold uppercase tracking-widest
+                                   bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
+                                   shadow-lg shadow-yellow-600/20
+                                   transition-all duration-200 hover:scale-[1.02] hover:shadow-xl
+                                   active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed
+                                   disabled:hover:scale-100 cursor-pointer flex items-center gap-2 shrink-0"
+                    >
+                        {loading
+                            ? <Loader2 size={15} className="animate-spin" />
+                            : <Search size={15} />}
+                        Search
+                    </button>
+                </form>
+            </div>
+
+            {/* Results */}
+            {searched && (
+                <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                                <UserX size={14} className="text-red-400" />
+                            </div>
+                            <h2 className="text-sm font-black uppercase tracking-widest text-white">Results</h2>
+                        </div>
+                        <span className="text-[11px] text-neutral-500 font-mono">
+                            {users.length} user{users.length !== 1 ? 's' : ''} found
+                        </span>
+                    </div>
+
+                    {loading && (
+                        <div className="flex items-center justify-center gap-3 py-12 text-neutral-600">
+                            <Loader2 size={18} className="animate-spin" />
+                            <span className="text-sm">Searching…</span>
+                        </div>
+                    )}
+
+                    {!loading && users.length === 0 && (
+                        <div className="text-center py-12">
+                            <UserCircle size={32} className="text-neutral-700 mx-auto mb-3" />
+                            <p className="text-sm text-neutral-500">No users found.</p>
+                        </div>
+                    )}
+
+                    {!loading && users.length > 0 && (
+                        <div className="divide-y divide-neutral-800/60">
+                            {users.map((u) => (
+                                <div
+                                    key={u.id}
+                                    className="flex items-center justify-between px-6 py-4 hover:bg-neutral-800/40 transition-colors group"
+                                >
+                                    <div className="flex items-center gap-4 min-w-0">
+                                        {/* Avatar */}
+                                        <div className="w-10 h-10 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden shrink-0">
+                                            {u.avatarUrl
+                                                ? <img src={u.avatarUrl} alt={u.name} className="w-full h-full object-cover" />
+                                                : <span className="text-neutral-400 text-sm font-black uppercase">{u.name.charAt(0)}</span>}
+                                        </div>
+                                        {/* Info */}
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="font-bold text-white text-sm">{u.name}</span>
+                                                {u.role === 'ADMIN' && (
+                                                    <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest bg-yellow-600/20 text-yellow-500 border border-yellow-600/30">
+                                                        Admin
+                                                    </span>
+                                                )}
+                                                <span className="px-2 py-0.5 rounded text-[9px] font-mono text-neutral-500 bg-neutral-800 border border-neutral-700">
+                                                    {u.language?.toUpperCase() || 'EN'}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-neutral-400 truncate mt-0.5">{u.email}</p>
+                                            <div className="flex items-center gap-3 mt-1">
+                                                <span className="text-[10px] text-neutral-600">
+                                                    Joined {fmt(u.createdAt)}
+                                                </span>
+                                                {u.team && (
+                                                    <span className="text-[10px] text-yellow-600/70">
+                                                        Team: {u.team.name}
+                                                    </span>
+                                                )}
+                                                <span className="text-[10px] text-neutral-600 font-mono">
+                                                    {(u.xp || 0).toLocaleString()} XP
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Delete button */}
+                                    <button
+                                        onClick={() => setUserToDelete(u)}
+                                        disabled={u.role === 'ADMIN'}
+                                        title={u.role === 'ADMIN' ? 'Cannot delete admin accounts' : `Delete ${u.name}`}
+                                        className="ml-4 p-2.5 rounded-xl text-neutral-600 hover:text-red-400
+                                                   hover:bg-red-500/10 border border-transparent
+                                                   hover:border-red-500/20
+                                                   transition-all duration-200 cursor-pointer shrink-0
+                                                   disabled:opacity-30 disabled:cursor-not-allowed
+                                                   disabled:hover:text-neutral-600 disabled:hover:bg-transparent"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Delete confirmation modal */}
+            {userToDelete && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-neutral-950/80 backdrop-blur-sm cursor-pointer"
+                        onClick={() => !deleting && setUserToDelete(null)}
+                    />
+                    <div
+                        className="relative bg-neutral-900 border border-neutral-800 rounded-3xl w-full max-w-md
+                                   shadow-2xl shadow-black p-8 md:p-10 flex flex-col items-center text-center"
+                        style={{ animation: 'zoomIn 0.25s ease-out' }}
+                    >
+                        <div className="w-20 h-20 rounded-2xl bg-red-500/10 flex items-center justify-center mb-6
+                                        border border-red-500/20 text-red-500 shadow-inner">
+                            <UserX size={36} />
+                        </div>
+
+                        <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-2">
+                            Delete User?
+                        </h3>
+
+                        <div className="bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 mb-5 w-full">
+                            <p className="text-white font-bold text-sm">{userToDelete.name}</p>
+                            <p className="text-neutral-400 text-xs mt-0.5">{userToDelete.email}</p>
+                            {userToDelete.team && (
+                                <p className="text-yellow-600/70 text-xs mt-1">Team: {userToDelete.team.name}</p>
+                            )}
+                        </div>
+
+                        <p className="text-neutral-500 text-sm mb-8 leading-relaxed">
+                            This will permanently delete the account, all progress, and club registrations.
+                            {userToDelete.team && (
+                                <>
+                                    <br /><br />
+                                    <span className="text-yellow-600/80">
+                                        ⚠ User is in team "{userToDelete.team.name}" — they will be removed from it.
+                                    </span>
+                                </>
+                            )}
+                            <br /><br />
+                            <span className="text-red-400 font-bold uppercase tracking-widest text-[10px]">
+                                This action cannot be undone.
+                            </span>
+                        </p>
+
+                        <div className="flex gap-4 w-full">
+                            <button
+                                onClick={() => setUserToDelete(null)}
+                                disabled={deleting}
+                                className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest
+                                           bg-neutral-800 text-white hover:bg-neutral-700 transition-colors
+                                           disabled:opacity-50 cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteConfirm}
+                                disabled={deleting}
+                                className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest
+                                           bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20
+                                           active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer
+                                           flex items-center justify-center gap-2"
+                            >
+                                {deleting ? <Loader2 size={18} className="animate-spin" /> : <><Trash2 size={16} /> Delete</>}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
 // ─── AdminPage (root) ─────────────────────────────────────────────────
 
 export default function AdminPage({ onBack }) {
     const { user } = useAuth()
-    const [adminTab, setAdminTab] = useState('competitions') // 'competitions' | 'posts' | 'club'
+    const [adminTab, setAdminTab] = useState('competitions') // 'competitions' | 'posts' | 'club' | 'users'
     
     // ─── Competitions State ──────────────────────────────────────────────
     const [competitions, setCompetitions] = useState([])
@@ -1237,12 +1490,28 @@ export default function AdminPage({ onBack }) {
                             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-yellow-500" />
                         )}
                     </button>
+                    <button
+                        onClick={() => setAdminTab('users')}
+                        className={`pb-4 text-sm font-bold uppercase tracking-widest transition-colors cursor-pointer relative ${
+                            adminTab === 'users' ? 'text-red-400' : 'text-neutral-500 hover:text-neutral-300'
+                        }`}
+                    >
+                        <span className="flex items-center gap-1.5">
+                            <UserX size={13} />
+                            Users
+                        </span>
+                        {adminTab === 'users' && (
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-400" />
+                        )}
+                    </button>
                 </div>
 
                 {adminTab === 'posts' ? (
                     <AdminPostsManager showToast={showToast} />
                 ) : adminTab === 'club' ? (
                     <ClubMembersSection />
+                ) : adminTab === 'users' ? (
+                    <UserDeleteSection showToast={showToast} />
                 ) : (
                     <>
                         <div className="mb-10">
