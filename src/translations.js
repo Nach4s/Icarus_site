@@ -929,6 +929,18 @@ const translations = {
     en: 'Continue',
     ro: 'Continuare',
   },
+  'onboarding.selected': {
+    kk: 'Таңдалды',
+    ru: 'Выбрано',
+    en: 'Selected',
+    ro: 'Selectat',
+  },
+  'onboarding.languageRequired': {
+    kk: 'Тілді таңдаңыз',
+    ru: 'Пожалуйста, выберите язык',
+    en: 'Please select a language to continue',
+    ro: 'Vă rugăm să selectați o limbă',
+  },
   'comp.regClosed': {
     kk: 'Тіркелу жабық',
     ru: 'Регистрация закрыта',

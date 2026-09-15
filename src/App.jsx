@@ -410,7 +410,7 @@ function CompetitionModal({ isOpen, onClose }) {
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const [successMsg, setSuccessMsg] = useState('')
-    const [selectedLanguage, setSelectedLanguage] = useState('en')
+    const [selectedLanguage, setSelectedLanguage] = useState(null) // null = not chosen yet (mandatory)
 
     // When auth state changes, only close modal if user already has a team
     useEffect(() => {
@@ -438,7 +438,7 @@ function CompetitionModal({ isOpen, onClose }) {
             setOtpCode('')
             setError('')
             setSuccessMsg('')
-            setSelectedLanguage('en')
+            setSelectedLanguage(null)
             setRegistrationEmail('')
         }
     }, [isOpen, isAuthenticated, user?.teamId, onClose])
@@ -494,16 +494,10 @@ function CompetitionModal({ isOpen, onClose }) {
         if (otpCode.length !== 6) { setError('Please enter a 6-digit code.'); return }
         setLoading(true)
         try {
-            const data = await verifyEmail(registrationEmail, otpCode)
-            setSuccessMsg('Email verified successfully! Welcome to ICARUS.')
-
-            console.log('DEBUG: Before phase change, current phase:', phase)
-            console.log('DEBUG: Setting phase to language')
-
+            await verifyEmail(registrationEmail, otpCode)
+            setSuccessMsg('')
             // Always go to language selection after verification
             setPhase('language')
-
-            console.log('DEBUG: After phase change, current phase:', phase)
         } catch (err) {
             setError(err.message || 'Verification failed. Invalid code.')
         } finally {
@@ -563,17 +557,15 @@ function CompetitionModal({ isOpen, onClose }) {
     }
 
     async function handleLanguageSelection() {
+        if (!selectedLanguage) { setError(t('onboarding.languageRequired')); return }
         setError('')
         setLoading(true)
         try {
             const data = await api.put('/user/language', { language: selectedLanguage })
             if (data.user) updateUser(data.user)
             setLang(selectedLanguage)
-            setSuccessMsg('Language selected successfully!')
-
             // After language is set, proceed to team creation
             setPhase('create')
-            setSuccessMsg('')
         } catch (err) {
             setError(err.message || 'Failed to save language preference.')
         } finally {
@@ -612,12 +604,8 @@ function CompetitionModal({ isOpen, onClose }) {
                     {isLanguagePhase ? t('onboarding.languageDesc') : isAuthPhase ? t('auth.authenticate') : `${t('auth.welcomeBack')}, ${user?.name}`}
                 </p>
 
-                {/* Debug: Show current phase */}
-                <div className="text-xs text-red-500 text-center mb-4">
-                    DEBUG: Phase = {phase}, Auth = {isAuthenticated ? 'yes' : 'no'}
-                </div>
 
-                {/* Mode Toggle */}
+{/* Mode Toggle */}
                 {!(!isAuthPhase && user?.teamId) && phase !== 'verify' && phase !== 'forgot' && !isLanguagePhase && (
                     <div className="flex rounded-xl bg-neutral-950 border border-neutral-800 p-1 mb-6">
                     {isAuthPhase ? (
@@ -725,8 +713,11 @@ function CompetitionModal({ isOpen, onClose }) {
                         {isLanguagePhase && (
                             <div className="space-y-6">
                                 <div className="text-center mb-6">
-                                    <Globe size={32} className="text-yellow-600 mx-auto mb-3" />
-                                    <h3 className="text-xl font-bold text-white mb-2">{t('onboarding.selectLanguage')}</h3>
+                                    <Globe size={36} className="text-yellow-600 mx-auto mb-3" />
+                                    <h3 className="text-xl font-bold text-white mb-2">
+                                        {t('onboarding.selectLanguage')}
+                                        <span className="text-yellow-500 ml-1">*</span>
+                                    </h3>
                                     <p className="text-sm text-neutral-400">{t('onboarding.languageDesc')}</p>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
@@ -735,29 +726,37 @@ function CompetitionModal({ isOpen, onClose }) {
                                         { code: 'ru', label: 'Русский', flag: '🇷🇺' },
                                         { code: 'en', label: 'English', flag: '🇬🇧' },
                                         { code: 'ro', label: 'Română', flag: '🇷🇴' }
-                                    ].map((lang) => (
+                                    ].map((lng) => (
                                         <button
-                                            key={lang.code}
-                                            onClick={() => setSelectedLanguage(lang.code)}
-                                            className={`p-4 rounded-xl text-center transition-all cursor-pointer
-                                                ${selectedLanguage === lang.code
-                                                    ? 'bg-yellow-600/20 border-2 border-yellow-600 text-yellow-600'
-                                                    : 'bg-neutral-800 border border-neutral-700 text-neutral-400 hover:border-neutral-600'}`}
+                                            key={lng.code}
+                                            onClick={() => { setSelectedLanguage(lng.code); setError(''); }}
+                                            className={`p-4 rounded-xl text-center transition-all duration-200 cursor-pointer
+                                                ${selectedLanguage === lng.code
+                                                    ? 'bg-yellow-600/20 border-2 border-yellow-600 text-yellow-400 scale-[1.03] shadow-lg shadow-yellow-600/20'
+                                                    : 'bg-neutral-800/60 border border-neutral-700 text-neutral-400 hover:border-yellow-600/40 hover:text-neutral-200 hover:bg-neutral-800'}`}
                                         >
-                                            <div className="text-2xl mb-2">{lang.flag}</div>
-                                            <div className="text-sm font-semibold">{lang.label}</div>
+                                            <div className="text-3xl mb-2">{lng.flag}</div>
+                                            <div className="text-sm font-bold tracking-wide">{lng.label}</div>
+                                            {selectedLanguage === lng.code && (
+                                                <div className="mt-1 text-[10px] text-yellow-500 font-bold uppercase tracking-widest">✓ {t('onboarding.selected')}</div>
+                                            )}
                                         </button>
                                     ))}
                                 </div>
+                                {!selectedLanguage && (
+                                    <p className="text-center text-xs text-yellow-600/70 tracking-wide">
+                                        {t('onboarding.languageRequired')}
+                                    </p>
+                                )}
                                 <button
                                     onClick={handleLanguageSelection}
-                                    disabled={loading}
-                                    className="mt-6 w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
+                                    disabled={loading || !selectedLanguage}
+                                    className="mt-2 w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
                                                bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
                                                shadow-lg shadow-yellow-600/20
                                                transition-all duration-300 ease-out
                                                hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
-                                               active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                                               active:scale-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
                                 >
                                     {loading ? t('generic.loading') : t('onboarding.continue')}
                                 </button>
