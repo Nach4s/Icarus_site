@@ -147,10 +147,11 @@ function gameLoop(ts) {
       EL.scoreVal.textContent = score;
     }
 
-    // Difficulty
+    // Difficulty: a level lasts 15s while an event is running, 11s otherwise
+    const levelDuration = activeEvent ? LEVEL_DURATION_EVENT : LEVEL_DURATION;
     diffTimer += dt;
-    if (diffTimer >= 15) {
-      diffTimer -= 15;
+    if (diffTimer >= levelDuration) {
+      diffTimer = 0;
       diffLevel++;
       sessionLevel = diffLevel;
       EL.levelVal.textContent = diffLevel;

@@ -2,7 +2,7 @@
 // Unique hazards for the four biomes that had no mechanic of their own:
 //   Neon Azure        → Ion Gates      (pylon pair with a pulsing electric arc)
 //   Golden Supernova  → Supernova      (expanding shock ring with safe gaps)
-//   Deep Ultramarine  → Minefield      (near-invisible mines, revealed by sonar)
+//   Deep Ultramarine  → Minefield      (invisible mines, revealed only by sonar)
 //   Fiery Magma       → Eruptions      (fireballs arc up from the bottom edge and fall back)
 //
 // Event compatibility — a biome hazard must never make an event unwinnable.
@@ -581,8 +581,9 @@ function drawMinefield(ctx) {
 
   mines.forEach(m => {
     const armed = m.state === 'ARMED';
-    // Almost invisible until a sonar ping (or arming) lights it up
-    const vis = armed ? 1 : 0.05 + 0.95 * Math.min(1, m.reveal / 0.8);
+    // Fully invisible until a sonar ping (or arming) lights it up
+    const vis = armed ? 1 : Math.min(1, m.reveal / 0.8);
+    if (vis <= 0.01) return;
     ctx.save();
     ctx.globalAlpha = Math.max(0, vis * m.alpha);
 
@@ -633,37 +634,44 @@ function drawMinefield(ctx) {
 // ══════════════════════════════════════════════════════════════
 //  FIERY MAGMA — ERUPTIONS
 // ══════════════════════════════════════════════════════════════
-// A vent glows on the bottom edge and shows the dotted arcs its fireballs will
-// fly; then 1–3 fireballs shoot up and fall back under gravity — the only
-// curved projectiles in the game.
+// A vent glows on the bottom edge and shows the dotted paths its fireballs will
+// fly; then 1–3 fireballs shoot up one after another and fall back. Each one has
+// its own height, sideways speed and a weaving wobble, so the arcs are chaotic —
+// but every path is fully shown in the preview.
 const ERUPT_WARN = 1.3;        // seconds of vent glow + trajectory preview
 const FIREBALL_R = 15;
+
+// Position of a fireball s seconds after launch (shared by preview and flight)
+function fireballPos(x0, y0, b, s) {
+  return {
+    x: x0 + b.vx * s + b.wobA * (Math.sin(b.wobF * s * Math.PI * 2 + b.wobP) - Math.sin(b.wobP)),
+    y: y0 + b.vy0 * s + 0.5 * b.g * s * s,
+  };
+}
 
 function spawnMagmaVent(w, h) {
   const x = w * (0.08 + Math.random() * 0.84);
   const count = diffLevel < 8 ? 1 : diffLevel < 14 ? 1 + (Math.random() < 0.5 ? 1 : 0) : 2 + (Math.random() < 0.5 ? 1 : 0);
   const balls = [];
   for (let i = 0; i < count; i++) {
-    const apex = h * (0.35 + Math.random() * 0.35);   // how high it flies
-    const tUp = 1.35 + Math.random() * 0.35;           // seconds to the apex
-    // Lean towards the middle so fireballs stay on screen
-    const dir = x < w * 0.3 ? 1 : x > w * 0.7 ? -1 : (Math.random() < 0.5 ? -1 : 1);
+    const apex = h * (0.3 + Math.random() * 0.5);     // how high it flies
+    const tUp = 1.1 + Math.random() * 0.7;             // seconds to the apex
+    let vx = (Math.random() < 0.5 ? -1 : 1) * (20 + Math.random() * 200);
+    // Flip sideways speed if it would land off-screen
+    const landX = x + vx * tUp * 2;
+    if (landX < w * 0.05 || landX > w * 0.95) vx = -vx;
     balls.push({
-      vx: dir * (30 + Math.random() * 110),
+      vx,
       vy0: -2 * apex / tUp,
       g: 2 * apex / (tUp * tUp),
+      wobA: 25 + Math.random() * 45,                   // weave amplitude, px
+      wobF: 0.7 + Math.random() * 1.1,                 // weaves per second
+      wobP: Math.random() * Math.PI * 2,
+      delay: i * (0.15 + Math.random() * 0.3),         // staggered launches
       r: FIREBALL_R + Math.random() * 5,
     });
   }
-  magmaVents.push({ x, timer: 0, balls });
-}
-
-function launchVent(v, h) {
-  playSfxExplosion();
-  spawnExplosion(v.x, h, 14);
-  v.balls.forEach(b => {
-    fireballs.push({ x: v.x, y: h + 20, vx: b.vx, vy: b.vy0, g: b.g, r: b.r, spin: Math.random() * 6 });
-  });
+  magmaVents.push({ x, timer: 0, launched: 0, balls });
 }
 
 function updateEruptions(dt, w, h, active) {
@@ -693,31 +701,37 @@ function updateEruptions(dt, w, h, active) {
   for (let i = magmaVents.length - 1; i >= 0; i--) {
     const v = magmaVents[i];
     v.timer += dt;
-    if (v.timer >= ERUPT_WARN) {
-      launchVent(v, h);
-      magmaVents.splice(i, 1);
+    while (v.launched < v.balls.length && v.timer >= ERUPT_WARN + v.balls[v.launched].delay) {
+      const b = v.balls[v.launched++];
+      if (v.launched === 1) playSfxExplosion();
+      spawnExplosion(v.x, h, 10);
+      fireballs.push({ x0: v.x, y0: h + 20, x: v.x, y: h + 20, age: 0, b: { ...b }, spin: Math.random() * 6 });
     }
+    if (v.launched >= v.balls.length) magmaVents.splice(i, 1);
   }
 
   for (let i = fireballs.length - 1; i >= 0; i--) {
     const f = fireballs[i];
-    f.vy += f.g * dt;
-    f.x += f.vx * dt;
-    f.y += f.vy * dt;
+    const px = f.x, py = f.y;
+    f.age += dt;
+    const pos = fireballPos(f.x0, f.y0, f.b, f.age);
+    f.x = pos.x;
+    f.y = pos.y;
     f.spin += dt * 4;
-    if (f.vy > 0 && f.y > h + 60) { fireballs.splice(i, 1); continue; }
+    const vy = f.b.vy0 + f.b.g * f.age;
+    if (vy > 0 && f.y > h + 60) { fireballs.splice(i, 1); continue; }
     if (Math.random() < dt * 30) {
-      addParticle({ x: f.x + (Math.random() - 0.5) * f.r, y: f.y + (Math.random() - 0.5) * f.r,
-        vx: -f.vx * 0.1, vy: -f.vy * 0.1, life: 0.45, maxLife: 0.45, size: 3 + Math.random() * 3,
+      addParticle({ x: f.x + (Math.random() - 0.5) * f.b.r, y: f.y + (Math.random() - 0.5) * f.b.r,
+        vx: (px - f.x) * 6, vy: (py - f.y) * 6, life: 0.45, maxLife: 0.45, size: 3 + Math.random() * 3,
         color: Math.random() < 0.5 ? '#fb923c' : '#fde047', type: 'circle', grav: 0 });
     }
 
-    if (canHurtRocket() && Math.hypot(rocket.x - f.x, rocket.y - f.y) < f.r * 0.85 + rocketHitR()) {
+    if (canHurtRocket() && Math.hypot(rocket.x - f.x, rocket.y - f.y) < f.b.r * 0.85 + rocketHitR()) {
       killRocket();
     }
     for (const p of pirates) {
       if (!p.alive || !p.active) continue;
-      if (Math.hypot(p.x - f.x, p.y - f.y) < f.r * 0.85 + p.r * 0.8) {
+      if (Math.hypot(p.x - f.x, p.y - f.y) < f.b.r * 0.85 + p.r * 0.8) {
         p.alive = false;
         playSfxExplosion();
         spawnExplosion(p.x, p.y, p.r * 1.8 + 12);
@@ -744,15 +758,14 @@ function drawMagmaVents(ctx, w, h) {
     ctx.beginPath();
     ctx.arc(v.x, h, 70, Math.PI, Math.PI * 2);
     ctx.fill();
-    // Dotted preview of each fireball's arc
+    // Dotted preview of each fireball still to launch
     ctx.fillStyle = `rgba(251, 146, 60, ${0.35 + 0.45 * pulse})`;
-    v.balls.forEach(b => {
-      for (let s = 0.06; s < 6; s += 0.07) {
-        const x = v.x + b.vx * s;
-        const y = h + 20 + b.vy0 * s + 0.5 * b.g * s * s;
-        if (y > h + 20) break;
+    v.balls.slice(v.launched).forEach(b => {
+      for (let s = 0.06; s < 6; s += 0.06) {
+        const p = fireballPos(v.x, h + 20, b, s);
+        if (p.y > h + 20) break;
         ctx.beginPath();
-        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
         ctx.fill();
       }
     });
@@ -762,25 +775,26 @@ function drawMagmaVents(ctx, w, h) {
 
 function drawFireballs(ctx) {
   fireballs.forEach(f => {
+    const r = f.b.r;
     ctx.save();
     ctx.fillStyle = 'rgba(249, 115, 22, 0.22)';
     ctx.beginPath();
-    ctx.arc(f.x, f.y, f.r * 1.9, 0, Math.PI * 2);
+    ctx.arc(f.x, f.y, r * 1.9, 0, Math.PI * 2);
     ctx.fill();
-    const core = ctx.createRadialGradient(f.x - f.r * 0.3, f.y - f.r * 0.3, 0, f.x, f.y, f.r);
+    const core = ctx.createRadialGradient(f.x - r * 0.3, f.y - r * 0.3, 0, f.x, f.y, r);
     core.addColorStop(0, '#fffbeb');
     core.addColorStop(0.35, '#fde047');
     core.addColorStop(0.7, '#f97316');
     core.addColorStop(1, '#991b1b');
     ctx.fillStyle = core;
     ctx.beginPath();
-    ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+    ctx.arc(f.x, f.y, r, 0, Math.PI * 2);
     ctx.fill();
     // Dark crust cracks
     ctx.strokeStyle = 'rgba(69, 10, 10, 0.6)';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(f.x, f.y, f.r * 0.6, f.spin, f.spin + 1.2);
+    ctx.arc(f.x, f.y, r * 0.6, f.spin, f.spin + 1.2);
     ctx.stroke();
     ctx.restore();
   });
@@ -809,6 +823,11 @@ function drawBiomeHazardsAbove(ctx) {
   if (fireballs.length) drawFireballs(ctx);
 }
 
+function scaleFireballPath(b, sx, sy) {
+  b.vx *= sx; b.wobA *= sx;
+  b.vy0 *= sy; b.g *= sy;
+}
+
 // Keep hazards in place when the playfield is resized (see input.js)
 function rescaleBiomeHazards(sx, sy) {
   ionGates.forEach(g => { g.a.x *= sx; g.a.y *= sy; g.b.x *= sx; g.b.y *= sy; });
@@ -816,7 +835,10 @@ function rescaleBiomeHazards(sx, sy) {
   [mines, sonarPings].forEach(list => list.forEach(e => { e.x *= sx; e.y *= sy; }));
   magmaVents.forEach(v => {
     v.x *= sx;
-    v.balls.forEach(b => { b.vx *= sx; b.vy0 *= sy; b.g *= sy; });
+    v.balls.forEach(b => scaleFireballPath(b, sx, sy));
   });
-  fireballs.forEach(f => { f.x *= sx; f.y *= sy; f.vx *= sx; f.vy *= sy; f.g *= sy; });
+  fireballs.forEach(f => {
+    f.x0 *= sx; f.x *= sx; f.y0 *= sy; f.y *= sy;
+    scaleFireballPath(f.b, sx, sy);
+  });
 }

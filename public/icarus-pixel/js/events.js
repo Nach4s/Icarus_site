@@ -2987,14 +2987,20 @@ function updatePushWave(dt, w, h) {
       }
     }
 
-    // Pirates interaction: blown by the solar storm. Any pirate that leaves the
-    // map after being hit by the storm explodes — except shielded ones, which brace
-    // at the edge. (Pirates still flying in from off-screen are not affected.)
+    // Pirates interaction: the storm strips shields and blows pirates along. Any
+    // pirate that leaves the map after being hit explodes; one that somehow still
+    // has a shield braces at the edge. (Pirates flying in from off-screen are not affected.)
     for (let i = 0; i < pirates.length; i++) {
       const p = pirates[i];
       if (!p.alive || !p.active) continue;
       const pPos = getEntityPos(p);
       if (pPos <= pw.frontPos + 40) {
+        if (p.hasArmor) {
+          p.hasArmor = false;
+          p.armor = 0;
+          spawnShieldBreakEffect(p.x, p.y, p.r);
+          spawnFloatingText(p.x, p.y - 20, 'SHIELD BURNED!', '#38bdf8');
+        }
         if (p.x >= 0 && p.x <= w && p.y >= 0 && p.y <= h) p.stormBlown = true;
         p.x += pw.dir.dx * PUSH_PIRATE_SPD * dt;
         p.y += pw.dir.dy * PUSH_PIRATE_SPD * dt;

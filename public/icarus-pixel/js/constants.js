@@ -10,6 +10,8 @@
 
 // ─── Constants ────────────────────────────────────────────────
 const ROCKET_SPEED = 320;   // px/sec
+const LEVEL_DURATION = 11;        // seconds per level without an event
+const LEVEL_DURATION_EVENT = 15;  // seconds per level while an event is running
 const MAX_PARTICLES = 350;   // cap to avoid memory issues
 const STAR_LAYERS = [
   { count: 80, speed: 20, size: 1, alpha: 0.4 },
