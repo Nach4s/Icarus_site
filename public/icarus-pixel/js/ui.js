@@ -297,6 +297,7 @@ function startGame() {
   pushWave = null;
   pushWaveTimer = 0;
   pushWaveInterval = 0;
+  resetBiomeHazards();
   gameState = 'PLAYING';
   startTime = performance.now();   // FIX: record actual start time
 

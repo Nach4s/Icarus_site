@@ -1,15 +1,22 @@
 // ─── Difficulty ───────────────────────────────────────────────
-// ─── Difficulty ───────────────────────────────────────────────
-// Returns a smooth difficulty multiplier:
-//   levels 1–8  → linear, +0.16 per level (0 … 1.12)
-//   levels 8–10 → +0.012/lvl (1.12 … 1.144)
-//   levels 10–15→ +0.016/lvl (1.144 … 1.224) (мягкая прогрессия, убрана стена сложности)
-//   levels 15+  → +0.022/lvl (1.224 … ~1.33 на 20 уровне) (контролируемая скорость)
+// Returns a smooth difficulty multiplier (obstacle speed = base × (1 + scale)):
+//   levels 1–6   → +0.16/lvl  (0 … 0.80)   — early game unchanged
+//   levels 6–10  → +0.04/lvl  (0.80 … 0.96)
+//   levels 10–15 → +0.02/lvl  (0.96 … 1.06)
+//   levels 15+   → +0.01/lvl, capped at 1.20
+// The old curve hit 1.12 by level 8, so obstacles flew at 2.1× base speed
+// (well above the rocket's 320 px/s) and late levels became unplayable.
 function getDiffScale(level) {
-  if (level <= 8) return (level - 1) * 0.16;
-  if (level <= 10) return 1.12 + (level - 8) * 0.012;
-  if (level <= 15) return 1.144 + (level - 10) * 0.016;
-  return 1.224 + (level - 15) * 0.022;
+  if (level <= 6) return (level - 1) * 0.16;
+  if (level <= 10) return 0.80 + (level - 6) * 0.04;
+  if (level <= 15) return 0.96 + (level - 10) * 0.02;
+  return Math.min(1.20, 1.06 + (level - 15) * 0.01);
+}
+
+// Rocket top speed: from level 7 the ship gets slightly faster (+2.5%/lvl, max +25%)
+// so the player can keep up with the denser late-game field
+function getRocketSpeed() {
+  return ROCKET_SPEED * (1 + Math.min(0.25, Math.max(0, diffLevel - 6) * 0.025));
 }
 
 function getSpawnInterval() {
@@ -17,18 +24,23 @@ function getSpawnInterval() {
   const isGreen = isGreenZoneTheme();
   const inSynthwave = typeof isSynthwaveTheme === 'function' && isSynthwaveTheme();
   const isCrimson = typeof isCrimsonTheme === 'function' && isCrimsonTheme();
-  // Purple Space has fewer obstacles due to active black holes
-  // Green Zone has ~40–50% reduced obstacle density
-  // Synthwave Magenta has more obstacles (0.8× interval = more frequent spawns)
-  // Crimson Pulsar has even fewer obstacles (2.2× interval = much less frequent spawns)
-  const multiplier = isGreen ? 1.8 : (isPurple ? 1.6 : (inSynthwave ? 0.80 : (isCrimson ? 2.2 : 1.0)));
+  // Interval multipliers balance each biome's own hazard against obstacle density:
+  // Purple Space: a bit fewer obstacles than normal — frequent black holes (pull + control inversion)
+  // Green Zone: a bit fewer obstacles than normal — toxic fog hides what is coming
+  // Synthwave Magenta: most spawns are splitting asteroids (a big one becomes 2–4
+  //   fragments, a mega one up to ~8), so spawns are rarer — field ends up ~30% busier than normal
+  // Crimson Pulsar: solar push waves are the main threat, so the field stays sparse
+  // Neon Azure / Golden Supernova / Deep Ultramarine / Fiery Magma: their biome hazard
+  //   (biomes.js) replaces part of the obstacle density
+  const multiplier = isGreen ? 1.35 : (isPurple ? 1.3 : (inSynthwave ? 1.25 : (isCrimson ? 2.0 :
+    (isBiomeHazardTheme() ? 1.3 : 1.0))));
 
   // Pirates event: slightly reduced obstacles so combat feels dynamic with obstacles colliding into mothership
   if (activeEvent && activeEvent.type === 'PIRATES') {
     return Math.max(1.8, 3.2 - getDiffScale(diffLevel) * 1.2) * multiplier;
   }
-  // Normal: slightly reduced spawn frequency across all levels (2.25s → floor 0.75s)
-  return Math.max(0.75, 2.25 - getDiffScale(diffLevel) * 1.2) * multiplier;
+  // Normal: 2.25s at level 1 → floor 0.95s
+  return Math.max(0.95, 2.25 - getDiffScale(diffLevel) * 1.2) * multiplier;
 }
 
 // ─── EVENT SYSTEM ─────────────────────────────────────────────
@@ -2857,7 +2869,9 @@ function drawControlInversionHUD(ctx, w, h) {
 // ---------------------------------------------------------------
 
 const PUSH_WAVE_SPEED    = 600;  // px/s wave front travel speed (fast but survivable)
-const PUSH_DRIFT_SPEED   = 800;  // px/s direct position displacement on rocket (strong but counterable)
+// At 800 the wave out-pushed a rocket thrusting fully against it and carried it
+// off-screen; at 650 a player who counters survives, a passive one still doesn't
+const PUSH_DRIFT_SPEED   = 650;  // px/s direct position displacement on rocket (strong but counterable)
 const PUSH_IMPULSE       = 400;  // px/s velocity bias added to rocket (strong but counterable)
 const PUSH_OBSTACLE_SPD  = 700;  // px/s displacement & target speed for obstacles
 const PUSH_PIRATE_SPD    = 750;  // px/s displacement on pirates

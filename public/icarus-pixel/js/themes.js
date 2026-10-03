@@ -250,3 +250,24 @@ function isGreenZoneTheme() {
     (currentBgTheme.circle && currentBgTheme.circle[0] === 16 && currentBgTheme.circle[1] === 185);
 }
 
+
+// Biomes with their own hazards in biomes.js
+function isNeonAzureTheme() {
+  return !!currentBgTheme && currentBgTheme.name === 'Neon Azure';
+}
+
+function isGoldenSupernovaTheme() {
+  return !!currentBgTheme && currentBgTheme.name === 'Golden Supernova';
+}
+
+function isUltramarineTheme() {
+  return !!currentBgTheme && currentBgTheme.name === 'Deep Ultramarine';
+}
+
+function isMagmaTheme() {
+  return !!currentBgTheme && currentBgTheme.name === 'Fiery Magma';
+}
+
+function isBiomeHazardTheme() {
+  return isNeonAzureTheme() || isGoldenSupernovaTheme() || isUltramarineTheme() || isMagmaTheme();
+}

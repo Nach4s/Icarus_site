@@ -94,6 +94,7 @@ function rescaleWorld(sx, sy) {
     list.forEach(e => scaleEntity(e, sx, sy));
   });
   solarFlares.forEach(f => { f.pos *= f.axis === 'H' ? sy : sx; });
+  rescaleBiomeHazards(sx, sy);
   if (pushWave) {
     const s = pushWave.edge < 2 ? sx : sy; // edges 0/1 sweep horizontally
     pushWave.frontPos *= s;

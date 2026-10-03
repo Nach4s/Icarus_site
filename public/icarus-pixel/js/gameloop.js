@@ -15,7 +15,7 @@ function gameLoop(ts) {
     // ── Inertia-based rocket movement ──
     const ACCEL = 1400;   // px/s² — how fast rocket speeds up
     const FRICTION = 7.5;   // damping factor when no key pressed
-    const MAX_SPD = ROCKET_SPEED;
+    const MAX_SPD = getRocketSpeed();
 
     let inputX = 0, inputY = 0;
     if (keys['ArrowUp'] || keys['w'] || keys['W']) inputY -= 1;
@@ -199,14 +199,14 @@ function gameLoop(ts) {
       // Extra spawns — slightly increased obstacles during PIRATES event as requested
       if (activeEvent && activeEvent.type === 'PIRATES') {
         if (diffLevel >= 6 && Math.random() < 0.20) spawnObstacle(w, h);
-      } else if (isPurple || isGreen || isCrimson) {
-        // Reduced extra spawns in Crimson Pulsar (even fewer than Purple/Green)
-        if (!isGreen && !isCrimson && diffLevel >= 8 && Math.random() < 0.12) spawnObstacle(w, h);
-        // Crimson Pulsar: no extra spawns at all
+      } else if (isPurple || isGreen || isCrimson || isBiomeHazardTheme()) {
+        // Biomes with their own hazard: 15% chance of a second obstacle from level 6
+        // Crimson Pulsar: no extra spawns — solar waves carry the difficulty
+        if (!isCrimson && diffLevel >= 6 && Math.random() < 0.15) spawnObstacle(w, h);
       } else {
-        // С 10 уровня добавляется 20% шанс вылета сразу трёх астероидов за один тик
-        // С 5 уровня добавляется 25% шанс вылета двух астероидов одновременно
-        if (diffLevel >= 10 && Math.random() < 0.20) {
+        // From level 10: 10% chance of three obstacles in one tick (was 20%)
+        // From level 5: 25% chance of two obstacles at once
+        if (diffLevel >= 10 && Math.random() < 0.10) {
           spawnObstacle(w, h);
           spawnObstacle(w, h);
         } else if (diffLevel >= 5 && Math.random() < 0.25) {
@@ -412,6 +412,9 @@ function gameLoop(ts) {
       }
     }
 
+    // ── Biome hazards: ion gates, supernova, minefield, lava (biomes.js) ──
+    updateBiomeHazards(dt, w, h);
+
     // ── Gravity Shift particle & field update ────────────
     if (activeEvent && activeEvent.type === 'GRAVITY_SHIFT' && typeof updateGravityShift === 'function') {
       updateGravityShift(dt, w, h);
@@ -419,6 +422,7 @@ function gameLoop(ts) {
 
     // ── Draw ───────────────────────────────
     drawStars(ctx, w, h);
+    drawBiomeHazardsBelow(ctx);
     drawDangerZones(ctx);
 
     // Draw constriction zone overlay (behind obstacles, above stars)
@@ -502,6 +506,8 @@ function gameLoop(ts) {
       drawToxicClouds(ctx, w, h);
     }
 
+    drawBiomeHazardsAbove(ctx);
+
     // ── Draw Rocket & Fog Vision Ring ──
     if (rocket && rocket.alive) {
       if (isRocketInFog()) {
@@ -530,6 +536,7 @@ function gameLoop(ts) {
 
   } else if (gameState === 'PAUSED') {
     drawStars(ctx, w, h);
+    drawBiomeHazardsBelow(ctx);
     obstacles.forEach(ob => {
       const alpha = getObstacleFogAlpha(ob);
       if (alpha <= 0.02) return;
@@ -567,6 +574,7 @@ function gameLoop(ts) {
     if (pirates.length > 0) {
       pirates.forEach(p => drawPirate(ctx, p));
     }
+    drawBiomeHazardsAbove(ctx);
     if (rocket && rocket.alive) {
       if (isRocketInFog()) drawRocketFogVision(ctx);
       drawRocketPixelArt(ctx, rocket.x, rocket.y, rocket.thrusterPhase, 1.6, rocketMvx, rocketMvy, rocketAngle);
