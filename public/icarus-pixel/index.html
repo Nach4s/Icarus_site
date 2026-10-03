@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Icarus Pixel — Космическая аркада на выживание</title>
+  <meta name="description"
+    content="Icarus Pixel — браузерная 2D пиксельная аркада. Управляй ракетой «Икар» и уворачивайся от комет в бесконечном космосе." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/menu.css" />
+  <link rel="stylesheet" href="css/hud.css" />
+  <link rel="stylesheet" href="css/gameover.css" />
+  <link rel="stylesheet" href="css/records.css" />
+  <link rel="stylesheet" href="css/hangar.css" />
+</head>
+
+<body>
+
+  <!-- ═══════════════════════════════════════════ MAIN MENU ══ -->
+  <div id="screen-menu" class="screen active">
+    <div class="stars-bg" id="menu-stars"></div>
+
+    <div class="menu-content">
+      <div class="logo-wrap">
+        <div class="logo-subtitle">— КОСМИЧЕСКАЯ АРКАДА —</div>
+        <h1 class="logo-title" id="logo-title">ICARUS<br /><span>PIXEL</span></h1>
+        <div class="logo-glow"></div>
+      </div>
+
+      <canvas id="menu-rocket-canvas" width="120" height="160"></canvas>
+
+      <div class="menu-coins-badge" id="menu-coins-badge" onclick="showSkinsScreen()" title="Открыть ангар">
+        <span class="coin-icon">🪙</span> <span id="menu-coins-val">0</span>
+      </div>
+
+      <div class="menu-actions">
+        <button id="btn-start" class="btn-primary" onclick="startGame()">
+          <span class="btn-icon">▶</span> СТАРТ
+        </button>
+        <button id="btn-skins" class="btn-primary btn-skins" onclick="showSkinsScreen()">
+          <span class="btn-icon">✨</span> АНГАР
+        </button>
+        <button id="btn-records" class="btn-primary btn-records" onclick="showRecordsScreen()">
+          <span class="btn-icon">🏆</span> РЕКОРДЫ
+        </button>
+        <button id="btn-mute" class="btn-secondary" onclick="toggleMute()">
+          <span id="mute-icon">🔊</span> ЗВУК
+        </button>
+      </div>
+
+      <div class="controls-panel">
+        <div class="controls-title">УПРАВЛЕНИЕ</div>
+        <div class="controls-grid">
+          <div class="control-row">
+            <div class="key-group">
+              <div class="key-spacer"></div>
+              <div class="key">W</div>
+              <div class="key-spacer"></div>
+            </div>
+            <div class="key-group">
+              <div class="key-spacer"></div>
+              <div class="key key-arrow">▲</div>
+              <div class="key-spacer"></div>
+            </div>
+          </div>
+          <div class="control-row">
+            <div class="key-group">
+              <div class="key">A</div>
+              <div class="key">S</div>
+              <div class="key">D</div>
+            </div>
+            <div class="key-group">
+              <div class="key key-arrow">◀</div>
+              <div class="key key-arrow">▼</div>
+              <div class="key key-arrow">▶</div>
+            </div>
+          </div>
+        </div>
+        <div class="controls-hint">Уворачивайся от комет и астероидов!</div>
+      </div>
+
+      <div class="best-score-display" id="menu-best">
+        РЕКОРД: <span id="menu-best-val">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ GAME SCREEN ══ -->
+  <div id="screen-game" class="screen">
+    <canvas id="game-canvas"></canvas>
+
+    <div id="hud">
+      <div id="hud-score">
+        <div class="hud-label">СЧЁТ</div>
+        <div class="hud-value" id="score-val">0</div>
+      </div>
+      <div id="hud-level">
+        <div class="hud-label">УРОВЕНЬ</div>
+        <div class="hud-value" id="level-val">1</div>
+      </div>
+      <div id="hud-best">
+        <div class="hud-label">РЕКОРД</div>
+        <div class="hud-value" id="best-val">0</div>
+      </div>
+    </div>
+
+    <div id="pause-hint">ESC — пауза</div>
+
+    <!-- Mobile pause button -->
+    <button id="btn-mobile-pause" class="btn-mobile-pause" onclick="pauseGame()">⏸</button>
+
+    <!-- Pause overlay -->
+    <div id="pause-overlay" class="overlay hidden">
+      <div class="overlay-panel">
+        <div class="overlay-title">ПАУЗА</div>
+        <button id="btn-resume" class="btn-primary" onclick="resumeGame()">▶ ПРОДОЛЖИТЬ</button>
+        <button id="btn-menu-from-pause" class="btn-secondary" onclick="goToMenu()">⌂ МЕНЮ</button>
+      </div>
+    </div>
+
+    <!-- Mobile D-Pad -->
+    <div id="mobile-dpad">
+      <div class="dpad-center"></div>
+      <button id="dpad-up" class="dpad-btn dpad-up" data-key="ArrowUp">▲</button>
+      <button id="dpad-down" class="dpad-btn dpad-down" data-key="ArrowDown">▼</button>
+      <button id="dpad-left" class="dpad-btn dpad-left" data-key="ArrowLeft">◀</button>
+      <button id="dpad-right" class="dpad-btn dpad-right" data-key="ArrowRight">▶</button>
+    </div>
+
+    <!-- DEBUG: Level control -->
+    <div id="debug-level-panel">
+      <span class="debug-label">LVL</span>
+      <button id="debug-lvl-minus" onclick="debugChangeLevel(-1)">−</button>
+      <span id="debug-lvl-val">1</span>
+      <button id="debug-lvl-plus" onclick="debugChangeLevel(1)">+</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ GAME OVER ══ -->
+  <div id="screen-gameover" class="screen">
+    <canvas id="gameover-bg-canvas"></canvas>
+
+    <div class="gameover-content">
+      <div class="gameover-title-wrap">
+        <div class="gameover-label">ИГРА ОКОНЧЕНА</div>
+        <div class="explosion-icon">💥</div>
+      </div>
+
+      <div class="result-panel">
+        <div class="result-row">
+          <span class="result-label">ВАШ СЧЁТ</span>
+          <span class="result-value" id="final-score">0</span>
+        </div>
+        <div class="result-row coins-row">
+          <span class="result-label">🪙 МОНЕТЫ</span>
+          <span class="result-value coins-val" id="final-coins">+0 (Всего: 0)</span>
+        </div>
+        <div class="result-divider"></div>
+        <div class="result-row record-row" id="record-row">
+          <span class="result-label">🏆 РЕКОРД</span>
+          <span class="result-value highlight" id="final-best">0</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">⏱ ВРЕМЯ</span>
+          <span class="result-value" id="final-time">0 сек</span>
+        </div>
+        <div class="new-record-badge hidden" id="new-record-badge">✨ НОВЫЙ РЕКОРД! ✨</div>
+      </div>
+
+      <!-- Achievements earned this run -->
+      <div class="achievements-earned hidden" id="achievements-earned">
+        <div class="ae-title">ДОСТИЖЕНИЯ</div>
+        <div class="ae-list" id="ae-list"></div>
+      </div>
+
+      <div class="gameover-actions">
+        <button id="btn-restart" class="btn-primary btn-glow" onclick="startGame()">
+          ↺ СЫГРАТЬ ЗАНОВО
+        </button>
+        <button id="btn-skins-from-go" class="btn-secondary btn-skins-go" onclick="showSkinsScreen()">
+          ✨ АНГАР
+        </button>
+        <button id="btn-records-from-go" class="btn-secondary" onclick="showRecordsScreen()">
+          🏆 РЕКОРДЫ
+        </button>
+        <button id="btn-menu-from-go" class="btn-secondary" onclick="goToMenu()">
+          ⌂ В МЕНЮ
+        </button>
+      </div>
+
+      <div class="survival-time" id="survival-time">
+        Продержался: <span id="time-val">0 сек</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ RECORDS SCREEN ══ -->
+  <div id="screen-records" class="screen">
+    <canvas id="records-bg-canvas"></canvas>
+    <div class="records-content">
+      <div class="records-title">🏆 ТАБЛИЦА РЕКОРДОВ</div>
+      <div class="records-subtitle">ТОП 5 РЕЗУЛЬТАТОВ</div>
+
+      <div class="records-table-wrap">
+        <table class="records-table" id="records-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>СЧЁТ</th>
+              <th>УРОВЕНЬ</th>
+              <th>ВРЕМЯ</th>
+              <th>ДАТА</th>
+            </tr>
+          </thead>
+          <tbody id="records-tbody"></tbody>
+        </table>
+        <div class="records-empty hidden" id="records-empty">
+          Ещё нет рекордов.<br />Сыграй первым!
+        </div>
+      </div>
+
+      <div class="achievements-panel">
+        <div class="achievements-title">ДОСТИЖЕНИЯ</div>
+        <div class="achievements-grid" id="achievements-grid"></div>
+      </div>
+
+      <div class="records-actions">
+        <button id="btn-records-back" class="btn-primary" onclick="goToMenu()">⌂ МЕНЮ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ SKINS SCREEN ══ -->
+  <div id="screen-skins" class="screen">
+    <canvas id="skins-bg-canvas"></canvas>
+    <div class="skins-content">
+      <div class="skins-header">
+        <div class="skins-title-wrap">
+          <div class="skins-title">✨ АНГАР ИКАРА</div>
+          <div class="skins-subtitle">ВЫБЕРИТЕ ОБЛИК ДЛЯ ПОЛЁТА</div>
+        </div>
+        <div class="skins-coins-badge" id="skins-coins-badge">
+          <span class="coin-icon">🪙</span>
+          <span id="skins-coin-count">0</span>
+        </div>
+      </div>
+
+      <div class="skins-grid" id="skins-grid">
+        <!-- Rendered dynamically via game.js -->
+      </div>
+
+      <div class="skins-actions">
+        <button id="btn-skins-back" class="btn-primary" onclick="goToMenu()">⌂ В МЕНЮ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ TOAST ══ -->
+  <div id="achievement-toast" class="achievement-toast hidden">
+    <div class="toast-icon" id="toast-icon">🏅</div>
+    <div class="toast-body">
+      <div class="toast-label">ДОСТИЖЕНИЕ</div>
+      <div class="toast-name" id="toast-name">—</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ FOOTER ══ -->
+  <footer class="game-footer">
+    <a href="https://github.com/Nach4s" target="_blank" rel="noopener" class="footer-link">made by Nach4s</a>
+    <a href="https://www.instagram.com/icarusrockets/" target="_blank" rel="noopener"
+      class="footer-link footer-team">v1.0 · Icarus Team 🚀</a>
+  </footer>
+
+  <!-- Game Engine Modules -->
+  <script src="js/constants.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/records.js"></script>
+  <script src="js/themes.js"></script>
+  <script src="js/background.js"></script>
+  <script src="js/rocket.js"></script>
+  <script src="js/obstacles.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/toxic.js"></script>
+  <script src="js/gameloop.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/input.js"></script>
+</body>
+
+</html>

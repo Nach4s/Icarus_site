@@ -8,6 +8,7 @@ import ResetPasswordPage from './ResetPasswordPage.jsx'
 import LatestNewsBlock from './LatestNewsBlock.jsx'
 import NewsPage from './NewsPage.jsx'
 import NewsPostPage from './NewsPostPage.jsx'
+import SpaceWeekTab from './SpaceWeekTab.jsx'
 import Preloader from './Preloader.jsx'
 import {
     Rocket,
@@ -253,7 +254,7 @@ const TABS = [
     { id: 'journey', labelKey: 'nav.journey', icon: Compass },
     { id: 'news', labelKey: 'nav.news', icon: Newspaper },
     { id: 'training', labelKey: 'nav.training', icon: Crosshair },
-    { id: 'ranking', labelKey: 'nav.ranking', icon: Globe },
+    { id: 'spaceweek', labelKey: 'nav.spaceWeek', icon: Rocket },
     { id: 'contact', labelKey: 'nav.contact', icon: MessageCircle },
 ]
 
@@ -1768,275 +1769,6 @@ function TrainingTab() {
 }
 
 
-/* ── Tab 3: GLOBAL RANKING (Podium + Card List) ─────────── */
-
-/* Desktop-only: tall vertical podium column */
-function PodiumColumn({ entry, height, theme }) {
-    const themes = {
-        gold: {
-            bg: 'bg-gradient-to-t from-yellow-700 via-yellow-600 to-yellow-400',
-            text: 'text-black',
-            shadow: 'shadow-[0_0_50px_rgba(202,138,4,0.35)]',
-            label: '1ST',
-            nameSize: 'text-lg',
-        },
-        silver: {
-            bg: 'bg-gradient-to-t from-neutral-500 via-neutral-400 to-neutral-300',
-            text: 'text-black',
-            shadow: 'shadow-[0_0_30px_rgba(163,163,163,0.25)]',
-            label: '2ND',
-            nameSize: 'text-base',
-        },
-        bronze: {
-            bg: 'bg-gradient-to-t from-orange-900 via-orange-700 to-orange-600',
-            text: 'text-white',
-            shadow: 'shadow-[0_0_30px_rgba(194,65,12,0.25)]',
-            label: '3RD',
-            nameSize: 'text-base',
-        },
-    }
-    const t = themes[theme]
-
-    return (
-        <div className="flex flex-col items-center w-full">
-            {theme === 'gold' && (
-                <div className="mb-3 animate-float">
-                    <Crown size={32} className="text-yellow-400 drop-shadow-lg" />
-                </div>
-            )}
-            <div
-                className={`w-full rounded-t-2xl ${t.bg} ${t.text} ${t.shadow} p-6 text-center
-                           transition-all duration-500 hover:scale-[1.03]`}
-                style={{ minHeight: height }}
-            >
-                <p className={`text-3xl font-black tracking-wider mb-2 ${theme === 'bronze' ? 'opacity-90' : 'opacity-80'}`}>
-                    {t.label}
-                </p>
-                <h3 className={`${t.nameSize} font-black uppercase tracking-widest leading-tight mb-3`}>
-                    {entry.team}
-                </h3>
-                <p className={`text-2xl font-black tabular-nums mb-3 ${theme === 'bronze' ? '' : 'opacity-90'}`}>
-                    {entry.score.toLocaleString()}
-                </p>
-                <div className={`flex items-center justify-center gap-3 text-xs font-semibold ${theme === 'bronze' ? 'text-white/70' : 'opacity-60'}`}>
-                    {entry.streak > 0 && (
-                        <span className="flex items-center gap-1">
-                            <Flame size={13} />
-                            {entry.streak}d
-                        </span>
-                    )}
-                    <span className="flex items-center gap-1">
-                        <User size={13} />
-                        {entry.members}
-                    </span>
-                </div>
-            </div>
-        </div>
-    )
-}
-
-/* Mobile-only: compact gradient bar for top-3 entries */
-function PodiumBar({ entry, theme }) {
-    const themes = {
-        gold: {
-            bg: 'bg-gradient-to-r from-yellow-700 via-yellow-600 to-yellow-500',
-            text: 'text-black',
-            shadow: 'shadow-lg shadow-yellow-600/25',
-            label: '1ST',
-            icon: <Crown size={18} className="shrink-0" />,
-        },
-        silver: {
-            bg: 'bg-gradient-to-r from-neutral-500 via-neutral-400 to-neutral-350',
-            text: 'text-black',
-            shadow: 'shadow-lg shadow-neutral-400/20',
-            label: '2ND',
-            icon: <Medal size={18} className="shrink-0" />,
-        },
-        bronze: {
-            bg: 'bg-gradient-to-r from-orange-800 via-orange-700 to-orange-600',
-            text: 'text-white',
-            shadow: 'shadow-lg shadow-orange-700/20',
-            label: '3RD',
-            icon: <Award size={18} className="shrink-0" />,
-        },
-    }
-    const t = themes[theme]
-
-    return (
-        <div
-            className={`flex items-center justify-between w-full px-4 py-3.5 rounded-xl
-                        ${t.bg} ${t.text} ${t.shadow}
-                        transition-all duration-300 hover:scale-[1.02]`}
-        >
-            {/* Left: rank + icon + team name */}
-            <div className="flex items-center gap-3 min-w-0">
-                {t.icon}
-                <span className="text-xs font-black uppercase tracking-wider opacity-70 shrink-0">
-                    {t.label}
-                </span>
-                <span className="text-sm font-bold uppercase tracking-wide truncate">
-                    {entry.team}
-                </span>
-            </div>
-            {/* Right: score + streak */}
-            <div className="flex items-center gap-3 shrink-0 ml-3">
-                {entry.streak > 0 && (
-                    <span className="flex items-center gap-1 text-xs font-semibold opacity-70">
-                        <Flame size={13} />
-                        {entry.streak}d
-                    </span>
-                )}
-                <span className="text-base font-black tabular-nums">
-                    {entry.score.toLocaleString()}
-                </span>
-            </div>
-        </div>
-    )
-}
-
-function TeamDetailsModal({ teamId, onClose }) {
-    const { t } = useLang()
-    const [team, setTeam] = useState(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState('')
-
-    useEffect(() => {
-        async function fetchTeam() {
-            try {
-                const res = await api.get(`/teams/${teamId}`)
-                setTeam(res.team)
-            } catch (err) {
-                setError(err.message || t('team.loadFailed'))
-            } finally {
-                setLoading(false)
-            }
-        }
-        if (teamId) fetchTeam()
-    }, [teamId])
-
-    if (!document.body) return null;
-
-    return createPortal(
-        <div 
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] px-4"
-            onClick={onClose}
-        >
-            <div 
-                className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-lg p-6 relative shadow-2xl shadow-black/80"
-                onClick={e => e.stopPropagation()}
-                style={{ animation: 'fadeSlideIn 0.25s ease-out' }}
-            >
-                <button
-                    onClick={onClose}
-                    className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors duration-200 cursor-pointer"
-                >
-                    <X size={20} />
-                </button>
-
-                {loading ? (
-                    <div className="py-20 flex flex-col items-center justify-center">
-                        <Loader2 size={32} className="text-yellow-600 animate-spin mb-4" />
-                    </div>
-                ) : error ? (
-                    <div className="py-10 text-center text-red-400 font-semibold">{error}</div>
-                ) : team ? (
-                    <>
-                        <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-widest text-white mb-2 text-center mt-2">
-                            {team.name}
-                        </h2>
-                        <div className="flex justify-center items-center gap-4 mb-8">
-                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-600/10 border border-yellow-600/25">
-                                <Star size={14} className="text-yellow-600" />
-                                <span className="text-sm font-bold text-yellow-600 tabular-nums">{team.totalScore.toLocaleString()} XP</span>
-                            </div>
-                        </div>
-
-                        <div className="space-y-3">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-3 px-1">
-                                {t('team.roster')} ({team.members.length}/6)
-                            </p>
-                            {team.members.map(member => {
-                                const isCaptain = member.id === team.captainId
-                                return (
-                                    <div 
-                                        key={member.id}
-                                        className="flex items-center justify-between bg-neutral-950/50 border border-neutral-800/80 rounded-xl px-4 py-3"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center overflow-hidden border border-neutral-700">
-                                                {member.avatarUrl ? (
-                                                    <img src={member.avatarUrl} alt={member.name} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <User size={16} className="text-neutral-500" />
-                                                )}
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-bold text-white tracking-wide">{member.name}</span>
-                                                    {isCaptain && <Crown size={14} className="text-yellow-500" />}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-4 text-right">
-                                            {member.currentStreak > 0 && (
-                                                <div className="hidden sm:flex items-center gap-1 opacity-80">
-                                                    <Flame size={14} className="text-orange-400" />
-                                                    <span className="text-xs font-bold text-orange-400">{member.currentStreak}d</span>
-                                                </div>
-                                            )}
-                                            <div className="flex items-center gap-1.5">
-                                                <Star size={13} className="text-yellow-600/70" />
-                                                <span className="text-sm font-semibold text-neutral-300 tabular-nums">
-                                                    {member.xp.toLocaleString()}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </>
-                ) : null}
-            </div>
-        </div>,
-        document.body
-    )
-}
-
-function RankingTab({ onJoinClick, isRegistered }) {
-    const { isAuthenticated } = useAuth()
-    const { t } = useLang()
-
-    return (
-        <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-20 lg:py-32 flex flex-col items-center justify-center text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Glowing Icon Container */}
-            <div className="relative mb-8 group">
-                <div className="absolute inset-0 bg-yellow-600/20 rounded-full blur-2xl group-hover:bg-yellow-600/30 transition-colors duration-700" />
-                <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-neutral-900 border border-neutral-700/50 flex items-center justify-center shadow-2xl shadow-black/50 overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/10 to-transparent opacity-50" />
-                    <Activity size={48} className="text-yellow-600/50 animate-pulse" />
-                </div>
-            </div>
-
-            {/* Title */}
-            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black text-white uppercase tracking-widest mb-6 drop-shadow-lg flex flex-col sm:flex-row items-center justify-center gap-3 break-words w-full">
-                {t('ranking.system')}
-            </h1>
-
-            {/* Status Badge */}
-            <div className="px-6 py-2 rounded-full bg-yellow-600/10 border border-yellow-600/20 inline-flex items-center gap-2 mb-8">
-                <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
-                <span className="text-yellow-600 text-xs md:text-sm font-bold uppercase tracking-widest">{t('training.comingSoon')}</span>
-            </div>
-
-            {/* Subtitle */}
-            <p className="text-base sm:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed mb-14">
-                {t('ranking.description')}
-            </p>
-        </div>
-    )
-}
-
 function CompetitionJoinModal({ isOpen, onClose, onRegistered, onNavigateToTraining }) {
     const { user } = useAuth()
     const { t } = useLang()
@@ -3427,7 +3159,7 @@ export default function App() {
                                 {activeTab === 'news' && <NewsPage onPostClick={(slug) => { setActiveTab('newsPost'); window.history.pushState({}, '', `/news/${slug}`); }} />}
                                 {activeTab === 'newsPost' && <NewsPostPage onBack={() => { setActiveTab('news'); window.history.pushState({}, '', '/news'); }} />}
                                 {activeTab === 'training' && <TrainingTab />}
-                                {activeTab === 'ranking' && <RankingTab onJoinClick={handleGlobalJoinClick} isRegistered={isRegistered} />}
+                                {activeTab === 'spaceweek' && <SpaceWeekTab />}
                                 {activeTab === 'contact' && <ContactUs />}
                             </div>
                         </main>

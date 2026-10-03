@@ -21,11 +21,53 @@ const translations = {
     en: 'TRAINING',
     ro: 'ANTRENAMENT',
   },
-  'nav.ranking': {
-    kk: 'ЖАҺАНДЫҚ РЕЙТИНГ',
-    ru: 'МИРОВОЙ РЕЙТИНГ',
-    en: 'GLOBAL RANKING',
-    ro: 'CLASAMENT GLOBAL',
+  'nav.spaceWeek': {
+    kk: 'SPACE WEEK',
+    ru: 'SPACE WEEK',
+    en: 'SPACE WEEK',
+    ro: 'SPACE WEEK',
+  },
+  'spaceWeek.title': {
+    kk: 'SPACE WEEK',
+    ru: 'SPACE WEEK',
+    en: 'SPACE WEEK',
+    ro: 'SPACE WEEK',
+  },
+  'spaceWeek.subtitle': {
+    kk: 'Аэроғарыш саласының сарапшыларымен апталық онлайн-семинарлар. Қосылыңыз және Icarus Pixel ойынын ойнаңыз!',
+    ru: 'Недельная серия онлайн-семинаров с экспертами аэрокосмической отрасли. Присоединяйтесь и играйте в Icarus Pixel!',
+    en: 'A week of online seminars with aerospace experts. Join a session and play Icarus Pixel!',
+    ro: 'O săptămână de seminarii online cu experți din domeniul aerospațial. Alătură-te și joacă Icarus Pixel!',
+  },
+  'spaceWeek.seminars': {
+    kk: 'Семинарлар',
+    ru: 'Семинары',
+    en: 'Seminars',
+    ro: 'Seminarii',
+  },
+  'spaceWeek.timezone': {
+    kk: 'Уақыт белдеуі: Asia/Almaty',
+    ru: 'Часовой пояс: Asia/Almaty',
+    en: 'Time zone: Asia/Almaty',
+    ro: 'Fus orar: Asia/Almaty',
+  },
+  'spaceWeek.join': {
+    kk: 'Қосылу',
+    ru: 'Войти',
+    en: 'Join',
+    ro: 'Intră',
+  },
+  'spaceWeek.fullscreen': {
+    kk: 'Толық экран',
+    ru: 'На весь экран',
+    en: 'Fullscreen',
+    ro: 'Ecran complet',
+  },
+  'spaceWeek.gameHint': {
+    kk: 'Басқару: WASD немесе көрсеткілер. Кометалардан қашыңыз!',
+    ru: 'Управление: WASD или стрелки. Уворачивайтесь от комет!',
+    en: 'Controls: WASD or arrow keys. Dodge the comets!',
+    ro: 'Control: WASD sau săgeți. Ferește-te de comete!',
   },
   'nav.contact': {
     kk: 'БІЗ ТУРАЛЫ',
@@ -372,20 +414,6 @@ const translations = {
     ru: 'О НАС',
     en: 'ABOUT US',
     ro: 'DESPRE NOI',
-  },
-
-  // ── Ranking Tab ───────────────────────────────────────────────────────────
-  'ranking.title': {
-    kk: 'ЖАҺАНДЫҚ РЕЙТИНГ',
-    ru: 'МИРОВОЙ РЕЙТИНГ',
-    en: 'GLOBAL RANKING',
-    ro: 'CLASAMENT GLOBAL',
-  },
-  'ranking.joinToView': {
-    kk: 'Рейтингті көру үшін қосылыңыз',
-    ru: 'Вступите, чтобы увидеть рейтинг',
-    en: 'Join to view the ranking',
-    ro: 'Alătură-te pentru a vedea clasamentul',
   },
 
   // ── Settings page ─────────────────────────────────────────────────────────
@@ -1370,7 +1398,7 @@ const translations = {
     ro: 'Contactați-ne rapid prin canalul nostru de Telegram',
   },
 
-  // ── Training & Ranking Placeholders ──────────────────────────────────────────
+  // ── Training Placeholders ─────────────────────────────────────────────────
   'training.modules': {
     kk: 'ОҚУ МОДУЛЬДЕРІ',
     ru: 'ОБУЧАЮЩИЕ МОДУЛИ',
@@ -1388,18 +1416,6 @@ const translations = {
     ru: 'Освойте концепции аэрокосмической инженерии с помощью интерактивных модулей. Этот раздел платформы находится в разработке.',
     en: 'Master aerospace engineering concepts with interactive modules. This section of the platform is currently under development.',
     ro: 'Stăpâniți conceptele ingineriei aerospațiale cu module interactive. Această secțiune a platformei este în curs de dezvoltare.',
-  },
-  'ranking.system': {
-    kk: 'ГЛОБАЛДЫҚ РЕЙТИНГ',
-    ru: 'ГЛОБАЛЬНЫЙ РЕЙТИНГ',
-    en: 'GLOBAL RANKING',
-    ro: 'CLASAMENT GLOBAL',
-  },
-  'ranking.description': {
-    kk: 'Әлемнің түкпір-түкпірінен келген командалармен бақ сынасып, XP жинап, көшбасшылар тақтасында жоғарылаңыз. Көп ұзамай қолжетімді болады.',
-    ru: 'Соревнуйтесь с командами со всего мира, зарабатывайте XP и поднимайтесь в таблице лидеров. Раздел будет доступен совсем скоро.',
-    en: 'Compete with teams globally, earn XP, and climb the leaderboard. Will be available very soon.',
-    ro: 'Concurați cu echipe la nivel global, câștigați XP și urcați în clasament. Va fi disponibil foarte curând.',
   },
 
   // ── Club Registration ─────────────────────────────────────────────────────

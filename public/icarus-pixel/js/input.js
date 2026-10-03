@@ -1,0 +1,195 @@
+// ─── DEBUG: Level Control ─────────────────────────────────────
+function debugChangeLevel(delta) {
+  if (gameState !== 'PLAYING') return;
+  diffLevel = Math.max(1, diffLevel + delta);
+  sessionLevel = diffLevel;
+  EL.levelVal.textContent = diffLevel;
+  document.getElementById('debug-lvl-val').textContent = diffLevel;
+
+  // Trigger effects same as normal level-up
+  playSfxLevelUp();
+  if (rocket && rocket.alive) spawnLevelUpRing(rocket.x, rocket.y);
+  EL.hudLevel.classList.add('level-flash');
+  setTimeout(() => EL.hudLevel.classList.remove('level-flash'), 600);
+
+  // Theme transition at milestones
+  if (diffLevel === 5 || diffLevel === 10 || diffLevel === 15 || diffLevel === 20 ||
+      (diffLevel > 20 && diffLevel % 5 === 0)) {
+    triggerThemeTransition();
+  }
+
+  // End active event on level advance and start next event when reached
+  if (delta > 0) {
+    if (activeEvent) endEvent();
+    if (diffLevel >= nextEventLevel) {
+      if (!activeEvent && canvas) startEvent(diffLevel, canvas.width, canvas.height);
+      nextEventLevel = diffLevel + getNextEventLevelInterval();
+    }
+  }
+
+  // Trigger periodic pirates if advancing level
+  if (delta > 0 && diffLevel >= nextPirateLevel) {
+    if (canvas) triggerLevelPirates(canvas.width, canvas.height);
+    nextPirateLevel = diffLevel + getNextPirateLevelInterval();
+  }
+}
+
+// Keep debug display in sync with real level during gameplay
+function syncDebugLevel() {
+  const el = document.getElementById('debug-lvl-val');
+  if (el) el.textContent = diffLevel;
+}
+
+// ─── Input Handlers ───────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  // Also map by physical key code so layout doesn't matter (WASD on any keyboard)
+  if (e.code === 'KeyW' || e.code === 'ArrowUp')    keys['ArrowUp']    = true;
+  if (e.code === 'KeyS' || e.code === 'ArrowDown')  keys['ArrowDown']  = true;
+  if (e.code === 'KeyA' || e.code === 'ArrowLeft')  keys['ArrowLeft']  = true;
+  if (e.code === 'KeyD' || e.code === 'ArrowRight') keys['ArrowRight'] = true;
+
+  if (e.key === 'Escape') {
+    if (gameState === 'PLAYING') pauseGame();
+    else if (gameState === 'PAUSED') resumeGame();
+  }
+  if (gameState === 'PLAYING' && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+      'w', 'W', 'a', 'A', 's', 'S', 'd', 'D'].includes(e.key)) {
+    e.preventDefault();
+  }
+});
+
+document.addEventListener('keyup', e => {
+  keys[e.key] = false;
+  // Mirror the code-based mapping on keyup
+  if (e.code === 'KeyW' || e.code === 'ArrowUp')    keys['ArrowUp']    = false;
+  if (e.code === 'KeyS' || e.code === 'ArrowDown')  keys['ArrowDown']  = false;
+  if (e.code === 'KeyA' || e.code === 'ArrowLeft')  keys['ArrowLeft']  = false;
+  if (e.code === 'KeyD' || e.code === 'ArrowRight') keys['ArrowRight'] = false;
+});
+
+
+// ─── Resize Handler ───────────────────────────────────────────
+window.addEventListener('resize', () => {
+  if (gameState === 'PLAYING' || gameState === 'PAUSED') {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    initStars(canvas.width, canvas.height);
+  }
+  if (goCanvas) { goCanvas.width = window.innerWidth; goCanvas.height = window.innerHeight; }
+  if (recCanvas) { recCanvas.width = window.innerWidth; recCanvas.height = window.innerHeight; }
+});
+
+// ─── Touch / Mobile Swipe Controls ───────────────────────────
+let touchStartX = 0, touchStartY = 0;
+let touchActive = false;
+
+document.addEventListener('touchstart', e => {
+  if (gameState !== 'PLAYING') return;
+  // Ignore if touching a d-pad button
+  if (e.target.closest && e.target.closest('#mobile-dpad')) return;
+  const t = e.touches[0];
+  touchStartX = t.clientX;
+  touchStartY = t.clientY;
+  touchActive = true;
+  e.preventDefault();
+}, { passive: false });
+
+document.addEventListener('touchmove', e => {
+  if (!touchActive || gameState !== 'PLAYING') return;
+  if (e.target.closest && e.target.closest('#mobile-dpad')) return;
+  const t = e.touches[0];
+  const dx = t.clientX - touchStartX;
+  const dy = t.clientY - touchStartY;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const dead = 10;
+  if (dist > dead) {
+    keys['ArrowRight'] = dx > dead;
+    keys['ArrowLeft'] = dx < -dead;
+    keys['ArrowDown'] = dy > dead;
+    keys['ArrowUp'] = dy < -dead;
+  }
+  e.preventDefault();
+}, { passive: false });
+
+document.addEventListener('touchend', e => {
+  if (e.target.closest && e.target.closest('#mobile-dpad')) return;
+  touchActive = false;
+  keys['ArrowUp'] = keys['ArrowDown'] = keys['ArrowLeft'] = keys['ArrowRight'] = false;
+  e.preventDefault();
+}, { passive: false });
+
+// ─── D-Pad Controls ───────────────────────────────────────────
+function setupDpad() {
+  const btns = document.querySelectorAll('.dpad-btn');
+  btns.forEach(btn => {
+    const key = btn.dataset.key;
+
+    btn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      keys[key] = true;
+      btn.classList.add('pressed');
+    }, { passive: false });
+
+    btn.addEventListener('touchend', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      keys[key] = false;
+      btn.classList.remove('pressed');
+    }, { passive: false });
+
+    btn.addEventListener('touchcancel', e => {
+      keys[key] = false;
+      btn.classList.remove('pressed');
+    });
+
+    // Also support mouse for testing
+    btn.addEventListener('mousedown', e => { keys[key] = true; btn.classList.add('pressed'); });
+    btn.addEventListener('mouseup', e => { keys[key] = false; btn.classList.remove('pressed'); });
+    btn.addEventListener('mouseleave', e => { keys[key] = false; btn.classList.remove('pressed'); });
+  });
+}
+
+// ─── Ripple effect for all buttons ───────────────────────────
+function setupRipple() {
+  document.querySelectorAll('.btn-primary, .btn-secondary').forEach(btn => {
+    btn.addEventListener('click', function (e) {
+      const rect = btn.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      const x = e.clientX - rect.left - size / 2;
+      const y = e.clientY - rect.top - size / 2;
+      const ripple = document.createElement('span');
+      ripple.classList.add('btn-ripple');
+      ripple.style.cssText = `width:${size}px;height:${size}px;left:${x}px;top:${y}px`;
+      btn.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 600);
+    });
+  });
+}
+
+// ─── CSS for level flash ──────────────────────────────────────
+const levelFlashStyle = document.createElement('style');
+levelFlashStyle.textContent = `
+  #hud-level.level-flash .hud-value {
+    animation: level-flash-anim 0.6s ease;
+  }
+  @keyframes level-flash-anim {
+    0%   { color: #fff; text-shadow: 0 0 30px #fff, 0 0 60px #fff; transform: scale(1.5); }
+    50%  { color: #ff8800; text-shadow: 0 0 20px #ff8800; transform: scale(1.2); }
+    100% { color: #ff6b35; text-shadow: 0 0 12px rgba(255,107,53,0.6); transform: scale(1); }
+  }
+`;
+document.head.appendChild(levelFlashStyle);
+
+// ─── Startup ──────────────────────────────────────────────────
+cacheEls();
+updateCoinsUI();
+setupDpad();
+setupRipple();
+EL.menuBestVal.textContent = bestScore;
+showScreen('screen-menu');
+
+// Rocket is fully procedural — start menu animation immediately
+initMenuAnimation();
+

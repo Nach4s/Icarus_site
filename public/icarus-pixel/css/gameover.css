@@ -1,0 +1,163 @@
+/* ═══════════════════════════════════════════════════════════════
+   GAME OVER
+═══════════════════════════════════════════════════════════════ */
+.gameover-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 32px 24px;
+  max-width: 480px;
+  width: 100%;
+  animation: gameover-enter 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
+.gameover-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.gameover-label {
+  font-size: clamp(14px, 4vw, 22px);
+  color: var(--col-orange);
+  text-shadow:
+    0 0 20px var(--col-orange),
+    0 0 40px rgba(255, 107, 53, 0.4);
+  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+.explosion-icon {
+  font-size: 32px;
+  animation: spin-explosion 0.8s ease-out;
+}
+
+.result-panel {
+  background: var(--col-panel);
+  border: 1px solid var(--col-border);
+  border-radius: 8px;
+  padding: 24px 32px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(0, 229, 255, 0.05) inset;
+}
+
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.result-label {
+  font-size: 8px;
+  color: var(--col-text-dim);
+  letter-spacing: 1px;
+}
+
+.result-value {
+  font-size: 18px;
+  color: #fff;
+}
+
+.result-value.highlight {
+  color: var(--col-gold);
+  text-shadow: 0 0 16px rgba(255, 215, 0, 0.5);
+}
+
+.result-divider {
+  height: 1px;
+  background: var(--col-border);
+}
+
+.new-record-badge {
+  font-size: 9px;
+  color: var(--col-gold);
+  text-align: center;
+  animation: pulse-text 0.8s infinite alternate;
+  letter-spacing: 1px;
+}
+
+.new-record-badge.hidden { display: none; }
+
+/* Achievements earned this run */
+.achievements-earned {
+  background: var(--col-panel);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 8px;
+  padding: 16px 20px;
+  width: 100%;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.achievements-earned.hidden { display: none; }
+
+.ae-title {
+  font-size: 8px;
+  color: var(--col-gold);
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.ae-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.ae-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 7px;
+  color: var(--col-gold);
+  animation: ae-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes ae-pop {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.gameover-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.survival-time {
+  font-size: 7px;
+  color: var(--col-text-dim);
+  letter-spacing: 1px;
+}
+
+/* Result panel coins row */
+.coins-row {
+  color: #fef08a !important;
+}
+
+.coins-val {
+  color: #ffd700 !important;
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+}
+
