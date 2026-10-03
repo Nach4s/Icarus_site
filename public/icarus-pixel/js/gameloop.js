@@ -420,7 +420,7 @@ function gameLoop(ts) {
       }
     }
 
-    // ── Biome hazards: ion gates, supernova, minefield, lava (biomes.js) ──
+    // ── Biome hazards: ion gates, supernova, minefield, eruptions (biomes.js) ──
     updateBiomeHazards(dt, w, h);
 
     // ── Gravity Shift particle & field update ────────────

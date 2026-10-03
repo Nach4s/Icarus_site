@@ -3,7 +3,7 @@
 //   Neon Azure        → Ion Gates      (pylon pair with a pulsing electric arc)
 //   Golden Supernova  → Supernova      (expanding shock ring with safe gaps)
 //   Deep Ultramarine  → Minefield      (near-invisible mines, revealed by sonar)
-//   Fiery Magma       → Lava Pools     (standing in lava fills an overheat meter)
+//   Fiery Magma       → Eruptions      (fireballs arc up from the bottom edge and fall back)
 //
 // Event compatibility — a biome hazard must never make an event unwinnable.
 // While a listed event is active, the hazard stops spawning and existing
@@ -11,39 +11,37 @@
 //   Ion Gates   — CONSTRICTION (could wall off the safe zone), PIRATES (flagship salvos)
 //   Supernova   — every event (dodging the ring needs free movement)
 //   Minefield   — CONSTRICTION (no room to flee a mine inside the zone)
-//   Lava Pools  — CONSTRICTION (a pool could cover the safe zone)
+//   Eruptions   — CONSTRICTION (fireballs through the small safe zone leave no room to dodge)
 
 const BIOME_BLOCKING_EVENTS = {
-  ion:  ['CONSTRICTION', 'PIRATES'],
-  nova: ['CONSTRICTION', 'PIRATES', 'SOLAR_FLARE', 'AXIS_INVERSION', 'GRAVITY_SHIFT'],
-  mine: ['CONSTRICTION'],
-  lava: ['CONSTRICTION'],
+  ion:   ['CONSTRICTION', 'PIRATES'],
+  nova:  ['CONSTRICTION', 'PIRATES', 'SOLAR_FLARE', 'AXIS_INVERSION', 'GRAVITY_SHIFT'],
+  mine:  ['CONSTRICTION'],
+  magma: ['CONSTRICTION'],
 };
 
 let ionGates = [];
 let supernova = null;     // one at a time
-let stardust = [];
 let mines = [];
 let sonarPings = [];
-let lavaPools = [];
-let rocketHeat = 0;       // 0…1 — the rocket explodes at 1
-const biomeTimers = { ion: 0, nova: 0, mine: 0, lava: 0, sonar: 0 };
-const biomeNext = { ion: 0, nova: 0, mine: 0, lava: 0 };
+let magmaVents = [];      // telegraphed eruption points on the bottom edge
+let fireballs = [];
+const biomeTimers = { ion: 0, nova: 0, mine: 0, magma: 0, sonar: 0 };
+const biomeNext = { ion: 0, nova: 0, mine: 0, magma: 0 };
 let biomeHintShown = '';  // biome whose hint was shown since entering it
 
 function resetBiomeHazards() {
   ionGates = [];
   supernova = null;
-  stardust = [];
   mines = [];
   sonarPings = [];
-  lavaPools = [];
-  rocketHeat = 0;
+  magmaVents = [];
+  fireballs = [];
   for (const k in biomeTimers) biomeTimers[k] = 0;
   biomeNext.ion = 5 + Math.random() * 3;
   biomeNext.nova = 6 + Math.random() * 3;
   biomeNext.mine = 2;
-  biomeNext.lava = 3 + Math.random() * 2;
+  biomeNext.magma = 3 + Math.random() * 2;
   biomeHintShown = '';
 }
 
@@ -333,13 +331,7 @@ function updateSupernova(dt, w, h, active) {
         n.state = 'EXPANDING';
         n.timer = 0;
         playSfxExplosion();
-        spawnExplosion(n.x, n.y, 30);
-        // Stardust reward left at the core
-        for (let i = 0; i < 4; i++) {
-          const a = Math.random() * Math.PI * 2;
-          stardust.push({ x: n.x + Math.cos(a) * 30, y: n.y + Math.sin(a) * 30,
-            vx: Math.cos(a) * 25, vy: Math.sin(a) * 25, life: 7, phase: Math.random() * 6 });
-        }
+        spawnExplosion(n.x, n.y, 20);
       }
     } else if (n.state === 'EXPANDING') {
       n.radius += NOVA_RING_SPEED * dt;
@@ -354,21 +346,6 @@ function updateSupernova(dt, w, h, active) {
     } else {
       n.alpha -= dt * 2.5;
       if (n.alpha <= 0) supernova = null;
-    }
-  }
-
-  for (let i = stardust.length - 1; i >= 0; i--) {
-    const s = stardust[i];
-    s.life -= dt;
-    s.x += s.vx * dt; s.y += s.vy * dt;
-    s.vx *= 0.98; s.vy *= 0.98;
-    if (s.life <= 0) { stardust.splice(i, 1); continue; }
-    if (rocket && rocket.alive && Math.hypot(rocket.x - s.x, rocket.y - s.y) < 26) {
-      score += 2;
-      EL.scoreVal.textContent = score;
-      spawnFloatingText(s.x, s.y - 14, '+2 STARDUST', '#fde047');
-      playSfxCoin();
-      stardust.splice(i, 1);
     }
   }
 }
@@ -412,12 +389,9 @@ function drawSupernova(ctx) {
       ctx.arc(n.x, n.y, coreR + 14 + pulse * 6, 0, Math.PI * 2);
       ctx.stroke();
     } else if (n.state === 'EXPANDING') {
-      // Shock ring with gaps cut out
+      // Shock ring with gaps cut out. Glow is a wide translucent stroke instead
+      // of shadowBlur — blurring a screen-sized ring every frame caused lag.
       const segStep = 0.04;
-      ctx.shadowColor = '#fbbf24';
-      ctx.shadowBlur = 20;
-      ctx.strokeStyle = '#fde047';
-      ctx.lineWidth = NOVA_RING_HALF * 2;
       ctx.beginPath();
       let drawing = false;
       for (let a = 0; a <= Math.PI * 2 + segStep; a += segStep) {
@@ -426,6 +400,11 @@ function drawSupernova(ctx) {
         if (inGap) { drawing = false; continue; }
         if (!drawing) { ctx.moveTo(px, py); drawing = true; } else ctx.lineTo(px, py);
       }
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.25)';
+      ctx.lineWidth = NOVA_RING_HALF * 2 + 16;
+      ctx.stroke();
+      ctx.strokeStyle = '#fde047';
+      ctx.lineWidth = NOVA_RING_HALF * 2;
       ctx.stroke();
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
       ctx.lineWidth = 3;
@@ -433,34 +412,14 @@ function drawSupernova(ctx) {
     }
     ctx.restore();
   }
-
-  stardust.forEach(s => {
-    const tw = 0.6 + 0.4 * Math.sin(t * 6 + s.phase);
-    ctx.save();
-    ctx.globalAlpha = Math.min(1, s.life);
-    ctx.translate(s.x, s.y);
-    ctx.rotate(t * 2 + s.phase);
-    ctx.shadowColor = '#fde047';
-    ctx.shadowBlur = 14;
-    ctx.fillStyle = `rgba(253, 224, 71, ${tw})`;
-    ctx.beginPath();
-    for (let i = 0; i < 8; i++) {
-      const r = i % 2 === 0 ? 9 : 3.5;
-      const a = (Math.PI / 4) * i;
-      ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-    }
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  });
 }
 
 // ══════════════════════════════════════════════════════════════
 //  DEEP ULTRAMARINE — MINEFIELD + SONAR
 // ══════════════════════════════════════════════════════════════
 const MINE_R = 13;
-const MINE_TRIGGER_R = 100;    // rocket closer than this arms the mine
-const MINE_BLAST_R = 95;
+const MINE_TRIGGER_R = 120;    // rocket closer than this arms the mine
+const MINE_BLAST_R = 150;
 const MINE_FUSE = 1.0;         // seconds from arming to blast
 const SONAR_PERIOD = 4;
 const SONAR_SPEED = 700;
@@ -568,6 +527,20 @@ function updateMinefield(dt, w, h, active) {
     }
     if (m.x < -80 || m.x > w + 80 || m.y < -80 || m.y > h + 80) { mines.splice(i, 1); continue; }
 
+    // Pirates crash into mines: the pirate blows up on contact and the mine arms
+    for (const p of pirates) {
+      if (!p.alive || !p.active) continue;
+      if (Math.hypot(p.x - m.x, p.y - m.y) < p.r * 0.8 + MINE_R) {
+        p.alive = false;
+        playSfxExplosion();
+        spawnExplosion(p.x, p.y, p.r * 1.8 + 12);
+        score += 3;
+        EL.scoreVal.textContent = score;
+        spawnFloatingText(p.x, p.y - 20, '+3 MINE!', '#60a5fa');
+        armMine(m);
+      }
+    }
+
     if (m.state === 'IDLE') {
       if (rocket && rocket.alive && Math.hypot(rocket.x - m.x, rocket.y - m.y) < MINE_TRIGGER_R) armMine(m);
       // Obstacles bumping into a mine also arm it (same fuse — never an unannounced blast)
@@ -608,7 +581,8 @@ function drawMinefield(ctx) {
 
   mines.forEach(m => {
     const armed = m.state === 'ARMED';
-    const vis = armed ? 1 : 0.22 + 0.78 * Math.min(1, m.reveal / 0.8);
+    // Almost invisible until a sonar ping (or arming) lights it up
+    const vis = armed ? 1 : 0.05 + 0.95 * Math.min(1, m.reveal / 0.8);
     ctx.save();
     ctx.globalAlpha = Math.max(0, vis * m.alpha);
 
@@ -640,7 +614,7 @@ function drawMinefield(ctx) {
     }
     // Body
     ctx.shadowColor = armed ? '#ef4444' : '#3b82f6';
-    ctx.shadowBlur = armed ? 18 : 8;
+    ctx.shadowBlur = armed ? 18 : (m.reveal > 0 ? 8 : 0);
     ctx.fillStyle = '#1e293b';
     ctx.strokeStyle = armed ? '#ef4444' : '#60a5fa';
     ctx.lineWidth = 2;
@@ -657,133 +631,159 @@ function drawMinefield(ctx) {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  FIERY MAGMA — LAVA POOLS + OVERHEAT
+//  FIERY MAGMA — ERUPTIONS
 // ══════════════════════════════════════════════════════════════
-const LAVA_WARM_TIME = 1.6;    // cracks glow, no heat yet
-const LAVA_COOL_TIME = 1.5;
-const HEAT_GAIN = 0.5;         // per second inside lava → 2s to overheat
-const HEAT_LOSS = 0.4;         // per second outside
+// A vent glows on the bottom edge and shows the dotted arcs its fireballs will
+// fly; then 1–3 fireballs shoot up and fall back under gravity — the only
+// curved projectiles in the game.
+const ERUPT_WARN = 1.3;        // seconds of vent glow + trajectory preview
+const FIREBALL_R = 15;
 
-function spawnLavaPool(w, h) {
-  const intensity = biomeIntensity();
-  const maxR = 90 + Math.random() * 40 + intensity * 30;
-  let x, y, tries = 0;
-  do {
-    x = w * (0.12 + Math.random() * 0.76);
-    y = h * (0.15 + Math.random() * 0.7);
-    tries++;
-  } while (rocket && Math.hypot(x - rocket.x, y - rocket.y) < maxR + 90 && tries < 20);
-  lavaPools.push({ x, y, maxR, r: 0, state: 'WARMING', timer: 0,
-    hotTime: 7 + Math.random() * 3, seed: Math.random() * 10 });
+function spawnMagmaVent(w, h) {
+  const x = w * (0.08 + Math.random() * 0.84);
+  const count = diffLevel < 8 ? 1 : diffLevel < 14 ? 1 + (Math.random() < 0.5 ? 1 : 0) : 2 + (Math.random() < 0.5 ? 1 : 0);
+  const balls = [];
+  for (let i = 0; i < count; i++) {
+    const apex = h * (0.35 + Math.random() * 0.35);   // how high it flies
+    const tUp = 1.35 + Math.random() * 0.35;           // seconds to the apex
+    // Lean towards the middle so fireballs stay on screen
+    const dir = x < w * 0.3 ? 1 : x > w * 0.7 ? -1 : (Math.random() < 0.5 ? -1 : 1);
+    balls.push({
+      vx: dir * (30 + Math.random() * 110),
+      vy0: -2 * apex / tUp,
+      g: 2 * apex / (tUp * tUp),
+      r: FIREBALL_R + Math.random() * 5,
+    });
+  }
+  magmaVents.push({ x, timer: 0, balls });
 }
 
-function updateLavaPools(dt, w, h, active) {
-  const blocked = isBiomeHazardBlocked('lava');
+function launchVent(v, h) {
+  playSfxExplosion();
+  spawnExplosion(v.x, h, 14);
+  v.balls.forEach(b => {
+    fireballs.push({ x: v.x, y: h + 20, vx: b.vx, vy: b.vy0, g: b.g, r: b.r, spin: Math.random() * 6 });
+  });
+}
+
+function updateEruptions(dt, w, h, active) {
+  const blocked = isBiomeHazardBlocked('magma');
   if (active && !blocked) {
-    biomeTimers.lava += dt;
-    const maxPools = diffLevel >= 12 ? 3 : 2;
-    if (biomeTimers.lava >= biomeNext.lava && lavaPools.filter(p => p.state !== 'COOLING').length < maxPools) {
-      biomeTimers.lava = 0;
-      biomeNext.lava = 7 + Math.random() * 4;
-      spawnLavaPool(w, h);
-      if (biomeHintShown !== 'lava') {
-        biomeHintShown = 'lava';
-        showBiomeHint("LAVA: DON'T OVERHEAT!", '#fb923c');
+    biomeTimers.magma += dt;
+    if (biomeTimers.magma >= biomeNext.magma) {
+      biomeTimers.magma = 0;
+      biomeNext.magma = 4.5 + Math.random() * 2.5;
+      spawnMagmaVent(w, h);
+      if (biomeHintShown !== 'magma') {
+        biomeHintShown = 'magma';
+        showBiomeHint('ERUPTIONS: WATCH THE GLOW BELOW', '#fb923c');
       }
     }
-  } else if (!active) {
-    biomeTimers.lava = 0;
-    biomeNext.lava = 3 + Math.random() * 2;
+  } else {
+    if (!active) {
+      biomeTimers.magma = 0;
+      biomeNext.magma = 3 + Math.random() * 2;
+    }
+    // Blocked by an event or biome left: cancel pending vents, fizzle airborne fireballs
+    magmaVents = [];
+    fireballs.forEach(f => spawnExplosion(f.x, f.y, 6));
+    fireballs = [];
   }
 
-  let inLava = false;
-  for (let i = lavaPools.length - 1; i >= 0; i--) {
-    const p = lavaPools[i];
-    if ((blocked || !active) && p.state !== 'COOLING') { p.state = 'COOLING'; p.timer = 0; }
-    p.timer += dt;
-    if (p.state === 'WARMING') {
-      p.r = p.maxR * Math.min(1, p.timer / LAVA_WARM_TIME);
-      if (p.timer >= LAVA_WARM_TIME) { p.state = 'HOT'; p.timer = 0; }
-    } else if (p.state === 'HOT') {
-      p.r = p.maxR;
-      if (p.timer >= p.hotTime) { p.state = 'COOLING'; p.timer = 0; }
-      if (rocket && rocket.alive && Math.hypot(rocket.x - p.x, rocket.y - p.y) < p.r) inLava = true;
-      if (Math.random() < dt * 6) {
-        const a = Math.random() * Math.PI * 2, d = Math.random() * p.r * 0.8;
-        addParticle({ x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d, vx: 0, vy: -30 - Math.random() * 30,
-          life: 0.8, maxLife: 0.8, size: 2 + Math.random() * 3, color: Math.random() < 0.5 ? '#fb923c' : '#fde047',
-          type: 'circle', grav: -10 });
-      }
-    } else {
-      if (p.timer >= LAVA_COOL_TIME) { lavaPools.splice(i, 1); continue; }
+  for (let i = magmaVents.length - 1; i >= 0; i--) {
+    const v = magmaVents[i];
+    v.timer += dt;
+    if (v.timer >= ERUPT_WARN) {
+      launchVent(v, h);
+      magmaVents.splice(i, 1);
     }
   }
 
-  if (rocket && rocket.alive) {
-    if (inLava && rocket.invincible <= 0) rocketHeat = Math.min(1, rocketHeat + HEAT_GAIN * dt);
-    else rocketHeat = Math.max(0, rocketHeat - HEAT_LOSS * dt);
-    if (rocketHeat >= 1 && canHurtRocket()) {
-      spawnFloatingText(rocket.x, rocket.y - 30, 'OVERHEATED!', '#ef4444');
+  for (let i = fireballs.length - 1; i >= 0; i--) {
+    const f = fireballs[i];
+    f.vy += f.g * dt;
+    f.x += f.vx * dt;
+    f.y += f.vy * dt;
+    f.spin += dt * 4;
+    if (f.vy > 0 && f.y > h + 60) { fireballs.splice(i, 1); continue; }
+    if (Math.random() < dt * 30) {
+      addParticle({ x: f.x + (Math.random() - 0.5) * f.r, y: f.y + (Math.random() - 0.5) * f.r,
+        vx: -f.vx * 0.1, vy: -f.vy * 0.1, life: 0.45, maxLife: 0.45, size: 3 + Math.random() * 3,
+        color: Math.random() < 0.5 ? '#fb923c' : '#fde047', type: 'circle', grav: 0 });
+    }
+
+    if (canHurtRocket() && Math.hypot(rocket.x - f.x, rocket.y - f.y) < f.r * 0.85 + rocketHitR()) {
       killRocket();
     }
+    for (const p of pirates) {
+      if (!p.alive || !p.active) continue;
+      if (Math.hypot(p.x - f.x, p.y - f.y) < f.r * 0.85 + p.r * 0.8) {
+        p.alive = false;
+        playSfxExplosion();
+        spawnExplosion(p.x, p.y, p.r * 1.8 + 12);
+        score += 3;
+        EL.scoreVal.textContent = score;
+        spawnFloatingText(p.x, p.y - 20, '+3 MAGMA!', '#fb923c');
+      }
+    }
   }
 }
 
-function drawLavaPools(ctx) {
+function drawMagmaVents(ctx, w, h) {
   const t = performance.now() / 1000;
-  lavaPools.forEach(p => {
-    if (p.r <= 1) return;
-    const cooling = p.state === 'COOLING';
-    const warming = p.state === 'WARMING';
-    const fade = cooling ? Math.max(0, 1 - p.timer / LAVA_COOL_TIME) : 1;
+  magmaVents.forEach(v => {
+    const k = Math.min(1, v.timer / ERUPT_WARN);
+    const pulse = 0.5 + 0.5 * Math.sin(t * (10 + k * 25));
     ctx.save();
-    ctx.globalAlpha = fade;
-    const wob = 1 + Math.sin(t * 3 + p.seed) * 0.03;
-    const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * wob);
-    if (warming) {
-      grd.addColorStop(0, 'rgba(251, 146, 60, 0.35)');
-      grd.addColorStop(1, 'rgba(120, 30, 0, 0.15)');
-    } else {
-      grd.addColorStop(0, 'rgba(254, 240, 138, 0.9)');
-      grd.addColorStop(0.45, 'rgba(249, 115, 22, 0.85)');
-      grd.addColorStop(0.85, 'rgba(185, 28, 28, 0.75)');
-      grd.addColorStop(1, 'rgba(60, 10, 0, 0.6)');
-    }
+    // Glowing vent on the bottom edge
+    const grd = ctx.createRadialGradient(v.x, h, 0, v.x, h, 70);
+    grd.addColorStop(0, `rgba(254, 240, 138, ${0.5 + 0.4 * pulse})`);
+    grd.addColorStop(0.4, `rgba(249, 115, 22, ${0.45 + 0.3 * pulse})`);
+    grd.addColorStop(1, 'rgba(185, 28, 28, 0)');
     ctx.fillStyle = grd;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r * wob, 0, Math.PI * 2);
+    ctx.arc(v.x, h, 70, Math.PI, Math.PI * 2);
     ctx.fill();
-    // Crust edge — dashed while warming so it reads as "about to be hot"
-    if (warming) ctx.setLineDash([10, 8]);
-    ctx.strokeStyle = warming ? 'rgba(251, 146, 60, 0.9)' : 'rgba(255, 200, 120, 0.9)';
-    ctx.lineWidth = 3;
-    ctx.shadowColor = '#f97316';
-    ctx.shadowBlur = 16;
-    ctx.stroke();
+    // Dotted preview of each fireball's arc
+    ctx.fillStyle = `rgba(251, 146, 60, ${0.35 + 0.45 * pulse})`;
+    v.balls.forEach(b => {
+      for (let s = 0.06; s < 6; s += 0.07) {
+        const x = v.x + b.vx * s;
+        const y = h + 20 + b.vy0 * s + 0.5 * b.g * s * s;
+        if (y > h + 20) break;
+        ctx.beginPath();
+        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
     ctx.restore();
   });
 }
 
-// Heat ring around the rocket (only while warm)
-function drawRocketHeat(ctx) {
-  if (!rocket || !rocket.alive || rocketHeat <= 0.01) return;
-  const t = performance.now() / 1000;
-  const danger = rocketHeat > 0.7;
-  ctx.save();
-  ctx.lineWidth = 5;
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
-  ctx.beginPath();
-  ctx.arc(rocket.x, rocket.y, 34, 0, Math.PI * 2);
-  ctx.stroke();
-  const r = Math.round(253 - rocketHeat * 14), g = Math.round(224 - rocketHeat * 180);
-  ctx.strokeStyle = danger && Math.sin(t * 25) > 0 ? '#ffffff' : `rgb(${r}, ${g}, 40)`;
-  ctx.shadowColor = '#ef4444';
-  ctx.shadowBlur = 12;
-  ctx.beginPath();
-  ctx.arc(rocket.x, rocket.y, 34, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * rocketHeat);
-  ctx.stroke();
-  ctx.restore();
+function drawFireballs(ctx) {
+  fireballs.forEach(f => {
+    ctx.save();
+    ctx.fillStyle = 'rgba(249, 115, 22, 0.22)';
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, f.r * 1.9, 0, Math.PI * 2);
+    ctx.fill();
+    const core = ctx.createRadialGradient(f.x - f.r * 0.3, f.y - f.r * 0.3, 0, f.x, f.y, f.r);
+    core.addColorStop(0, '#fffbeb');
+    core.addColorStop(0.35, '#fde047');
+    core.addColorStop(0.7, '#f97316');
+    core.addColorStop(1, '#991b1b');
+    ctx.fillStyle = core;
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+    ctx.fill();
+    // Dark crust cracks
+    ctx.strokeStyle = 'rgba(69, 10, 10, 0.6)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, f.r * 0.6, f.spin, f.spin + 1.2);
+    ctx.stroke();
+    ctx.restore();
+  });
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -793,25 +793,30 @@ function updateBiomeHazards(dt, w, h) {
   updateIonGates(dt, w, h, isNeonAzureTheme());
   updateSupernova(dt, w, h, isGoldenSupernovaTheme());
   updateMinefield(dt, w, h, isUltramarineTheme());
-  updateLavaPools(dt, w, h, isMagmaTheme());
+  updateEruptions(dt, w, h, isMagmaTheme());
 }
 
 // Ground-level layers (under obstacles)
 function drawBiomeHazardsBelow(ctx) {
-  if (lavaPools.length) drawLavaPools(ctx);
+  if (magmaVents.length) drawMagmaVents(ctx, canvas.width, canvas.height);
 }
 
 // Layers drawn over obstacles
 function drawBiomeHazardsAbove(ctx) {
   if (mines.length || sonarPings.length) drawMinefield(ctx);
   if (ionGates.length) drawIonGates(ctx);
-  if (supernova || stardust.length) drawSupernova(ctx);
-  drawRocketHeat(ctx);
+  if (supernova) drawSupernova(ctx);
+  if (fireballs.length) drawFireballs(ctx);
 }
 
 // Keep hazards in place when the playfield is resized (see input.js)
 function rescaleBiomeHazards(sx, sy) {
   ionGates.forEach(g => { g.a.x *= sx; g.a.y *= sy; g.b.x *= sx; g.b.y *= sy; });
   if (supernova) { supernova.x *= sx; supernova.y *= sy; }
-  [stardust, mines, sonarPings, lavaPools].forEach(list => list.forEach(e => { e.x *= sx; e.y *= sy; }));
+  [mines, sonarPings].forEach(list => list.forEach(e => { e.x *= sx; e.y *= sy; }));
+  magmaVents.forEach(v => {
+    v.x *= sx;
+    v.balls.forEach(b => { b.vx *= sx; b.vy0 *= sy; b.g *= sy; });
+  });
+  fireballs.forEach(f => { f.x *= sx; f.y *= sy; f.vx *= sx; f.vy *= sy; f.g *= sy; });
 }
