@@ -159,19 +159,20 @@ function drawAsteroid(ctx, ob) {
   ctx.translate(x, y);
   ctx.rotate(rotation);
 
-  const glw = ctx.createRadialGradient(0, 0, r * 0.5, 0, 0, r * 1.8);
-  glw.addColorStop(0, 'rgba(100, 80, 60, 0.3)');
-  glw.addColorStop(1, 'rgba(60, 40, 30, 0)');
+  // Warm halo so the rock stands out against any background colour
+  const glw = ctx.createRadialGradient(0, 0, r * 0.6, 0, 0, r * 1.9);
+  glw.addColorStop(0, 'rgba(255, 170, 90, 0.35)');
+  glw.addColorStop(1, 'rgba(255, 140, 60, 0)');
   ctx.fillStyle = glw;
   ctx.beginPath();
-  ctx.arc(0, 0, r * 1.8, 0, Math.PI * 2);
+  ctx.arc(0, 0, r * 1.9, 0, Math.PI * 2);
   ctx.fill();
 
   const bodyGrd = ctx.createRadialGradient(-r * 0.3, -r * 0.3, 0, 0, 0, r);
-  bodyGrd.addColorStop(0, '#7a6a50');
-  bodyGrd.addColorStop(0.4, '#5a4a36');
-  bodyGrd.addColorStop(0.8, '#3a2e24');
-  bodyGrd.addColorStop(1, '#1a1410');
+  bodyGrd.addColorStop(0, '#c9a77a');
+  bodyGrd.addColorStop(0.4, '#9a7a56');
+  bodyGrd.addColorStop(0.8, '#6b5238');
+  bodyGrd.addColorStop(1, '#3d2c1e');
   ctx.fillStyle = bodyGrd;
   ctx.beginPath();
   vertices.forEach((v, i) => {
@@ -180,6 +181,16 @@ function drawAsteroid(ctx, ob) {
   });
   ctx.closePath();
   ctx.fill();
+
+  // Two-tone outline: dark edge reads on bright backgrounds,
+  // the light amber rim reads on dark ones
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(15, 8, 4, 0.75)';
+  ctx.lineWidth = Math.max(3, r * 0.16);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255, 196, 130, 0.9)';
+  ctx.lineWidth = Math.max(1.5, r * 0.07);
+  ctx.stroke();
 
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
   ob.craters.forEach(c => {
