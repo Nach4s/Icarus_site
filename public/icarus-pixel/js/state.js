@@ -35,6 +35,51 @@ function sizeGameCanvas(c) {
   topSafeY = IS_TOUCH && hud ? Math.round(hud.offsetHeight * k) : 0;
 }
 
+// Phones (iOS/Android) draw symbols like ☠ ⚡ ☣ ⚠ as colour emoji, ignoring
+// fillStyle; append U+FE0E so they render as tinted text glyphs like on Windows.
+const CANVAS_SYMBOLS = /([☀-➿])(?![︎️])/g;
+const origFillText = CanvasRenderingContext2D.prototype.fillText;
+CanvasRenderingContext2D.prototype.fillText = function (text, ...rest) {
+  if (typeof text === 'string') text = text.replace(CANVAS_SYMBOLS, '$1︎');
+  return origFillText.call(this, text, ...rest);
+};
+
+// Vector icons for spots where a glyph would still turn into an emoji on phones
+function drawShieldIcon(ctx, x, y, size, color) {
+  const s = size / 2;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.beginPath();
+  ctx.moveTo(0, -s);
+  ctx.quadraticCurveTo(s * 0.55, -s * 0.72, s * 0.9, -s * 0.72);
+  ctx.lineTo(s * 0.9, -s * 0.05);
+  ctx.quadraticCurveTo(s * 0.85, s * 0.62, 0, s);
+  ctx.quadraticCurveTo(-s * 0.85, s * 0.62, -s * 0.9, -s * 0.05);
+  ctx.lineTo(-s * 0.9, -s * 0.72);
+  ctx.quadraticCurveTo(-s * 0.55, -s * 0.72, 0, -s);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawBoltIcon(ctx, x, y, size, color) {
+  const s = size / 2;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.beginPath();
+  ctx.moveTo(s * 0.25, -s);
+  ctx.lineTo(-s * 0.55, s * 0.12);
+  ctx.lineTo(-s * 0.02, s * 0.12);
+  ctx.lineTo(-s * 0.25, s);
+  ctx.lineTo(s * 0.55, -s * 0.15);
+  ctx.lineTo(s * 0.02, -s * 0.15);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.restore();
+}
+
 // Canvas labels are drawn in logical pixels, so after the CSS downscale the
 // 7–10px pixel font becomes unreadable on phones — enlarge it to compensate.
 if (IS_TOUCH) {

@@ -209,8 +209,8 @@ function drawInversionAuraOnRocket(ctx, S, mode = 'BOTH') {
     ctx.font = `${Math.round(7 * S)}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('⚡', 0, -16 * S);
-    ctx.fillText('⚡', 0, 16 * S);
+    drawBoltIcon(ctx, 0, -16 * S, 7 * S, '#f472b6');
+    drawBoltIcon(ctx, 0, 16 * S, 7 * S, '#f472b6');
   }
 
   ctx.restore();

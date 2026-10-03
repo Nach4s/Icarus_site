@@ -34,7 +34,7 @@
       <canvas id="menu-rocket-canvas" width="120" height="160"></canvas>
 
       <div class="menu-coins-badge" id="menu-coins-badge" onclick="showSkinsScreen()" title="Open hangar">
-        <span class="coin-icon">🪙</span> <span id="menu-coins-val">0</span>
+        <span class="coin-icon"></span> <span id="menu-coins-val">0</span>
       </div>
 
       <div class="menu-actions">
@@ -114,9 +114,6 @@
 
     <div id="pause-hint">ESC — pause</div>
 
-    <!-- Mobile pause button -->
-    <button id="btn-mobile-pause" class="btn-mobile-pause" onclick="pauseGame()">⏸</button>
-
     <!-- Pause overlay -->
     <div id="pause-overlay" class="overlay hidden">
       <div class="overlay-panel">
@@ -157,7 +154,7 @@
           <span class="result-value" id="final-score">0</span>
         </div>
         <div class="result-row coins-row">
-          <span class="result-label">🪙 COINS</span>
+          <span class="result-label"><span class="coin-icon"></span> COINS</span>
           <span class="result-value coins-val" id="final-coins">+0 (Total: 0)</span>
         </div>
         <div class="result-divider"></div>
@@ -245,7 +242,7 @@
           <div class="skins-subtitle">CHOOSE YOUR SHIP</div>
         </div>
         <div class="skins-coins-badge" id="skins-coins-badge">
-          <span class="coin-icon">🪙</span>
+          <span class="coin-icon"></span>
           <span id="skins-coin-count">0</span>
         </div>
       </div>

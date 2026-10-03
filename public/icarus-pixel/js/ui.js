@@ -184,14 +184,14 @@ function buildSkinsUI() {
     } else if (isOwned) {
       buttonHtml = `<button class="btn-skin-action btn-select" onclick="selectSkin('${skin.id}')">SELECT</button>`;
     } else if (canAfford) {
-      buttonHtml = `<button class="btn-skin-action btn-buy" onclick="unlockSkin('${skin.id}')">BUY FOR ${skin.price} 🪙</button>`;
+      buttonHtml = `<button class="btn-skin-action btn-buy" onclick="unlockSkin('${skin.id}')">BUY FOR ${skin.price} <span class="coin-icon"></span></button>`;
     } else {
-      buttonHtml = `<button class="btn-skin-action btn-locked" disabled>🔒 ${skin.price} 🪙</button>`;
+      buttonHtml = `<button class="btn-skin-action btn-locked" disabled>🔒 ${skin.price} <span class="coin-icon"></span></button>`;
     }
 
     const priceText = skin.price === 0
       ? '<span class="skin-price-tag free">FREE</span>'
-      : `<span class="skin-price-tag">🪙 ${skin.price} coins</span>`;
+      : `<span class="skin-price-tag"><span class="coin-icon"></span> ${skin.price} coins</span>`;
 
     card.innerHTML = `
       <div class="skin-preview-wrap">

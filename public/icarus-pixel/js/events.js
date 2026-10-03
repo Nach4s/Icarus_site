@@ -1397,7 +1397,8 @@ function drawPirate(ctx, p) {
     ctx.font = `${Math.round(p.r)}px serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(isArmored ? '🛡' : '☠', p.x, p.y);
+    if (isArmored) drawShieldIcon(ctx, p.x, p.y, p.r, '#38bdf8');
+    else ctx.fillText('☠', p.x, p.y);
     ctx.restore();
     return;
   }
@@ -1516,7 +1517,7 @@ function drawPirate(ctx, p) {
       ctx.font = `${Math.round(p.r * 0.55)}px serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('🛡', 0, p.r * 0.05);
+      drawShieldIcon(ctx, 0, p.r * 0.05, p.r * 0.55, '#38bdf8');
     } else {
       // Scorch mark / cracked armor decal
       ctx.fillStyle = 'rgba(239, 68, 68, 0.7)';
@@ -1567,7 +1568,7 @@ function drawPirate(ctx, p) {
     ctx.font = `${Math.round(p.r * 0.55)}px serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('⚡', 0, 0);
+    drawBoltIcon(ctx, 0, 0, p.r * 0.55, 'rgba(255, 255, 255, 0.85)');
   }
 
   // Black hole gravitational suppression aura (sluggish indicator)

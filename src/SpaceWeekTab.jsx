@@ -248,14 +248,15 @@ export default function SpaceWeekTab() {
                                 <Loader2 size={32} className="text-yellow-600 animate-spin" />
                             </div>
                         )}
-                        {pseudoFullscreen && (
+                        {/* Phones have no pause button in the game — this is the only in-game control (exiting pauses the game) */}
+                        {(pseudoFullscreen || (fullscreen && isTouch)) && (
                             <button
                                 id="game-exit-fullscreen-btn"
                                 onClick={toggleFullscreen}
                                 aria-label={t('spaceWeek.exitFullscreen')}
-                                className="absolute bottom-3 left-3 z-10 flex items-center justify-center w-10 h-10 rounded-full bg-black/60 border border-neutral-700 text-neutral-300 cursor-pointer"
+                                className="absolute top-3 right-3 z-10 flex items-center justify-center w-11 h-11 rounded-full bg-black/60 border border-neutral-700 text-neutral-300 cursor-pointer"
                             >
-                                <Minimize size={16} />
+                                <Minimize size={18} />
                             </button>
                         )}
                     </div>
