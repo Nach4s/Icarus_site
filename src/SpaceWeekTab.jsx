@@ -112,8 +112,11 @@ export default function SpaceWeekTab() {
     }, [])
 
     // ── Pause the game when fullscreen is exited (ESC is swallowed by the browser) ──
+    // The game is only playable in fullscreen, so also take keyboard focus away from
+    // the frame — otherwise ESC/arrow keys would still reach it in the small window.
     const pauseGame = useCallback(() => {
         frameRef.current?.contentWindow?.postMessage({ type: 'icarus-pause' }, window.location.origin)
+        frameRef.current?.blur()
     }, [])
 
     useEffect(() => {
@@ -149,6 +152,11 @@ export default function SpaceWeekTab() {
         }
     }
     const isFullscreen = fullscreen || pseudoFullscreen
+
+    // Entering fullscreen hands keyboard focus to the game right away
+    useEffect(() => {
+        if (isFullscreen) frameRef.current?.contentWindow?.focus()
+    }, [isFullscreen])
 
     return (
         <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-12 lg:py-20">
@@ -242,10 +250,26 @@ export default function SpaceWeekTab() {
                                 src="/icarus-pixel/index.html"
                                 className="absolute inset-0 w-full h-full border-0"
                                 allow="fullscreen; autoplay"
+                                tabIndex={isFullscreen ? 0 : -1}
                             />
                         ) : (
                             <div className="absolute inset-0 flex items-center justify-center">
                                 <Loader2 size={32} className="text-yellow-600 animate-spin" />
+                            </div>
+                        )}
+                        {/* The game is playable only in fullscreen: in the small window this
+                            overlay covers the frame so no clicks or touches reach it */}
+                        {gameReady && !isFullscreen && (
+                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 px-6 text-center bg-black/65 backdrop-blur-sm">
+                                <button
+                                    id="game-play-fullscreen-btn"
+                                    onClick={toggleFullscreen}
+                                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-yellow-600 hover:bg-yellow-500 text-black text-sm font-black uppercase tracking-wider shadow-lg shadow-yellow-600/30 transition-colors cursor-pointer"
+                                >
+                                    <Maximize size={18} />
+                                    {t('spaceWeek.playFullscreen')}
+                                </button>
+                                <p className="max-w-xs text-xs text-neutral-400">{t('spaceWeek.fullscreenOnly')}</p>
                             </div>
                         )}
                         {/* Phones have no pause button in the game — this is the only in-game control (exiting pauses the game) */}

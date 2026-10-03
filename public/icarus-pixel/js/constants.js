@@ -47,18 +47,36 @@ const MIN_COMET_EXPLODE_R = 12;
 const DANGER_ZONE_DURATION = 1.5;
 
 // ─── Achievements Definition ──────────────────────────────────
+// check(s) gets the saved stats: best*, s.total.X (lifetime), s.best.X (best run),
+// s.sectorsVisited / s.eventTypesSurvived (sets) — see mergeRunStats in records.js
 const ACHIEVEMENTS_DEF = [
-  { id: 'first_flight', icon: '🚀', name: 'First Flight', desc: 'Play your first game', check: (s) => s.gamesPlayed >= 1 },
-  { id: 'survivor_30', icon: '⏱', name: '30 Seconds', desc: 'Survive for 30 seconds', check: (s) => s.bestTime >= 30 },
-  { id: 'survivor_60', icon: '⌛', name: 'One Minute', desc: 'Survive for 60 seconds', check: (s) => s.bestTime >= 60 },
-  { id: 'survivor_120', icon: '🕐', name: '2 Minutes', desc: 'Survive for 2 minutes', check: (s) => s.bestTime >= 120 },
-  { id: 'score_10', icon: '🎯', name: 'Tenner', desc: 'Score 10 points', check: (s) => s.bestScore >= 10 },
-  { id: 'score_50', icon: '⭐', name: 'Half Century', desc: 'Score 50 points', check: (s) => s.bestScore >= 50 },
-  { id: 'score_100', icon: '💫', name: 'Centurion', desc: 'Score 100 points', check: (s) => s.bestScore >= 100 },
-  { id: 'score_150', icon: '🏆', name: 'Master', desc: 'Score 150 points', check: (s) => s.bestScore >= 150 },
-  { id: 'score_200', icon: '👑', name: 'Legend', desc: 'Score 200 points', check: (s) => s.bestScore >= 200 },
-  { id: 'level_10', icon: '💀', name: 'Madness', desc: 'Reach level 10', check: (s) => s.bestLevel >= 10 },
-  { id: 'level_15', icon: '⚡', name: 'Apocalypse', desc: 'Reach level 15', check: (s) => s.bestLevel >= 15 },
+  // Progress
+  { id: 'liftoff', icon: '🚀', name: 'Liftoff', desc: 'Play your first game', check: (s) => s.gamesPlayed >= 1 },
+  { id: 'level_5', icon: '🌌', name: 'Sector Jumper', desc: 'Reach level 5', check: (s) => s.bestLevel >= 5 },
+  { id: 'level_10', icon: '🛰️', name: 'Deep Space', desc: 'Reach level 10', check: (s) => s.bestLevel >= 10 },
+  { id: 'level_15', icon: '💀', name: 'Point of No Return', desc: 'Reach level 15', check: (s) => s.bestLevel >= 15 },
+  { id: 'level_20', icon: '👑', name: 'Icarus Ascended', desc: 'Reach level 20', check: (s) => s.bestLevel >= 20 },
+  { id: 'endurance', icon: '⏱️', name: 'Endurance', desc: 'Survive 3 minutes in one run', check: (s) => s.bestTime >= 180 },
+  { id: 'high_flyer', icon: '⭐', name: 'High Flyer', desc: 'Score 250 points in one run', check: (s) => s.bestScore >= 250 },
+  // Exploration & events
+  { id: 'explorer', icon: '🧭', name: 'Explorer', desc: 'Visit 4 sectors in one run', check: (s) => (s.best.sectors || 0) >= 4 },
+  { id: 'cartographer', icon: '🗺️', name: 'Cartographer', desc: 'Visit all 8 sectors', check: (s) => s.sectorsVisited.length >= 8 },
+  { id: 'event_veteran', icon: '🎖️', name: 'Event Veteran', desc: 'Survive 5 events in one run', check: (s) => (s.best.eventsSurvived || 0) >= 5 },
+  { id: 'seen_it_all', icon: '🌀', name: 'Seen It All', desc: 'Survive every type of event', check: (s) => s.eventTypesSurvived.length >= 5 },
+  // Pirates
+  { id: 'pirate_hunter', icon: '🏴‍☠️', name: 'Pirate Hunter', desc: 'Destroy 25 pirates', check: (s) => (s.total.pirateKills || 0) >= 25 },
+  { id: 'ion_trap', icon: '⚡', name: 'Ion Trap', desc: 'Lure a pirate into an ion arc', check: (s) => (s.total.ionKills || 0) >= 1 },
+  { id: 'minesweeper', icon: '💣', name: 'Minesweeper', desc: 'Make a pirate crash into a mine', check: (s) => (s.total.mineKills || 0) >= 1 },
+  { id: 'volcanologist', icon: '🌋', name: 'Volcanologist', desc: 'Hit a pirate with a magma fireball', check: (s) => (s.total.magmaKills || 0) >= 1 },
+  // Biome survival
+  { id: 'nova_survivor', icon: '☀️', name: 'Supernova Survivor', desc: 'Outlast 3 supernovae in one run', check: (s) => (s.best.novasSurvived || 0) >= 3 },
+  { id: 'solar_surfer', icon: '🌊', name: 'Solar Surfer', desc: 'Ride out 3 solar storms in one run', check: (s) => (s.best.wavesSurvived || 0) >= 3 },
+  { id: 'event_horizon', icon: '🕳️', name: 'Event Horizon', desc: 'Outlast 5 black holes in one run', check: (s) => (s.best.blackHolesSurvived || 0) >= 5 },
+  { id: 'gas_mask', icon: '☣️', name: 'Gas Mask', desc: 'Spend 10 seconds in toxic fog in one run', check: (s) => (s.best.fogTime || 0) >= 10 },
+  { id: 'storm_chaser', icon: '☄️', name: 'Storm Chaser', desc: 'Make it through the Synthwave asteroid storm', check: (s) => (s.total.synthwaveCleared || 0) >= 1 },
+  // Hangar
+  { id: 'coin_collector', icon: '💰', name: 'Coin Collector', desc: 'Earn 100 coins in total', check: (s) => (s.total.coins || 0) >= 100 },
+  { id: 'new_ship', icon: '🛸', name: 'New Ship', desc: 'Unlock a ship in the hangar', check: () => unlockedSkins.length > 1 },
 ];
 
 // ─── Coins & Skins State ──────────────────────────────────────
@@ -169,6 +187,13 @@ function unlockSkin(skinId) {
   saveCoins();
   playSfxAchievement();
   buildSkinsUI();
+  // Buying a ship can unlock an achievement right away
+  const stats = getStats();
+  const newly = checkAchievements(stats);
+  if (newly.length) {
+    saveStats(stats);
+    newly.forEach(def => showAchievementToast(def));
+  }
   return true;
 }
 

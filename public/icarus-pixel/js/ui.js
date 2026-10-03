@@ -293,11 +293,13 @@ function startGame() {
   nextToxicBarrelInterval = getToxicBarrelInterval();
   eventBounds = { active: false };
   eventPlan = {};
+  eventCycleStartLevel = 0;
   newAchievementsThisRun = [];
   pushWave = null;
   pushWaveTimer = 0;
   pushWaveInterval = 0;
   resetBiomeHazards();
+  resetRunStats();
   gameState = 'PLAYING';
   startTime = performance.now();   // FIX: record actual start time
 
@@ -373,6 +375,8 @@ function showGameOver() {
   if (score > stats.bestScore) stats.bestScore = score;
   if (elapsed > stats.bestTime) stats.bestTime = elapsed;
   if (diffLevel > stats.bestLevel) stats.bestLevel = diffLevel;
+  runStats.coins = Math.floor(score / 20);
+  mergeRunStats(stats, runStats);
 
   // Check achievements
   const newAch = checkAchievements(stats);

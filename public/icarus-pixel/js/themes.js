@@ -121,6 +121,7 @@ function initRunTheme() {
   shuffleRunThemes();
   currentThemeIndex = runThemeDeck[0];
   currentBgTheme = SPACE_THEMES[currentThemeIndex];
+  noteRunSector(currentBgTheme.name);
   curBg = [...currentBgTheme.bg];
   fromBg = [...curBg];
   targetBg = [...curBg];
@@ -162,6 +163,7 @@ function initRunTheme() {
 }
 
 function triggerThemeTransition() {
+  if (isSynthwaveTheme() && rocket && rocket.alive) runStats.synthwaveCleared++;
   runThemeIndex++;
   // If player survived all themes in the deck without dying (8 sectors = 40 levels!),
   // reshuffle a fresh cycle without repeating the immediately preceding theme:
@@ -175,6 +177,7 @@ function triggerThemeTransition() {
 
   currentThemeIndex = runThemeDeck[runThemeIndex];
   currentBgTheme = SPACE_THEMES[currentThemeIndex];
+  noteRunSector(currentBgTheme.name);
 
   fromBg = [...curBg];
   targetBg = [...currentBgTheme.bg];

@@ -199,6 +199,7 @@ function updateIonGates(dt, w, h, active) {
         score += 3;
         EL.scoreVal.textContent = score;
         spawnFloatingText(p.x, p.y - 20, '+3 ION ZAP!', '#22d3ee');
+        runStats.ionKills++;
       }
     }
   }
@@ -342,7 +343,34 @@ function updateSupernova(dt, w, h, active) {
           killRocket();
         }
       }
-      if (n.radius >= n.maxR) supernova = null;
+      // The ring burns everything it sweeps over (anything inside a gap survives)
+      const hitsRing = (x, y, r) =>
+        Math.abs(Math.hypot(x - n.x, y - n.y) - n.radius) < NOVA_RING_HALF + r &&
+        !angleInGap(n, Math.atan2(y - n.y, x - n.x));
+      for (let j = obstacles.length - 1; j >= 0; j--) {
+        const ob = obstacles[j];
+        if (hitsRing(ob.x, ob.y, ob.r * 0.8)) {
+          spawnExplosion(ob.x, ob.y, 8);
+          obstacles.splice(j, 1);
+        }
+      }
+      for (const p of pirates) {
+        if (!p.alive || !p.active || !hitsRing(p.x, p.y, p.r * 0.8)) continue;
+        if (p.hasArmor) spawnShieldBreakEffect(p.x, p.y, p.r);
+        p.alive = false;
+        playSfxExplosion();
+        spawnExplosion(p.x, p.y, p.r * 1.8 + 12);
+        score += 3;
+        EL.scoreVal.textContent = score;
+        spawnFloatingText(p.x, p.y - 20, '+3 SUPERNOVA!', '#fde047');
+      }
+      toxicBarrels.forEach(b => {
+        if (b.alive && hitsRing(b.x, b.y, b.r)) detonateToxicBarrel(b);
+      });
+      if (n.radius >= n.maxR) {
+        if (rocket && rocket.alive) runStats.novasSurvived++;
+        supernova = null;
+      }
     } else {
       n.alpha -= dt * 2.5;
       if (n.alpha <= 0) supernova = null;
@@ -467,6 +495,7 @@ function detonateMine(m) {
       score += 3;
       EL.scoreVal.textContent = score;
       spawnFloatingText(p.x, p.y - 20, '+3 MINE!', '#60a5fa');
+      runStats.mineKills++;
     }
   }
   // Chain reaction: nearby mines arm themselves
@@ -537,6 +566,7 @@ function updateMinefield(dt, w, h, active) {
         score += 3;
         EL.scoreVal.textContent = score;
         spawnFloatingText(p.x, p.y - 20, '+3 MINE!', '#60a5fa');
+        runStats.mineKills++;
         armMine(m);
       }
     }
@@ -634,44 +664,75 @@ function drawMinefield(ctx) {
 // ══════════════════════════════════════════════════════════════
 //  FIERY MAGMA — ERUPTIONS
 // ══════════════════════════════════════════════════════════════
-// A vent glows on the bottom edge and shows the dotted paths its fireballs will
-// fly; then 1–3 fireballs shoot up one after another and fall back. Each one has
-// its own height, sideways speed and a weaving wobble, so the arcs are chaotic —
-// but every path is fully shown in the preview.
+// A vent glows on the bottom edge and shows the dotted arcs its fireballs will
+// fly; then it fires 1–3 fireballs one after another like a cannon. They follow
+// real ballistic arcs — one shared gravity, each ball with its own launch angle
+// and power — so the volley fans out unpredictably, yet every arc is previewed.
+// A fireball that hits a pirate bursts and takes nearby pirates with it.
 const ERUPT_WARN = 1.3;        // seconds of vent glow + trajectory preview
 const FIREBALL_R = 15;
+const FIREBALL_BLAST_R = 75;   // burst radius when a fireball hits a pirate
 
 // Position of a fireball s seconds after launch (shared by preview and flight)
 function fireballPos(x0, y0, b, s) {
-  return {
-    x: x0 + b.vx * s + b.wobA * (Math.sin(b.wobF * s * Math.PI * 2 + b.wobP) - Math.sin(b.wobP)),
-    y: y0 + b.vy0 * s + 0.5 * b.g * s * s,
-  };
+  return { x: x0 + b.vx * s, y: y0 + b.vy0 * s + 0.5 * b.g * s * s };
 }
 
 function spawnMagmaVent(w, h) {
   const x = w * (0.08 + Math.random() * 0.84);
   const count = diffLevel < 8 ? 1 : diffLevel < 14 ? 1 + (Math.random() < 0.5 ? 1 : 0) : 2 + (Math.random() < 0.5 ? 1 : 0);
+  // One gravity per eruption: a 60%-height shot takes ~1.4s to reach its apex
+  const g = 2 * h * 0.6 / (1.4 * 1.4);
   const balls = [];
   for (let i = 0; i < count; i++) {
-    const apex = h * (0.3 + Math.random() * 0.5);     // how high it flies
-    const tUp = 1.1 + Math.random() * 0.7;             // seconds to the apex
-    let vx = (Math.random() < 0.5 ? -1 : 1) * (20 + Math.random() * 200);
-    // Flip sideways speed if it would land off-screen
-    const landX = x + vx * tUp * 2;
-    if (landX < w * 0.05 || landX > w * 0.95) vx = -vx;
-    balls.push({
-      vx,
-      vy0: -2 * apex / tUp,
-      g: 2 * apex / (tUp * tUp),
-      wobA: 25 + Math.random() * 45,                   // weave amplitude, px
-      wobF: 0.7 + Math.random() * 1.1,                 // weaves per second
-      wobP: Math.random() * Math.PI * 2,
-      delay: i * (0.15 + Math.random() * 0.3),         // staggered launches
-      r: FIREBALL_R + Math.random() * 5,
-    });
+    const apex = h * (0.3 + Math.random() * 0.55);    // launch power
+    const vy0 = -Math.sqrt(2 * g * apex);
+    const flight = 2 * -vy0 / g;
+    const tilt = (4 + Math.random() * 30) * Math.PI / 180 * (Math.random() < 0.5 ? -1 : 1);
+    let vx = Math.tan(tilt) * -vy0;
+    // Keep the landing point on screen: flip the tilt, then tame it if still off
+    let landX = x + vx * flight;
+    if (landX < w * 0.03 || landX > w * 0.97) { vx = -vx; landX = x + vx * flight; }
+    if (landX < w * 0.03 || landX > w * 0.97) vx *= 0.3;
+    balls.push({ vx, vy0, g, delay: i * (0.18 + Math.random() * 0.3), r: FIREBALL_R + Math.random() * 5 });
   }
   magmaVents.push({ x, timer: 0, launched: 0, balls });
+}
+
+// Muzzle blast at the vent: flash ring + a cone of lava debris along the shot
+function spawnVentBlast(x, h, b) {
+  const ang = Math.atan2(b.vy0, b.vx);
+  addParticle({ x, y: h, vx: 0, vy: 0, life: 0.35, maxLife: 0.35, size: 10, maxSize: 70,
+    color: '#fdba74', type: 'ring', grav: 0 });
+  for (let i = 0; i < 16; i++) {
+    const a = ang + (Math.random() - 0.5) * 0.7;
+    const spd = 180 + Math.random() * 380;
+    const life = 0.35 + Math.random() * 0.4;
+    addParticle({ x: x + (Math.random() - 0.5) * 16, y: h, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
+      life, maxLife: life, size: 2 + Math.random() * 4,
+      color: ['#fde047', '#fb923c', '#ef4444', '#fff7ed'][i % 4],
+      type: Math.random() < 0.5 ? 'square' : 'circle', rot: Math.random() * 6, rotV: (Math.random() - 0.5) * 10,
+      grav: 500 });
+  }
+}
+
+function burstFireball(f) {
+  playSfxExplosion();
+  spawnExplosion(f.x, f.y, 22);
+  addParticle({ x: f.x, y: f.y, vx: 0, vy: 0, life: 0.4, maxLife: 0.4, size: 8, maxSize: FIREBALL_BLAST_R,
+    color: '#fb923c', type: 'ring', grav: 0 });
+  for (const p of pirates) {
+    if (!p.alive || !p.active) continue;
+    if (Math.hypot(p.x - f.x, p.y - f.y) < FIREBALL_BLAST_R + p.r * 0.5) {
+      if (p.hasArmor) spawnShieldBreakEffect(p.x, p.y, p.r);
+      p.alive = false;
+      spawnExplosion(p.x, p.y, p.r * 1.8 + 12);
+      score += 3;
+      EL.scoreVal.textContent = score;
+      spawnFloatingText(p.x, p.y - 20, '+3 MAGMA!', '#fb923c');
+      runStats.magmaKills++;
+    }
+  }
 }
 
 function updateEruptions(dt, w, h, active) {
@@ -703,8 +764,8 @@ function updateEruptions(dt, w, h, active) {
     v.timer += dt;
     while (v.launched < v.balls.length && v.timer >= ERUPT_WARN + v.balls[v.launched].delay) {
       const b = v.balls[v.launched++];
-      if (v.launched === 1) playSfxExplosion();
-      spawnExplosion(v.x, h, 10);
+      playSfxExplosion();
+      spawnVentBlast(v.x, h, b);
       fireballs.push({ x0: v.x, y0: h + 20, x: v.x, y: h + 20, age: 0, b: { ...b }, spin: Math.random() * 6 });
     }
     if (v.launched >= v.balls.length) magmaVents.splice(i, 1);
@@ -712,33 +773,29 @@ function updateEruptions(dt, w, h, active) {
 
   for (let i = fireballs.length - 1; i >= 0; i--) {
     const f = fireballs[i];
-    const px = f.x, py = f.y;
     f.age += dt;
     const pos = fireballPos(f.x0, f.y0, f.b, f.age);
     f.x = pos.x;
     f.y = pos.y;
-    f.spin += dt * 4;
+    f.spin += dt * 6;
     const vy = f.b.vy0 + f.b.g * f.age;
     if (vy > 0 && f.y > h + 60) { fireballs.splice(i, 1); continue; }
-    if (Math.random() < dt * 30) {
+    // Ember trail streaming behind the ball
+    if (Math.random() < dt * 40) {
+      const life = 0.3 + Math.random() * 0.3;
       addParticle({ x: f.x + (Math.random() - 0.5) * f.b.r, y: f.y + (Math.random() - 0.5) * f.b.r,
-        vx: (px - f.x) * 6, vy: (py - f.y) * 6, life: 0.45, maxLife: 0.45, size: 3 + Math.random() * 3,
-        color: Math.random() < 0.5 ? '#fb923c' : '#fde047', type: 'circle', grav: 0 });
+        vx: -f.b.vx * 0.15 + (Math.random() - 0.5) * 30, vy: -vy * 0.15 + (Math.random() - 0.5) * 30,
+        life, maxLife: life, size: 2 + Math.random() * 4,
+        color: Math.random() < 0.5 ? '#fb923c' : '#fde047', type: 'circle', grav: 60 });
     }
 
     if (canHurtRocket() && Math.hypot(rocket.x - f.x, rocket.y - f.y) < f.b.r * 0.85 + rocketHitR()) {
       killRocket();
     }
-    for (const p of pirates) {
-      if (!p.alive || !p.active) continue;
-      if (Math.hypot(p.x - f.x, p.y - f.y) < f.b.r * 0.85 + p.r * 0.8) {
-        p.alive = false;
-        playSfxExplosion();
-        spawnExplosion(p.x, p.y, p.r * 1.8 + 12);
-        score += 3;
-        EL.scoreVal.textContent = score;
-        spawnFloatingText(p.x, p.y - 20, '+3 MAGMA!', '#fb923c');
-      }
+    const hitPirate = pirates.some(p => p.alive && p.active && Math.hypot(p.x - f.x, p.y - f.y) < f.b.r + p.r * 0.9);
+    if (hitPirate) {
+      burstFireball(f);
+      fireballs.splice(i, 1);
     }
   }
 }
@@ -776,25 +833,43 @@ function drawMagmaVents(ctx, w, h) {
 function drawFireballs(ctx) {
   fireballs.forEach(f => {
     const r = f.b.r;
+    const vx = f.b.vx, vy = f.b.vy0 + f.b.g * f.age;
+    const speed = Math.hypot(vx, vy);
+    const stretch = 1 + Math.min(0.8, speed / 900);  // faster → longer streak
     ctx.save();
+    ctx.translate(f.x, f.y);
+    ctx.rotate(Math.atan2(vy, vx));
+    // Flame tail behind the ball, pointing against the motion
+    const tail = ctx.createLinearGradient(0, 0, -r * 4 * stretch, 0);
+    tail.addColorStop(0, 'rgba(251, 146, 60, 0.75)');
+    tail.addColorStop(1, 'rgba(239, 68, 68, 0)');
+    ctx.fillStyle = tail;
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.9);
+    ctx.quadraticCurveTo(-r * 2.5 * stretch, 0, 0, r * 0.9);
+    ctx.lineTo(-r * 4 * stretch, 0);
+    ctx.closePath();
+    ctx.fill();
+    // Outer heat haze
     ctx.fillStyle = 'rgba(249, 115, 22, 0.22)';
     ctx.beginPath();
-    ctx.arc(f.x, f.y, r * 1.9, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, r * 1.8 * stretch, r * 1.6, 0, 0, Math.PI * 2);
     ctx.fill();
-    const core = ctx.createRadialGradient(f.x - r * 0.3, f.y - r * 0.3, 0, f.x, f.y, r);
+    // Molten core, slightly stretched along the flight path
+    const core = ctx.createRadialGradient(r * 0.3, -r * 0.2, 0, 0, 0, r * stretch);
     core.addColorStop(0, '#fffbeb');
     core.addColorStop(0.35, '#fde047');
     core.addColorStop(0.7, '#f97316');
     core.addColorStop(1, '#991b1b');
     ctx.fillStyle = core;
     ctx.beginPath();
-    ctx.arc(f.x, f.y, r, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, r * stretch, r, 0, 0, Math.PI * 2);
     ctx.fill();
-    // Dark crust cracks
+    // Dark crust cracks tumbling on the surface
     ctx.strokeStyle = 'rgba(69, 10, 10, 0.6)';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(f.x, f.y, r * 0.6, f.spin, f.spin + 1.2);
+    ctx.arc(0, 0, r * 0.6, f.spin, f.spin + 1.2);
     ctx.stroke();
     ctx.restore();
   });
@@ -824,7 +899,7 @@ function drawBiomeHazardsAbove(ctx) {
 }
 
 function scaleFireballPath(b, sx, sy) {
-  b.vx *= sx; b.wobA *= sx;
+  b.vx *= sx;
   b.vy0 *= sy; b.g *= sy;
 }
 

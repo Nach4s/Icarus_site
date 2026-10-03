@@ -242,6 +242,7 @@ function gameLoop(ts) {
     if (toxicBarrels.length > 0) updateToxicBarrels(dt, w, h);
     if (toxicClouds.length > 0 || rocketFogTransition > 0) {
       updateToxicClouds(dt);
+      if (isRocketInFog()) runStats.fogTime += dt;
     }
 
     // Update obstacles
@@ -269,8 +270,8 @@ function gameLoop(ts) {
 
       // Gravity Shift: curves obstacle trajectories smoothly toward gravity horizon
       if (activeEvent && activeEvent.type === 'GRAVITY_SHIFT' && activeEvent.gravity) {
-        ob.vx += activeEvent.gravity.x * 65 * dt;
-        ob.vy += activeEvent.gravity.y * 65 * dt;
+        ob.vx += activeEvent.gravity.x * 110 * dt;
+        ob.vy += activeEvent.gravity.y * 110 * dt;
       }
 
       ob.x += ob.vx * dt;

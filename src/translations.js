@@ -75,6 +75,18 @@ const translations = {
     en: 'Controls: touch the screen and drag. Dodge the comets!',
     ro: 'Control: atinge ecranul și glisează. Ferește-te de comete!',
   },
+  'spaceWeek.playFullscreen': {
+    kk: 'Толық экранда ойнау',
+    ru: 'Играть на весь экран',
+    en: 'Play fullscreen',
+    ro: 'Joacă pe tot ecranul',
+  },
+  'spaceWeek.fullscreenOnly': {
+    kk: 'Ойын тек толық экран режимінде қолжетімді.',
+    ru: 'Игра доступна только в полноэкранном режиме.',
+    en: 'The game can only be played in fullscreen mode.',
+    ro: 'Jocul poate fi jucat doar în modul ecran complet.',
+  },
   'spaceWeek.exitFullscreen': {
     kk: 'Толық экраннан шығу',
     ru: 'Выйти из полноэкранного режима',

@@ -1,16 +1,33 @@
 // ─── Records & Achievements (localStorage) ────────────────────
 function getStats() {
+  let stats;
   try {
-    return JSON.parse(localStorage.getItem('icarusStats') || 'null') || {
-      gamesPlayed: 0,
-      bestScore: 0,
-      bestTime: 0,
-      bestLevel: 1,
-      achievements: [],
-    };
-  } catch (e) {
-    return { gamesPlayed: 0, bestScore: 0, bestTime: 0, bestLevel: 1, achievements: [] };
+    stats = JSON.parse(localStorage.getItem('icarusStats') || 'null');
+  } catch (e) { stats = null; }
+  stats = stats || { gamesPlayed: 0, bestScore: 0, bestTime: 0, bestLevel: 1, achievements: [] };
+  // Mechanic counters: lifetime totals, best single run, and collected sets
+  stats.total = stats.total || {};
+  stats.best = stats.best || {};
+  stats.sectorsVisited = stats.sectorsVisited || [];
+  stats.eventTypesSurvived = stats.eventTypesSurvived || [];
+  // Drop achievements that no longer exist (the old set was replaced)
+  const known = ACHIEVEMENTS_DEF.map(d => d.id);
+  stats.achievements = (stats.achievements || []).filter(id => known.includes(id));
+  return stats;
+}
+
+// Fold one run's counters into the saved stats
+function mergeRunStats(stats, run) {
+  for (const key in run) {
+    const val = run[key];
+    if (typeof val === 'number') {
+      stats.total[key] = (stats.total[key] || 0) + val;
+      stats.best[key] = Math.max(stats.best[key] || 0, val);
+    }
   }
+  run.sectors.forEach(s => { if (!stats.sectorsVisited.includes(s)) stats.sectorsVisited.push(s); });
+  run.eventTypes.forEach(e => { if (!stats.eventTypesSurvived.includes(e)) stats.eventTypesSurvived.push(e); });
+  stats.best.sectors = Math.max(stats.best.sectors || 0, run.sectors.length);
 }
 
 function saveStats(stats) {

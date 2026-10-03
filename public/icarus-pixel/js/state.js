@@ -116,6 +116,7 @@ let pirateMothership = null;
 let activeEvent = null; // { type: 'CONSTRICTION' | 'PIRATES', level: N, timer: 0, bannerTimer: 0, pirateSpawnTimer: 0, piratesSpawned: 0, maxPirates: 0 }
 let eventBounds = { minX: 0, maxX: 0, minY: 0, maxY: 0, targetMinX: 0, targetMaxX: 0, targetMinY: 0, targetMaxY: 0, active: false };
 let eventPlan = {};
+let eventCycleStartLevel = 0; // events before this level no longer count toward the 2-per-type limit
 let floatingTexts = [];
 let pirateWarnings = [];
 let nextPirateLevel = 2; // Periodic pirate spawns every 1-3 levels
@@ -147,9 +148,8 @@ let nextEventLevel = 4;
 let lastEventInterval = 0;
 
 function getNextEventLevelInterval() {
-  // Interval of 3 to 4 levels (rolls 3 or 4)
-  // Alternate or randomize 3 and 4 levels between special events
-  const interval = Math.random() < 0.5 ? 3 : 4;
+  // A special event every 3 levels: levels 4, 7, 10, 13…
+  const interval = 3;
   lastEventInterval = interval;
   return interval;
 }
@@ -157,6 +157,32 @@ function getNextEventLevelInterval() {
 // Session tracking for achievements
 let sessionLevel = 1;
 let newAchievementsThisRun = [];
+
+// Per-run counters for achievements — reset in startGame, merged into the
+// saved stats in showGameOver (numbers → lifetime totals + best run, lists → union)
+let runStats = null;
+function resetRunStats() {
+  runStats = {
+    pirateKills: 0,          // pirates destroyed by anything (not ones that flew away)
+    ionKills: 0,             // pirates zapped by an ion arc (Neon Azure)
+    mineKills: 0,            // pirates blown up by mines (Deep Ultramarine)
+    magmaKills: 0,           // pirates hit by magma fireballs (Fiery Magma)
+    novasSurvived: 0,        // supernova rings that fully passed (Golden Supernova)
+    wavesSurvived: 0,        // solar push waves outlasted (Crimson Pulsar)
+    blackHolesSurvived: 0,   // black holes that collapsed while alive
+    fogTime: 0,              // seconds spent inside toxic fog
+    eventsSurvived: 0,
+    synthwaveCleared: 0,     // left Synthwave Magenta alive
+    coins: 0,
+    eventTypes: [],
+    sectors: [],
+  };
+}
+resetRunStats();
+
+function noteRunSector(name) {
+  if (runStats && name && !runStats.sectors.includes(name)) runStats.sectors.push(name);
+}
 
 // ─── Cached DOM elements ──────────────────────────────────────
 const EL = {};

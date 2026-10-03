@@ -44,8 +44,10 @@ function getSpawnInterval() {
 }
 
 // ─── EVENT SYSTEM ─────────────────────────────────────────────
-// Trigger levels: 4, 9, 14, 19. Ends at 5, 10, 15, 20 (theme transition).
-// Each group of 5 levels gets a unique randomly assigned event type.
+// An event starts every 3 levels (4, 7, 10, 13…) and ends at the next level-up.
+// Rules: the same type never comes twice in a row, and at most twice per run.
+// Only once every allowed type has been used up does a fresh cycle begin
+// (5 types × 2 = 10 events, i.e. around level 31).
 const EVENT_TYPES = ['CONSTRICTION', 'PIRATES', 'SOLAR_FLARE', 'AXIS_INVERSION', 'GRAVITY_SHIFT'];
 
 // Solar flare state: array of beam objects
@@ -53,40 +55,24 @@ let solarFlares = [];
 
 function pickEventForLevel(level) {
   if (!eventPlan[level]) {
-    // Count how many times each event has occurred so far in this run ("в катке макс 2 раза")
+    const planned = Object.keys(eventPlan).map(Number).sort((a, b) => a - b);
+    const prev = planned.length ? eventPlan[planned[planned.length - 1]] : null;
+
+    // Crimson Pulsar: no CONSTRICTION / GRAVITY_SHIFT — the solar waves would make them unwinnable
+    const isCrimson = typeof isCrimsonTheme === 'function' && isCrimsonTheme();
+    const allowed = EVENT_TYPES.filter(t => !isCrimson || (t !== 'CONSTRICTION' && t !== 'GRAVITY_SHIFT'));
+
+    // Uses of each type in the current cycle
     const counts = {};
-    for (const type of EVENT_TYPES) counts[type] = 0;
-    for (const lvl in eventPlan) {
-      const t = eventPlan[lvl];
-      if (counts[t] !== undefined) counts[t]++;
+    EVENT_TYPES.forEach(t => { counts[t] = 0; });
+    planned.forEach(lvl => { if (lvl >= eventCycleStartLevel) counts[eventPlan[lvl]]++; });
+
+    let pool = allowed.filter(t => counts[t] < 2 && t !== prev);
+    if (pool.length === 0) {
+      // Everything allowed is used up: start a fresh cycle (still never repeat the previous one)
+      eventCycleStartLevel = level;
+      pool = allowed.filter(t => t !== prev);
     }
-
-    // Only events that appeared strictly fewer than 2 times in this run
-    let available = EVENT_TYPES.filter(type => counts[type] < 2);
-
-    // Crimson Pulsar: exclude CONSTRICTION & GRAVITY_SHIFT (conflicts with solar waves)
-    // But allow PIRATES (pirates will be affected by solar waves)
-    if (typeof isCrimsonTheme === 'function' && isCrimsonTheme()) {
-      available = available.filter(type => type !== 'CONSTRICTION' && type !== 'GRAVITY_SHIFT');
-    }
-
-    // Safeguard: if all events reached 2 (e.g. after 8+ events in a very long run),
-    // pick among events with the lowest occurrence count
-    if (available.length === 0) {
-      const minCount = Math.min(...EVENT_TYPES.map(t => counts[t]));
-      available = EVENT_TYPES.filter(t => counts[t] === minCount);
-      // Apply Crimson Pulsar filter again for safeguard
-      if (typeof isCrimsonTheme === 'function' && isCrimsonTheme()) {
-        available = available.filter(type => type !== 'CONSTRICTION' && type !== 'GRAVITY_SHIFT');
-      }
-    }
-
-    // Avoid repeating the immediately preceding event if possible
-    const prevLevels = Object.keys(eventPlan).map(Number).sort((a, b) => a - b);
-    const lastLvl = prevLevels[prevLevels.length - 1];
-    const prev = lastLvl ? eventPlan[lastLvl] : null;
-    const nonRepeating = available.filter(type => type !== prev);
-    const pool = nonRepeating.length > 0 ? nonRepeating : available;
 
     eventPlan[level] = pool[Math.floor(Math.random() * pool.length)];
   }
@@ -158,8 +144,9 @@ function startEvent(level, w, h) {
       { id: 'RIGHT', x: 1,  y: 0,  label: 'RIGHT', icon: '\u25b6', arrow: '\u2192\u2192\u2192' },
     ];
     activeEvent.gravity = directions[Math.floor(Math.random() * directions.length)];
-    activeEvent.gravityPower = 280 + intensity * 60; // 280..340 px/s^2 acceleration
-    activeEvent.driftSpeed = 35 + intensity * 15;     // 35..50 px/s position bias
+    // Strong enough to feel: an idle rocket drifts ~150 px/s, full thrust against it still wins
+    activeEvent.gravityPower = 560 + intensity * 120; // 560..680 px/s^2 acceleration
+    activeEvent.driftSpeed = 80 + intensity * 30;     // 80..110 px/s position bias
     activeEvent.particles = [];
     for (let k = 0; k < 30; k++) {
       activeEvent.particles.push({
@@ -178,6 +165,10 @@ function startEvent(level, w, h) {
 }
 
 function endEvent() {
+  if (activeEvent && rocket && rocket.alive) {
+    runStats.eventsSurvived++;
+    if (!runStats.eventTypes.includes(activeEvent.type)) runStats.eventTypes.push(activeEvent.type);
+  }
   if (pirateMothership && pirateMothership.state !== 'FLEEING') {
     pirateMothership.state = 'FLEEING';
     pirateMothership.cannonState = 'IDLE';
@@ -286,7 +277,7 @@ function spawnPirateMothership(w, h, intensity = 0) {
     cannonState: 'IDLE', // 'IDLE' -> 'CHARGING' (1.5s) -> 'FIRING' (0.55s)
     cannonTimer: 1.8, // initial pause after arrival before targeting
     chargeDuration: 1.5, // 1.5 seconds warning for player to dodge!
-    fireDuration: 0.55,
+    fireDuration: 1.0, // beam stays live for 1 second (aim is locked, so it does not chase)
     cooldownDuration: Math.max(2.4, 3.4 - intensity * 0.8), // pause between shots
 
     // Cannon targeting trajectory
@@ -1215,6 +1206,7 @@ function updatePirates(dt, w, h) {
     // Out of bounds — mark dead
     if (p.x < -150 || p.x > w + 150 || p.y < -150 || p.y > h + 150) {
       p.alive = false;
+      p.escaped = true; // flew away — not a kill
       continue;
     }
 
@@ -1355,7 +1347,10 @@ function updatePirates(dt, w, h) {
 
   // Sweep: remove all dead pirates in one pass (safe, no mid-loop index issues)
   for (let i = pirates.length - 1; i >= 0; i--) {
-    if (!pirates[i].alive) pirates.splice(i, 1);
+    if (!pirates[i].alive) {
+      if (!pirates[i].escaped) runStats.pirateKills++;
+      pirates.splice(i, 1);
+    }
   }
 }
 
@@ -2206,6 +2201,7 @@ function updateSolarFlares(dt, w, h) {
           }
           playSfxExplosion();
           pirates.splice(j, 1);
+          runStats.pirateKills++;
           score += 8;
           EL.scoreVal.textContent = score;
           spawnFloatingText(p.x, p.y - 28, '+8 VAPORIZED!', '#ff6600');
@@ -2606,6 +2602,7 @@ function updateBlackHoles(dt) {
         color: '#d946ef',
         type: 'ring', grav: 0,
       });
+      if (rocket && rocket.alive) runStats.blackHolesSurvived++;
       blackHoles.splice(i, 1);
       continue;
     }
@@ -3027,6 +3024,7 @@ function updatePushWave(dt, w, h) {
     // Front crossed the entire field -> transition to dissipating
     if (pw.frontPos >= pw.totalDist) {
       pw.state = 'DISSIPATING';
+      if (rocket && rocket.alive) runStats.wavesSurvived++;
       pw.dissipateTimer = 0;
     }
     return;
