@@ -308,7 +308,7 @@ function spawnRocketTrail(x, y, vx, vy) {
     // Shedding feathers trail (inspired directly by the artwork!)
     if (Math.random() < 0.65) {
       const life = 0.55 + Math.random() * 0.45;
-      const isGold = Math.random() < 0.45;
+      const isGrey = Math.random() < 0.35;   // white feathers like the logo, a few in its outline grey
       addParticle({
         x: x + (Math.random() - 0.5) * 10,
         y: y + (Math.random() - 0.5) * 10,
@@ -317,7 +317,7 @@ function spawnRocketTrail(x, y, vx, vy) {
         life,
         maxLife: life,
         size: 3.5 + Math.random() * 3.5,
-        color: isGold ? '#fde047' : '#ffffff',
+        color: isGrey ? '#cbd5e1' : '#ffffff',
         type: 'feather',
         rot: Math.random() * Math.PI * 2,
         rotV: (Math.random() - 0.5) * 4.2,

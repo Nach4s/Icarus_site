@@ -144,9 +144,9 @@ function startEvent(level, w, h) {
       { id: 'RIGHT', x: 1,  y: 0,  label: 'RIGHT', icon: '\u25b6', arrow: '\u2192\u2192\u2192' },
     ];
     activeEvent.gravity = directions[Math.floor(Math.random() * directions.length)];
-    // Strong enough to feel: an idle rocket drifts ~150 px/s, full thrust against it still wins
-    activeEvent.gravityPower = 560 + intensity * 120; // 560..680 px/s^2 acceleration
-    activeEvent.driftSpeed = 80 + intensity * 30;     // 80..110 px/s position bias
+    // Noticeable but fair: an idle rocket drifts ~125 px/s, full thrust against it wins easily
+    activeEvent.gravityPower = 450 + intensity * 100; // 450..550 px/s^2 acceleration
+    activeEvent.driftSpeed = 65 + intensity * 25;     // 65..90 px/s position bias
     activeEvent.particles = [];
     for (let k = 0; k < 30; k++) {
       activeEvent.particles.push({
@@ -260,6 +260,10 @@ function spawnShieldBreakEffect(x, y, r) {
 }
 
 // ── PIRATE MOTHERSHIP (DREADNOUGHT FLAGSHIP) ─────────────────
+// The flagship cannon tracks the rocket only this long at the start of its charge,
+// then the beam line is fixed — so the player sees where it will fire for ~1 second
+const FLAGSHIP_AIM_TRACK_TIME = 0.1;
+
 function spawnPirateMothership(w, h, intensity = 0) {
   pirateMothership = {
     x: w / 2,
@@ -276,7 +280,7 @@ function spawnPirateMothership(w, h, intensity = 0) {
     // Heavy Cannon Attack System
     cannonState: 'IDLE', // 'IDLE' -> 'CHARGING' (1.5s) -> 'FIRING' (0.55s)
     cannonTimer: 1.8, // initial pause after arrival before targeting
-    chargeDuration: 1.5, // 1.5 seconds warning for player to dodge!
+    chargeDuration: 1.0, // 1 second to react: the aim locks almost at once (see FLAGSHIP_AIM_TRACK_TIME)
     fireDuration: 1.0, // beam stays live for 1 second (aim is locked, so it does not chase)
     cooldownDuration: Math.max(2.4, 3.4 - intensity * 0.8), // pause between shots
 
@@ -327,7 +331,7 @@ function updatePirateMothership(dt, w, h) {
         if (m.cannonTimer <= 0) {
           // Lock on player position & begin 2-second charge-up
           m.cannonState = 'CHARGING';
-          m.cannonTimer = m.chargeDuration; // 2.0s
+          m.cannonTimer = m.chargeDuration;
           m.aimX = rocket.x;
           m.aimY = rocket.y;
           m.beamAngle = Math.atan2(m.aimY - m.cannonMuzzleY, m.aimX - m.cannonMuzzleX);
@@ -336,7 +340,7 @@ function updatePirateMothership(dt, w, h) {
       } else if (m.cannonState === 'CHARGING') {
         m.cannonTimer -= dt;
         // Minor initial target tracking during first 0.35s, then firmly locked for remaining 1.65s
-        if (m.cannonTimer > m.chargeDuration - 0.35) {
+        if (m.cannonTimer > m.chargeDuration - FLAGSHIP_AIM_TRACK_TIME) {
           const targetAngle = Math.atan2(rocket.y - m.cannonMuzzleY, rocket.x - m.cannonMuzzleX);
           let diff = targetAngle - m.beamAngle;
           while (diff > Math.PI) diff -= Math.PI * 2;
@@ -1776,7 +1780,7 @@ function drawEventBanner(ctx, w, h) {
     bannerGlow = 'rgba(255,40,130,0.7)';
     icon = '☠';
     line1 = '! PIRATE FLAGSHIP !';
-    line2 = 'Dodge the main cannon volley (1.5 sec)!';
+    line2 = 'Dodge the main cannon volley (1 sec)!';
     borderColor = '255,40,150';
   } else if (type === 'SOLAR_FLARE') {
     bannerColor = '#ff8800';

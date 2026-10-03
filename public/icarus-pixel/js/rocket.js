@@ -230,28 +230,14 @@ function drawSkinExhaust(ctx, skinId, x, y, t, S, angle) {
   const flameFlicker = 0.8 + 0.2 * Math.sin(t * 22);
 
   if (skinId === 'icarus_wings') {
-    // Ethereal divine starlight slipstream
-    const beamLen = (28 + Math.sin(t * 14) * 8) * S;
-    const grd = ctx.createLinearGradient(0, 14 * S, 0, 14 * S + beamLen);
-    grd.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
-    grd.addColorStop(0.3, 'rgba(254, 240, 138, 0.6)');
-    grd.addColorStop(0.7, 'rgba(253, 224, 71, 0.25)');
-    grd.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    ctx.fillStyle = grd;
+    // No engine: just a soft white wake behind the flyer (feathers do the rest)
+    const pulse = 0.85 + 0.15 * Math.sin(t * 6);
+    const wake = ctx.createRadialGradient(0, 16 * S, 0, 0, 16 * S, 16 * S);
+    wake.addColorStop(0, `rgba(255, 255, 255, ${0.35 * pulse})`);
+    wake.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = wake;
     ctx.beginPath();
-    ctx.moveTo(-4 * S, 14 * S);
-    ctx.lineTo(0, 14 * S + beamLen);
-    ctx.lineTo(4 * S, 14 * S);
-    ctx.closePath();
-    ctx.fill();
-
-    // Soft celestial light orb behind feet
-    const halo = ctx.createRadialGradient(0, 14 * S, 0, 0, 14 * S, 10 * S);
-    halo.addColorStop(0, 'rgba(254, 240, 138, 0.7)');
-    halo.addColorStop(1, 'rgba(254, 240, 138, 0)');
-    ctx.fillStyle = halo;
-    ctx.beginPath();
-    ctx.arc(0, 14 * S, 10 * S, 0, Math.PI * 2);
+    ctx.ellipse(0, 16 * S, 9 * S, 16 * S, 0, 0, Math.PI * 2);
     ctx.fill();
 
   } else if (skinId === 'space_shuttle' || skinId === 'solar_phoenix') {
@@ -542,178 +528,117 @@ function drawSkinClassic(ctx, t, S) {
   ctx.fill();
 }
 
-// ── Helper: Draw Detached Loose Feather ───────────────────────
-function drawMiniFeather(ctx, x, y, size, rot) {
+// Leaf-shaped feather, pointed at both ends (the Icarus logo's feather motif).
+// Drawn from its base at (x, y) along angle `ang`; uses the current fill/stroke.
+function drawLeafFeather(ctx, x, y, len, wid, ang) {
   ctx.save();
   ctx.translate(x, y);
-  ctx.rotate(rot);
-  ctx.fillStyle = '#ffffff';
-  ctx.strokeStyle = 'rgba(253, 224, 71, 0.85)';
-  ctx.lineWidth = 0.7;
-
-  const w = size * 0.6;
-  const h = size * 2.2;
+  ctx.rotate(ang);
   ctx.beginPath();
-  ctx.moveTo(0, -h / 2);
-  ctx.quadraticCurveTo(w, -h * 0.1, 0, h / 2);
-  ctx.quadraticCurveTo(-w * 0.6, -h * 0.1, 0, -h / 2);
+  ctx.moveTo(0, 0);
+  ctx.quadraticCurveTo(len * 0.45, -wid, len, 0);
+  ctx.quadraticCurveTo(len * 0.55, wid, 0, 0);
   ctx.closePath();
   ctx.fill();
-  ctx.stroke();
-
-  // Spine quill
-  ctx.beginPath();
-  ctx.moveTo(0, -h / 2);
-  ctx.lineTo(0, h / 2);
   ctx.stroke();
   ctx.restore();
 }
 
-// ── SKIN 2: Icarus Wings (Directly inspired by the photo!) ─────
+// ── SKIN 2: Wings of Icarus (based on the Icarus Team logo) ─────
+// White silhouette with a thin outline, traced from the logo: Icarus flying
+// head-first with his head thrown back, one great wing raised over his back
+// whose feathers break loose and scatter behind him. Shapes are laid out as in
+// the logo (flying to the right) and turned so the head points along the flight.
 function drawSkinIcarusWings(ctx, t, S) {
-  // Wing flapping flex
-  const flap = Math.sin(t * 8.5) * 0.12;
+  const flap = Math.sin(t * 7) * 0.07;
 
-  // Celestial aura glow halo around Icarus
-  const aura = ctx.createRadialGradient(0, 0, 6 * S, 0, 0, 28 * S);
-  aura.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
-  aura.addColorStop(0.4, 'rgba(254, 240, 138, 0.22)');
-  aura.addColorStop(0.8, 'rgba(245, 158, 11, 0.08)');
+  // Soft white glow so the silhouette reads on every background
+  const aura = ctx.createRadialGradient(0, 0, 4 * S, 0, 0, 30 * S);
+  aura.addColorStop(0, 'rgba(255, 255, 255, 0.26)');
+  aura.addColorStop(0.6, 'rgba(226, 232, 240, 0.09)');
   aura.addColorStop(1, 'rgba(255, 255, 255, 0)');
   ctx.fillStyle = aura;
   ctx.beginPath();
-  ctx.arc(0, 0, 28 * S, 0, Math.PI * 2);
+  ctx.arc(0, 0, 30 * S, 0, Math.PI * 2);
   ctx.fill();
 
-  // Detached falling feathers drifting in his wake (exact motif from the artwork!)
-  drawMiniFeather(ctx, -15 * S, 11 * S + Math.sin(t * 5.2) * 3 * S, 3.2 * S, t * 1.6);
-  drawMiniFeather(ctx, -10 * S, 19 * S + Math.cos(t * 4.4) * 3 * S, 2.7 * S, -t * 1.9);
-  drawMiniFeather(ctx, -19 * S, 17 * S + Math.sin(t * 6.1) * 2.5 * S, 2.4 * S, t * 2.3);
-  drawMiniFeather(ctx, 14 * S, 13 * S + Math.sin(t * 5.8) * 3 * S, 3.0 * S, -t * 2.1);
-  drawMiniFeather(ctx, 9 * S, 21 * S + Math.cos(t * 4.9) * 3 * S, 2.5 * S, t * 1.4);
+  ctx.save();
+  ctx.rotate(-Math.PI / 2);               // logo "forward" (+x) → flight direction
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.95)';
+  ctx.lineWidth = 0.75 * S;
+  ctx.lineJoin = 'round';
+  const P = (x, y) => [x * S, y * S];
 
-  // ── WINGS (Left & Right with layered feathered tiers) ──
-  [-1, 1].forEach(side => {
-    ctx.save();
-    ctx.scale(side, 1);
-    ctx.rotate(flap * side);
-
-    // Wing gradient: pure radiant white-gold
-    const wingGrd = ctx.createLinearGradient(0, -6 * S, 26 * S, 10 * S);
-    wingGrd.addColorStop(0, '#ffffff');
-    wingGrd.addColorStop(0.5, '#fef9c3');
-    wingGrd.addColorStop(1, '#fde047');
-    ctx.fillStyle = wingGrd;
-    ctx.strokeStyle = '#f59e0b';
-    ctx.lineWidth = 1.0 * S;
-
-    // Sweeping primary wing shape with sculpted feather tiers
-    ctx.beginPath();
-    ctx.moveTo(3 * S, -8 * S);
-    // Upper wing arch leading to outermost feather tip
-    ctx.quadraticCurveTo(14 * S, -20 * S, 26 * S, -8 * S);
-
-    // Tier 1 feather tip
-    ctx.lineTo(21 * S, -3 * S);
-    // Tier 2 feather tip
-    ctx.lineTo(25 * S, 1 * S);
-    ctx.lineTo(19 * S, 4 * S);
-    // Tier 3 feather tip
-    ctx.lineTo(22 * S, 9 * S);
-    ctx.lineTo(16 * S, 10 * S);
-    // Tier 4 lower feather tip
-    ctx.lineTo(18 * S, 15 * S);
-    ctx.lineTo(11 * S, 13 * S);
-    // Tier 5 inner trailing feather
-    ctx.lineTo(13 * S, 18 * S);
-    ctx.lineTo(5 * S, 11 * S);
-    // Back to body anchor
-    ctx.quadraticCurveTo(2 * S, 4 * S, 2 * S, -4 * S);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    // Internal golden feather rib lines
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.65)';
-    ctx.lineWidth = 0.8 * S;
-    [
-      { x1: 5 * S, y1: -7 * S, x2: 24 * S, y2: -7 * S },
-      { x1: 5 * S, y1: -4 * S, x2: 22 * S, y2: 0 * S },
-      { x1: 4 * S, y1: 0 * S,  x2: 19 * S, y2: 7 * S },
-      { x1: 3 * S, y1: 4 * S,  x2: 15 * S, y2: 13 * S }
-    ].forEach(rib => {
-      ctx.beginPath();
-      ctx.moveTo(rib.x1, rib.y1);
-      ctx.lineTo(rib.x2, rib.y2);
-      ctx.stroke();
-    });
-
-    ctx.restore();
+  // Loose feathers scattered behind and below the wing
+  const loose = [
+    [-24, -3, 6.5, 1.6], [-17, 0, 6, 1.5], [-9, 1.5, 5, 1.4], [-22, 6, 5.5, 1.5],
+    [-14, 8, 6, 1.6], [-6, 7, 4.5, 1.3], [-18, 13, 5, 1.4], [-10, 14, 4.5, 1.3],
+    [-3, 12, 3.5, 1.1], [-13, 19, 4, 1.2],
+  ];
+  loose.forEach(([lx, ly, len, wid], i) => {
+    const drift = Math.sin(t * 2.6 + i * 1.3);
+    drawLeafFeather(ctx, (lx - drift * 0.8) * S, (ly + drift * 0.6) * S, len * S, wid * S, -0.7 + drift * 0.12);
   });
 
-  // ── BODY: Athletic Flying Silhouette ──
-  const bodyGrd = ctx.createLinearGradient(0, -22 * S, 0, 20 * S);
-  bodyGrd.addColorStop(0, '#ffffff');
-  bodyGrd.addColorStop(0.3, '#fefce8');
-  bodyGrd.addColorStop(0.7, '#fef08a');
-  bodyGrd.addColorStop(1, '#ffffff');
-  ctx.fillStyle = bodyGrd;
-  ctx.strokeStyle = '#f59e0b';
-  ctx.lineWidth = 1.1 * S;
-
-  // Golden divine halo ring behind head
+  // ── The wing, hinged at the shoulder ──
   ctx.save();
-  ctx.strokeStyle = '#fde047';
-  ctx.lineWidth = 1.5 * S;
-  ctx.shadowColor = '#fde047';
-  ctx.shadowBlur = 8;
+  ctx.translate(...P(8.6, -8.6));
+  ctx.rotate(-flap);
+  ctx.translate(...P(-8.6, 8.6));
+
+  // Long primary feathers sweeping back from under the wing
+  for (let i = 0; i < 7; i++) {
+    const k = i / 6;
+    drawLeafFeather(ctx, (-1 - 19 * k) * S, (-7 - 8 * k) * S, (10 + 4 * k) * S, 2 * S, Math.PI - 0.5 + k * 0.3);
+  }
+
+  // Wing body: leading edge rising to the tall spike, ragged trailing edge
   ctx.beginPath();
-  ctx.arc(0, -17 * S, 7 * S, 0, Math.PI * 2);
+  ctx.moveTo(...P(8.6, -8.6));                       // shoulder
+  ctx.quadraticCurveTo(...P(0, -12), ...P(-10.9, -19.5)); // tall spike
+  ctx.lineTo(...P(-10.2, -15.5));
+  ctx.lineTo(...P(-16, -17));
+  ctx.lineTo(...P(-26, -19));                        // far wing tip
+  ctx.lineTo(...P(-21, -14.5));
+  ctx.lineTo(...P(-14.5, -12));
+  ctx.lineTo(...P(-9, -9.5));
+  ctx.lineTo(...P(-5, -6.5));
+  ctx.lineTo(...P(-1, -7.5));
+  ctx.lineTo(...P(2, -3.5));
+  ctx.lineTo(...P(4.5, -5));
+  ctx.lineTo(...P(6.5, -1.5));
+  ctx.closePath();
+  ctx.fill();
   ctx.stroke();
   ctx.restore();
 
-  // Head and flowing hair plume
+  // ── Body: head thrown back, chest forward, one knee bent, one leg trailing ──
   ctx.beginPath();
-  ctx.ellipse(0, -17 * S, 3.8 * S, 4.8 * S, 0, 0, Math.PI * 2);
+  ctx.ellipse(...P(15, -11.5), 2.8 * S, 3.4 * S, 0.4, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
 
-  // Swept aerodynamic hair / crown contour
   ctx.beginPath();
-  ctx.moveTo(0, -21 * S);
-  ctx.quadraticCurveTo(-4 * S, -19 * S, -2 * S, -13 * S);
-  ctx.lineTo(0, -14 * S);
-  ctx.closePath();
-  ctx.fillStyle = '#fde047';
-  ctx.fill();
-
-  // Sleek athletic torso and shoulders
-  ctx.fillStyle = bodyGrd;
-  ctx.beginPath();
-  ctx.moveTo(0, -12 * S);                 // neck
-  ctx.lineTo(5.5 * S, -7 * S);            // right shoulder
-  ctx.lineTo(4 * S, 3 * S);               // waist
-  ctx.lineTo(3.2 * S, 11 * S);            // hips
-  ctx.lineTo(1.2 * S, 20 * S);            // streamlined tapered legs/feet
-  ctx.lineTo(0, 22 * S);                  // diving toe tip
-  ctx.lineTo(-1.2 * S, 20 * S);
-  ctx.lineTo(-3.2 * S, 11 * S);
-  ctx.lineTo(-4 * S, 3 * S);
-  ctx.lineTo(-5.5 * S, -7 * S);           // left shoulder
+  ctx.moveTo(...P(9.5, -8.5));                       // nape
+  ctx.lineTo(...P(12.6, -8));                        // throat
+  ctx.quadraticCurveTo(...P(14.5, -4), ...P(13.6, -1));  // chest
+  ctx.quadraticCurveTo(...P(13, 3), ...P(10.5, 5.5)); // belly
+  ctx.lineTo(...P(8, 7.5));                          // front thigh → knee
+  ctx.lineTo(...P(5.6, 13.5));                       // shin → foot
+  ctx.lineTo(...P(4.2, 13));
+  ctx.lineTo(...P(6, 7.6));
+  ctx.lineTo(...P(4.5, 5.5));                        // crotch
+  ctx.lineTo(...P(1, 9.5));                          // back leg, trailing
+  ctx.lineTo(...P(-5.5, 18.5));                      // foot
+  ctx.lineTo(...P(-6.4, 17.4));
+  ctx.lineTo(...P(-0.2, 7.5));
+  ctx.quadraticCurveTo(...P(3, 3), ...P(3.6, 2));     // buttock
+  ctx.quadraticCurveTo(...P(6.5, -3), ...P(9.5, -8.5)); // back
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
-
-  // Golden chest emblem / pectorals contour
-  ctx.strokeStyle = 'rgba(245, 158, 11, 0.75)';
-  ctx.lineWidth = 0.9 * S;
-  ctx.beginPath();
-  ctx.arc(0, -4 * S, 2.5 * S, 0, Math.PI);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(0, -4 * S);
-  ctx.lineTo(0, 3 * S);
-  ctx.stroke();
+  ctx.restore();
 }
 
 // ── SKIN 3: Space Shuttle (Directly based on the user's NASA photo) ──
