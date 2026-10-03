@@ -32,7 +32,7 @@ function saveScore(entry) {
 }
 
 function clearRecords() {
-  if (!confirm('Сбросить все рекорды и достижения?')) return;
+  if (!confirm('Reset all records and achievements?')) return;
   localStorage.removeItem('icarusScores');
   localStorage.removeItem('icarusStats');
   localStorage.removeItem('icarusBest');
@@ -89,9 +89,9 @@ function formatTime(totalSeconds) {
   const m = Math.floor(t / 60);
   const s = t % 60;
   if (m > 0) {
-    return `${m} мин ${s} сек`;
+    return `${m} min ${s} sec`;
   }
-  return `${s} сек`;
+  return `${s} sec`;
 }
 
 // ─── Records UI builder ───────────────────────────────────────
@@ -110,7 +110,7 @@ function buildRecordsUI() {
     EL.recordsTbody.innerHTML = scores.map((s, i) => {
       const rankClass = i === 0 ? 'rank-gold' : i === 1 ? 'rank-silver' : i === 2 ? 'rank-bronze' : '';
       const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`;
-      const date = new Date(s.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+      const date = new Date(s.date).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit' });
       return `<tr>
         <td class="${rankClass}">${medal}</td>
         <td class="${rankClass}" style="font-size:12px">${s.score}</td>

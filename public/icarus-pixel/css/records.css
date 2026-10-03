@@ -220,3 +220,10 @@
   line-height: 1.4;
 }
 
+
+/* ─── Small / short screens ─────────────────────────────────── */
+@media (max-height: 700px), (max-width: 480px) {
+  .records-content { gap: 18px; padding: 20px 12px 56px; }
+  .records-table th,
+  .records-table td { padding: 10px 6px; }
+}

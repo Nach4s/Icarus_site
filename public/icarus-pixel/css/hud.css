@@ -118,67 +118,75 @@
   margin-bottom: 8px;
 }
 
-/* ─── Mobile D-Pad ──────────────────────────────────────────── */
-#mobile-dpad {
+/* ─── Touch joystick ────────────────────────────────────────── */
+#screen-game { touch-action: none; }
+
+#touch-stick {
   position: absolute;
-  bottom: 24px;
-  left: 24px;
-  width: 140px;
-  height: 140px;
-  display: none;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
   z-index: 30;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+#touch-stick.visible { opacity: 1; }
+
+/* Base ring, centred on the point where the finger landed */
+#touch-stick::before {
+  content: '';
+  position: absolute;
+  left: -52px;
+  top: -52px;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 229, 255, 0.35);
+  background: rgba(0, 229, 255, 0.06);
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.15);
+}
+
+#touch-stick-knob {
+  position: absolute;
+  left: -22px;
+  top: -22px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 229, 255, 0.3);
+  border: 2px solid rgba(0, 229, 255, 0.7);
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.5);
+}
+
+#touch-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 18%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  color: var(--col-cyan);
+  text-shadow: 0 0 10px var(--col-cyan);
+  pointer-events: none;
+  z-index: 20;
+  display: none;
 }
 
 @media (hover: none) {
-  #mobile-dpad { display: block; }
+  #touch-hint { display: block; opacity: 0; }
+  #screen-game.active #touch-hint { animation: touch-hint-fade 3.5s ease forwards; }
+  /* Keep the BEST counter clear of the pause button */
+  #hud { padding-right: 68px; padding-left: 12px; }
 }
 
-.dpad-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 44px;
-  height: 44px;
-  background: rgba(0, 229, 255, 0.08);
-  border: 1px solid var(--col-border);
-  border-radius: 4px;
+@keyframes touch-hint-fade {
+  0%, 70% { opacity: 1; }
+  100% { opacity: 0; }
 }
-
-.dpad-btn {
-  position: absolute;
-  width: 44px;
-  height: 44px;
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid var(--col-border);
-  border-radius: 4px;
-  color: var(--col-text);
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  transition: background 0.1s, transform 0.1s;
-  -webkit-tap-highlight-color: transparent;
-  font-family: var(--font-pixel);
-}
-
-.dpad-btn:active,
-.dpad-btn.pressed {
-  background: rgba(0, 229, 255, 0.25);
-  transform: scale(0.92);
-}
-
-.dpad-up    { top: 0;   left: 50%; transform: translateX(-50%); }
-.dpad-up.pressed    { top: 0;   left: 50%; transform: translateX(-50%) scale(0.92); }
-.dpad-down  { bottom: 0; left: 50%; transform: translateX(-50%); }
-.dpad-down.pressed  { bottom: 0; left: 50%; transform: translateX(-50%) scale(0.92); }
-.dpad-left  { left: 0;  top: 50%;  transform: translateY(-50%); }
-.dpad-left.pressed  { left: 0;  top: 50%;  transform: translateY(-50%) scale(0.92); }
-.dpad-right { right: 0; top: 50%;  transform: translateY(-50%); }
-.dpad-right.pressed { right: 0; top: 50%;  transform: translateY(-50%) scale(0.92); }
 
 /* Debug Level Panel */
 #debug-level-panel {
@@ -194,7 +202,7 @@
   border: 1px solid rgba(255, 220, 60, 0.5);
   border-radius: 8px;
   padding: 6px 14px;
-  font-family: ''Press Start 2P'', monospace;
+  font-family: 'Press Start 2P', monospace;
   font-size: 9px;
   color: #ffd740;
   z-index: 9000;
@@ -218,7 +226,7 @@
   background: rgba(255, 200, 60, 0.15);
   border: 1px solid rgba(255, 200, 60, 0.4);
   color: #ffd740;
-  font-family: ''Press Start 2P'', monospace;
+  font-family: 'Press Start 2P', monospace;
   font-size: 12px;
   width: 26px;
   height: 26px;

@@ -1,7 +1,7 @@
 // ─── Dynamic Space Color Themes ───────────────────────────────
 const SPACE_THEMES = [
   {
-    name: 'Фиолетовый космос',
+    name: 'Violet Cosmos',
     bg: [8, 5, 24],
     circle: [147, 51, 234],
     nebulae: [
@@ -12,7 +12,7 @@ const SPACE_THEMES = [
     ]
   },
   {
-    name: 'Изумрудная туманность',
+    name: 'Emerald Nebula',
     bg: [3, 18, 14],
     circle: [16, 185, 129],
     nebulae: [
@@ -23,7 +23,7 @@ const SPACE_THEMES = [
     ]
   },
   {
-    name: 'Багровый пульсар',
+    name: 'Crimson Pulsar',
     bg: [20, 5, 8],
     circle: [239, 68, 68],
     nebulae: [
@@ -34,7 +34,7 @@ const SPACE_THEMES = [
     ]
   },
   {
-    name: 'Неоновая лазурь',
+    name: 'Neon Azure',
     bg: [4, 13, 26],
     circle: [6, 182, 212],
     nebulae: [
@@ -45,7 +45,7 @@ const SPACE_THEMES = [
     ]
   },
   {
-    name: 'Золотая сверхновая',
+    name: 'Golden Supernova',
     bg: [20, 12, 3],
     circle: [245, 158, 11],
     nebulae: [
@@ -56,7 +56,7 @@ const SPACE_THEMES = [
     ]
   },
   {
-    name: 'Синтвейв маджента',
+    name: 'Synthwave Magenta',
     bg: [20, 4, 22],
     circle: [236, 72, 153],
     nebulae: [
@@ -67,7 +67,7 @@ const SPACE_THEMES = [
     ]
   },
   {
-    name: 'Глубокий ультрамарин',
+    name: 'Deep Ultramarine',
     bg: [4, 7, 28],
     circle: [59, 130, 246],
     nebulae: [
@@ -78,7 +78,7 @@ const SPACE_THEMES = [
     ]
   },
   {
-    name: 'Огненная магма',
+    name: 'Fiery Magma',
     bg: [22, 8, 3],
     circle: [249, 115, 22],
     nebulae: [
@@ -227,13 +227,13 @@ function triggerThemeTransition() {
 // ── Biome & Theme Detection Helpers ───────────────────────────
 function isSynthwaveTheme() {
   if (!currentBgTheme) return false;
-  return currentBgTheme.name === 'Синтвейв маджента' ||
+  return currentBgTheme.name === 'Synthwave Magenta' ||
     (currentBgTheme.circle && currentBgTheme.circle[0] === 236 && currentBgTheme.circle[1] === 72);
 }
 
 function isCrimsonTheme() {
   if (!currentBgTheme) return false;
-  return currentBgTheme.name === 'Багровый пульсар' ||
+  return currentBgTheme.name === 'Crimson Pulsar' ||
     (currentBgTheme.circle && currentBgTheme.circle[0] === 239 && currentBgTheme.circle[1] === 68 && currentBgTheme.circle[2] === 68);
 }
 
@@ -246,7 +246,7 @@ function isPurpleSpaceTheme() {
 function isGreenZoneTheme() {
   if (!currentBgTheme) return false;
   return currentBgTheme === SPACE_THEMES[1] ||
-    currentBgTheme.name === 'Изумрудная туманность' ||
+    currentBgTheme.name === 'Emerald Nebula' ||
     (currentBgTheme.circle && currentBgTheme.circle[0] === 16 && currentBgTheme.circle[1] === 185);
 }
 

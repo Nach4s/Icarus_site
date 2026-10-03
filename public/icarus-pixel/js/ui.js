@@ -180,18 +180,18 @@ function buildSkinsUI() {
 
     let buttonHtml = '';
     if (isSelected) {
-      buttonHtml = `<button class="btn-skin-action btn-selected" disabled>✔ ВЫБРАНО</button>`;
+      buttonHtml = `<button class="btn-skin-action btn-selected" disabled>✔ SELECTED</button>`;
     } else if (isOwned) {
-      buttonHtml = `<button class="btn-skin-action btn-select" onclick="selectSkin('${skin.id}')">ВЫБРАТЬ</button>`;
+      buttonHtml = `<button class="btn-skin-action btn-select" onclick="selectSkin('${skin.id}')">SELECT</button>`;
     } else if (canAfford) {
-      buttonHtml = `<button class="btn-skin-action btn-buy" onclick="unlockSkin('${skin.id}')">КУПИТЬ ЗА ${skin.price} 🪙</button>`;
+      buttonHtml = `<button class="btn-skin-action btn-buy" onclick="unlockSkin('${skin.id}')">BUY FOR ${skin.price} 🪙</button>`;
     } else {
       buttonHtml = `<button class="btn-skin-action btn-locked" disabled>🔒 ${skin.price} 🪙</button>`;
     }
 
     const priceText = skin.price === 0
-      ? '<span class="skin-price-tag free">БЕСПЛАТНО</span>'
-      : `<span class="skin-price-tag">🪙 ${skin.price} монет</span>`;
+      ? '<span class="skin-price-tag free">FREE</span>'
+      : `<span class="skin-price-tag">🪙 ${skin.price} coins</span>`;
 
     card.innerHTML = `
       <div class="skin-preview-wrap">
@@ -319,8 +319,7 @@ function startGame() {
   cancelAnimationFrame(skinsAnimId);
 
   canvas = document.getElementById('game-canvas');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  sizeGameCanvas(canvas);
   ctx = canvas.getContext('2d');
 
   initRunTheme();
@@ -347,6 +346,7 @@ function resumeGame() {
 function pauseGame() {
   if (gameState !== 'PLAYING') return;
   gameState = 'PAUSED';
+  releaseStick();
   EL.pauseOverlay.classList.remove('hidden');
 }
 
@@ -354,6 +354,7 @@ function showGameOver() {
   gameState = 'GAMEOVER';
   cancelAnimationFrame(animFrameId);
   stopBgMusic();
+  releaseStick();
 
   // FIX: Use real elapsed time
   const elapsedMs = performance.now() - startTime;
@@ -390,7 +391,7 @@ function showGameOver() {
     addCoins(earnedCoins);
   }
   if (EL.finalCoins) {
-    EL.finalCoins.textContent = `+${earnedCoins} (Всего: ${userCoins})`;
+    EL.finalCoins.textContent = `+${earnedCoins} (Total: ${userCoins})`;
   }
 
   // Show new achievements in toast queue (delayed slightly)

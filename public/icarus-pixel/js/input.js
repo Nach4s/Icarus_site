@@ -72,84 +72,94 @@ document.addEventListener('keyup', e => {
 // ─── Resize Handler ───────────────────────────────────────────
 window.addEventListener('resize', () => {
   if (gameState === 'PLAYING' || gameState === 'PAUSED') {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const oldW = canvas.width, oldH = canvas.height;
+    sizeGameCanvas(canvas);
     initStars(canvas.width, canvas.height);
+    // Keep the rocket at the same relative spot (e.g. on phone rotation)
+    if (rocket && oldW && oldH) {
+      rocket.x *= canvas.width / oldW;
+      rocket.y *= canvas.height / oldH;
+    }
   }
   if (goCanvas) { goCanvas.width = window.innerWidth; goCanvas.height = window.innerHeight; }
   if (recCanvas) { recCanvas.width = window.innerWidth; recCanvas.height = window.innerHeight; }
 });
 
-// ─── Touch / Mobile Swipe Controls ───────────────────────────
-let touchStartX = 0, touchStartY = 0;
-let touchActive = false;
+// ─── Touch Controls: floating joystick ────────────────────────
+// Put a finger anywhere on the playfield and drag: the rocket flies in the
+// drag direction, faster the further the finger is pulled from where it landed.
+const STICK_RADIUS = 52;   // px — finger distance for full speed
+const STICK_DEAD = 0.12;   // fraction of the radius ignored (jitter)
+const stickEl = document.getElementById('touch-stick');
+const stickKnob = document.getElementById('touch-stick-knob');
+
+function findTouch(list, id) {
+  for (let i = 0; i < list.length; i++) if (list[i].identifier === id) return list[i];
+  return null;
+}
+
+function releaseStick() {
+  touchStick.active = false;
+  touchStick.id = null;
+  touchStick.x = touchStick.y = 0;
+  if (stickEl) stickEl.classList.remove('visible');
+}
+
+function updateStick(t) {
+  let dx = t.clientX - touchStick.ox;
+  let dy = t.clientY - touchStick.oy;
+  let dist = Math.sqrt(dx * dx + dy * dy);
+  // Drag the stick base along when the finger goes past the rim,
+  // so reversing direction responds instantly
+  if (dist > STICK_RADIUS) {
+    touchStick.ox = t.clientX - (dx / dist) * STICK_RADIUS;
+    touchStick.oy = t.clientY - (dy / dist) * STICK_RADIUS;
+    dx = (dx / dist) * STICK_RADIUS;
+    dy = (dy / dist) * STICK_RADIUS;
+    dist = STICK_RADIUS;
+  }
+  const mag = dist / STICK_RADIUS;
+  if (mag < STICK_DEAD) {
+    touchStick.x = touchStick.y = 0;
+  } else {
+    const m = (mag - STICK_DEAD) / (1 - STICK_DEAD);
+    touchStick.x = (dx / dist) * m;
+    touchStick.y = (dy / dist) * m;
+  }
+  if (stickEl) {
+    stickEl.style.transform = `translate(${touchStick.ox}px, ${touchStick.oy}px)`;
+    stickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+  }
+}
 
 document.addEventListener('touchstart', e => {
   if (gameState !== 'PLAYING') return;
-  // Ignore if touching a d-pad button
-  if (e.target.closest && e.target.closest('#mobile-dpad')) return;
-  const t = e.touches[0];
-  touchStartX = t.clientX;
-  touchStartY = t.clientY;
-  touchActive = true;
+  // Let buttons (pause etc.) receive their taps
+  if (e.target.closest && e.target.closest('button')) return;
   e.preventDefault();
+  if (touchStick.active) return; // one finger steers, extra fingers are ignored
+  const t = e.changedTouches[0];
+  touchStick.active = true;
+  touchStick.id = t.identifier;
+  touchStick.ox = t.clientX;
+  touchStick.oy = t.clientY;
+  updateStick(t);
+  if (stickEl) stickEl.classList.add('visible');
 }, { passive: false });
 
 document.addEventListener('touchmove', e => {
-  if (!touchActive || gameState !== 'PLAYING') return;
-  if (e.target.closest && e.target.closest('#mobile-dpad')) return;
-  const t = e.touches[0];
-  const dx = t.clientX - touchStartX;
-  const dy = t.clientY - touchStartY;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  const dead = 10;
-  if (dist > dead) {
-    keys['ArrowRight'] = dx > dead;
-    keys['ArrowLeft'] = dx < -dead;
-    keys['ArrowDown'] = dy > dead;
-    keys['ArrowUp'] = dy < -dead;
-  }
+  if (!touchStick.active) return;
+  const t = findTouch(e.changedTouches, touchStick.id);
+  if (!t) return;
+  if (gameState === 'PLAYING') updateStick(t);
   e.preventDefault();
 }, { passive: false });
 
-document.addEventListener('touchend', e => {
-  if (e.target.closest && e.target.closest('#mobile-dpad')) return;
-  touchActive = false;
-  keys['ArrowUp'] = keys['ArrowDown'] = keys['ArrowLeft'] = keys['ArrowRight'] = false;
-  e.preventDefault();
-}, { passive: false });
-
-// ─── D-Pad Controls ───────────────────────────────────────────
-function setupDpad() {
-  const btns = document.querySelectorAll('.dpad-btn');
-  btns.forEach(btn => {
-    const key = btn.dataset.key;
-
-    btn.addEventListener('touchstart', e => {
-      e.preventDefault();
-      e.stopPropagation();
-      keys[key] = true;
-      btn.classList.add('pressed');
-    }, { passive: false });
-
-    btn.addEventListener('touchend', e => {
-      e.preventDefault();
-      e.stopPropagation();
-      keys[key] = false;
-      btn.classList.remove('pressed');
-    }, { passive: false });
-
-    btn.addEventListener('touchcancel', e => {
-      keys[key] = false;
-      btn.classList.remove('pressed');
-    });
-
-    // Also support mouse for testing
-    btn.addEventListener('mousedown', e => { keys[key] = true; btn.classList.add('pressed'); });
-    btn.addEventListener('mouseup', e => { keys[key] = false; btn.classList.remove('pressed'); });
-    btn.addEventListener('mouseleave', e => { keys[key] = false; btn.classList.remove('pressed'); });
-  });
+function onTouchEnd(e) {
+  if (touchStick.active && findTouch(e.changedTouches, touchStick.id)) releaseStick();
 }
+document.addEventListener('touchend', onTouchEnd);
+document.addEventListener('touchcancel', onTouchEnd);
 
 // ─── Ripple effect for all buttons ───────────────────────────
 function setupRipple() {
@@ -185,7 +195,6 @@ document.head.appendChild(levelFlashStyle);
 // ─── Startup ──────────────────────────────────────────────────
 cacheEls();
 updateCoinsUI();
-setupDpad();
 setupRipple();
 EL.menuBestVal.textContent = bestScore;
 showScreen('screen-menu');

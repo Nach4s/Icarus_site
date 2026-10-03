@@ -24,6 +24,13 @@ function gameLoop(ts) {
     if (keys['ArrowRight'] || keys['d'] || keys['D']) inputX += 1;
     // Normalize diagonal input
     if (inputX !== 0 && inputY !== 0) { inputX *= 0.707; inputY *= 0.707; }
+    // Touch joystick: analog direction, top speed scales with stick deflection
+    let maxSpd = MAX_SPD;
+    if (touchStick.active && (touchStick.x !== 0 || touchStick.y !== 0)) {
+      inputX = touchStick.x;
+      inputY = touchStick.y;
+      maxSpd = MAX_SPD * Math.max(0.35, Math.sqrt(inputX * inputX + inputY * inputY));
+    }
 
     // ── Control Inversion Near Black Holes ───────────────────
     // "если игрок близко подойдет к черной дыре его управление будет полностью наоборот"
@@ -69,9 +76,9 @@ function gameLoop(ts) {
         rocket.vy += inputY * ACCEL * dt;
         // Clamp to max speed
         const spd = Math.sqrt(rocket.vx * rocket.vx + rocket.vy * rocket.vy);
-        if (spd > MAX_SPD) {
-          rocket.vx = (rocket.vx / spd) * MAX_SPD;
-          rocket.vy = (rocket.vy / spd) * MAX_SPD;
+        if (spd > maxSpd) {
+          rocket.vx = (rocket.vx / spd) * maxSpd;
+          rocket.vy = (rocket.vy / spd) * maxSpd;
         }
       } else {
         // Friction deceleration when no key pressed

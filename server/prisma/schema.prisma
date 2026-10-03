@@ -53,6 +53,9 @@ model User {
   // ── Learning progress ─────────────────────────────────────────────
   progress      UserProgress[]
 
+  // ── Icarus Pixel game progress ────────────────────────────────────
+  gameProgress  GameProgress?
+
   // ── Individual competition participations ─────────────────────────
   competitionParticipations CompetitionParticipant[]
 
@@ -256,3 +259,20 @@ model ClubRegistration {
   createdAt DateTime @default(now())
 }
 
+// ─── GameProgress ────────────────────────────────────────────────────
+
+/// Saved progress of the Icarus Pixel mini-game (one row per user).
+model GameProgress {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  coins         Int      @default(0)
+  unlockedSkins Json     @default("[\"classic\"]")
+  selectedSkin  String   @default("classic")
+  bestScore     Int      @default(0)
+  scores        Json     @default("[]")
+  stats         Json?
+
+  updatedAt     DateTime @updatedAt
+}

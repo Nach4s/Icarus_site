@@ -1,0 +1,117 @@
+﻿background.js:189: ctx.fillText(`★ СЕКТОР ${diffLevel} ★`, w / 2, h * 0.28);
+constants.js:49: { id: 'first_flight', icon: '🚀', name: 'Первый полёт', desc: 'Сыграй первую игру', check: (s) => s.gamesPlayed >= 1 },
+constants.js:50: { id: 'survivor_30', icon: '⏱', name: '30 секунд', desc: 'Продержись 30 секунд', check: (s) => s.bestTime >= 30 },
+constants.js:51: { id: 'survivor_60', icon: '⌛', name: 'Минута', desc: 'Продержись 60 секунд', check: (s) => s.bestTime >= 60 },
+constants.js:52: { id: 'survivor_120', icon: '🕐', name: '2 минуты', desc: 'Продержись 2 минуты', check: (s) => s.bestTime >= 120 },
+constants.js:53: { id: 'score_10', icon: '🎯', name: 'Десяточка', desc: 'Набери 10 очков', check: (s) => s.bestScore >= 10 },
+constants.js:54: { id: 'score_50', icon: '⭐', name: 'Пятидесятник', desc: 'Набери 50 очков', check: (s) => s.bestScore >= 50 },
+constants.js:55: { id: 'score_100', icon: '💫', name: 'Центурион', desc: 'Набери 100 очков', check: (s) => s.bestScore >= 100 },
+constants.js:56: { id: 'score_150', icon: '🏆', name: 'Мастер', desc: 'Набери 150 очков', check: (s) => s.bestScore >= 150 },
+constants.js:57: { id: 'score_200', icon: '👑', name: 'Легенда', desc: 'Набери 200 очков', check: (s) => s.bestScore >= 200 },
+constants.js:58: { id: 'level_10', icon: '💀', name: 'Безумие', desc: 'Достигни 10 уровня', check: (s) => s.bestLevel >= 10 },
+constants.js:59: { id: 'level_15', icon: '⚡', name: 'Апокалипсис', desc: 'Достигни 15 уровня', check: (s) => s.bestLevel >= 15 },
+constants.js:90: name: 'Классический Икар',
+constants.js:92: desc: 'Надежный титановый челнок с плазменным двигателем.',
+constants.js:93: tag: 'СТАНДАРТ',
+constants.js:97: name: 'Призрак Бездны',
+constants.js:99: desc: 'Скрытный истребитель из антиматерии с неоновыми кристаллическими клинками.',
+constants.js:100: tag: 'БЕЗДНА',
+constants.js:105: name: 'Спейс Шаттл',
+constants.js:107: desc: 'Легендарный комплекс NASA: оранжевый бак, белые ускорители SRB и орбитальный челнок с огненным шлейфом.',
+constants.js:108: tag: 'КОСМОПЛАН',
+constants.js:113: name: 'Крылья Икара',
+constants.js:115: desc: 'Легендарный крылатый Икар. Парит в космической бездне, роняя шлейф золотых перьев.',
+constants.js:116: tag: 'ЛЕГЕНДАРНЫЙ',
+constants.js:122: name: 'Крейсер «Венатор»',
+constants.js:124: desc: 'Звёздный разрушитель Великой Армии Республики: клиновидный корпус, двойной мостик, алая полоса и ионные двигатели.',
+constants.js:130: name: 'Кибер-Дредноут',
+constants.js:132: desc: 'Тяжелый штурмовой крейсер с квантовыми генераторами, неоновыми конденсаторами и плазменными энергоблоками.',
+constants.js:133: tag: 'КИБЕРПАНК',
+events.js:126: spawnFloatingText(w / 2, 70, '☠ ФЛОТ ПИРАТОВ АТАКУЕТ! ☠', '#ef4444');
+events.js:172: spawnFloatingText(pirateMothership.x, pirateMothership.y - 30, 'ФЛАГМАН ОТСТУПАЕТ!', '#a855f7');
+events.js:591: ctx.fillText(`⚠ ЗАЛП: ${remSec}с`, tx, ty);
+events.js:913: ctx.fillText('☠ ПИРАТСКИЙ ФЛАГМАН ☠', 0, -52);
+events.js:947: spawnFloatingText(w / 2, 70, '☠ ВРАЖЕСКИЙ ПИРАТ! ☠', '#ef4444');
+events.js:949: spawnFloatingText(w / 2, 70, '☠ ПАТРУЛЬ ПИРАТОВ (x2)! ☠', '#ef4444');
+events.js:1742: ctx.fillText(`ВХОДИ В ЗОНУ: ${eb.graceTimer.toFixed(1)}с`, eb.cx, y0 - 16);
+events.js:1747: ctx.fillText('☠ СМЕРТЕЛЬНЫЙ БАРЬЕР ☠', eb.cx, y0 - 16);
+events.js:1766: let line1 = '! ЗОНА СЖАТИЯ !';
+events.js:1767: let line2 = 'Зайди в зону за 5 сек!';
+events.js:1774: line1 = '! ПИРАТСКИЙ ФЛАГМАН !';
+events.js:1775: line2 = 'Уходи от залпа главного калибра (1.5 сек)!';
+events.js:1781: line1 = '! СОЛНЕЧНЫЙ ЛУЧ !';
+events.js:1782: line2 = 'Заманивай врагов в луч!';
+events.js:1789: line1 = '! ИНВЕРСИЯ: ГОРИЗОНТАЛЬ !';
+events.js:1790: line2 = 'Лево и Право поменялись местами!';
+events.js:1796: line1 = '! ИНВЕРСИЯ: ВЕРТИКАЛЬ !';
+events.js:1797: line2 = 'Вверх и Вниз поменялись местами!';
+events.js:1855: const axisTitle = isX ? 'ИНВЕРСИЯ: ЛЕВО ↔ ПРАВО' : 'ИНВЕРСИЯ: ВВЕРХ ↕ ВНИЗ';
+events.js:1856: const normalText = isX ? 'Вверх/Вниз: как обычно' : 'Лево/Право: как обычно';
+events.js:2404: currentBgTheme.name === 'Изумрудная туманность' ||
+events.js:2833: ctx.fillText('⚠ ИНВЕРСИЯ УПРАВЛЕНИЯ ⚠', w / 2, by + bh / 2 + 1);
+records.js:35: if (!confirm('Сбросить все рекорды и достижения?')) return;
+records.js:92: return `${m} мин ${s} сек`;
+records.js:94: return `${s} сек`;
+rocket.js:307: const S_vp = S * 0.85; // Slightly reduced scale as requested ("поменьше текстуру чуть чуть")
+themes.js:4: name: 'Фиолетовый космос',
+themes.js:15: name: 'Изумрудная туманность',
+themes.js:26: name: 'Багровый пульсар',
+themes.js:37: name: 'Неоновая лазурь',
+themes.js:48: name: 'Золотая сверхновая',
+themes.js:59: name: 'Синтвейв маджента',
+themes.js:70: name: 'Глубокий ультрамарин',
+themes.js:81: name: 'Огненная магма',
+themes.js:230: return currentBgTheme.name === 'Синтвейв маджента' ||
+themes.js:236: return currentBgTheme.name === 'Багровый пульсар' ||
+themes.js:249: currentBgTheme.name === 'Изумрудная туманность' ||
+ui.js:183: buttonHtml = `<button class="btn-skin-action btn-selected" disabled>✔ ВЫБРАНО</button>`;
+ui.js:185: buttonHtml = `<button class="btn-skin-action btn-select" onclick="selectSkin('${skin.id}')">ВЫБРАТЬ</button>`;
+ui.js:187: buttonHtml = `<button class="btn-skin-action btn-buy" onclick="unlockSkin('${skin.id}')">КУПИТЬ ЗА ${skin.price} 🪙</button>`;
+ui.js:193: ? '<span class="skin-price-tag free">БЕСПЛАТНО</span>'
+ui.js:194: : `<span class="skin-price-tag">🪙 ${skin.price} монет</span>`;
+ui.js:393: EL.finalCoins.textContent = `+${earnedCoins} (Всего: ${userCoins})`;
+index.html:7: <title>Icarus Pixel — Космическая аркада на выживание</title>
+index.html:9: content="Icarus Pixel — браузерная 2D пиксельная аркада. Управляй ракетой «Икар» и уворачивайся от комет в бесконечном космосе." />
+index.html:29: <div class="logo-subtitle">— КОСМИЧЕСКАЯ АРКАДА —</div>
+index.html:36: <div class="menu-coins-badge" id="menu-coins-badge" onclick="showSkinsScreen()" title="Открыть ангар">
+index.html:42: <span class="btn-icon">▶</span> СТАРТ
+index.html:45: <span class="btn-icon">✨</span> АНГАР
+index.html:48: <span class="btn-icon">🏆</span> РЕКОРДЫ
+index.html:51: <span id="mute-icon">🔊</span> ЗВУК
+index.html:56: <div class="controls-title">УПРАВЛЕНИЕ</div>
+index.html:83: <div class="controls-hint">Уворачивайся от комет и астероидов!</div>
+index.html:87: РЕКОРД: <span id="menu-best-val">0</span>
+index.html:98: <div class="hud-label">СЧЁТ</div>
+index.html:102: <div class="hud-label">УРОВЕНЬ</div>
+index.html:106: <div class="hud-label">РЕКОРД</div>
+index.html:111: <div id="pause-hint">ESC — пауза</div>
+index.html:119: <div class="overlay-title">ПАУЗА</div>
+index.html:120: <button id="btn-resume" class="btn-primary" onclick="resumeGame()">▶ ПРОДОЛЖИТЬ</button>
+index.html:121: <button id="btn-menu-from-pause" class="btn-secondary" onclick="goToMenu()">⌂ МЕНЮ</button>
+index.html:149: <div class="gameover-label">ИГРА ОКОНЧЕНА</div>
+index.html:155: <span class="result-label">ВАШ СЧЁТ</span>
+index.html:159: <span class="result-label">🪙 МОНЕТЫ</span>
+index.html:160: <span class="result-value coins-val" id="final-coins">+0 (Всего: 0)</span>
+index.html:164: <span class="result-label">🏆 РЕКОРД</span>
+index.html:168: <span class="result-label">⏱ ВРЕМЯ</span>
+index.html:169: <span class="result-value" id="final-time">0 сек</span>
+index.html:171: <div class="new-record-badge hidden" id="new-record-badge">✨ НОВЫЙ РЕКОРД! ✨</div>
+index.html:176: <div class="ae-title">ДОСТИЖЕНИЯ</div>
+index.html:182: ↺ СЫГРАТЬ ЗАНОВО
+index.html:185: ✨ АНГАР
+index.html:188: 🏆 РЕКОРДЫ
+index.html:191: ⌂ В МЕНЮ
+index.html:196: Продержался: <span id="time-val">0 сек</span>
+index.html:205: <div class="records-title">🏆 ТАБЛИЦА РЕКОРДОВ</div>
+index.html:206: <div class="records-subtitle">ТОП 5 РЕЗУЛЬТАТОВ</div>
+index.html:213: <th>СЧЁТ</th>
+index.html:214: <th>УРОВЕНЬ</th>
+index.html:215: <th>ВРЕМЯ</th>
+index.html:216: <th>ДАТА</th>
+index.html:222: Ещё нет рекордов.<br />Сыграй первым!
+index.html:227: <div class="achievements-title">ДОСТИЖЕНИЯ</div>
+index.html:232: <button id="btn-records-back" class="btn-primary" onclick="goToMenu()">⌂ МЕНЮ</button>
+index.html:243: <div class="skins-title">✨ АНГАР ИКАРА</div>
+index.html:244: <div class="skins-subtitle">ВЫБЕРИТЕ ОБЛИК ДЛЯ ПОЛЁТА</div>
+index.html:257: <button id="btn-skins-back" class="btn-primary" onclick="goToMenu()">⌂ В МЕНЮ</button>
+index.html:266: <div class="toast-label">ДОСТИЖЕНИЕ</div>

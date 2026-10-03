@@ -123,7 +123,7 @@ function startEvent(level, w, h) {
       activeEvent.piratesSpawned++;
     }
     playSfxPirateAlert();
-    spawnFloatingText(w / 2, 70, '☠ ФЛОТ ПИРАТОВ АТАКУЕТ! ☠', '#ef4444');
+    spawnFloatingText(w / 2, 70, '☠ PIRATE FLEET ATTACKS! ☠', '#ef4444');
   } else if (type === 'SOLAR_FLARE') {
     solarFlares = [];
     activeEvent.flareTimer = 0;   // controls when next batch of flares spawns
@@ -169,7 +169,7 @@ function endEvent() {
   if (pirateMothership && pirateMothership.state !== 'FLEEING') {
     pirateMothership.state = 'FLEEING';
     pirateMothership.cannonState = 'IDLE';
-    spawnFloatingText(pirateMothership.x, pirateMothership.y - 30, 'ФЛАГМАН ОТСТУПАЕТ!', '#a855f7');
+    spawnFloatingText(pirateMothership.x, pirateMothership.y - 30, 'FLAGSHIP RETREATING!', '#a855f7');
   }
   activeEvent = null;
   eventBounds = { active: false };
@@ -588,7 +588,7 @@ function drawMothershipCannonBeam(ctx, m) {
     ctx.textBaseline = 'middle';
     ctx.shadowColor = '#dc2626';
     ctx.shadowBlur = 6;
-    ctx.fillText(`⚠ ЗАЛП: ${remSec}с`, tx, ty);
+    ctx.fillText(`⚠ VOLLEY: ${remSec}s`, tx, ty);
 
     // 5. Plasma energy singularity charging at cannon nozzle tip (anchors laser into ship)
     const muzzleCoreR = (8 + chargeProgress * 14) * (0.85 + 0.15 * Math.sin(t * 26));
@@ -910,7 +910,7 @@ function drawPirateMothership(ctx, m) {
   ctx.textBaseline = 'middle';
   ctx.shadowColor = '#e11d48';
   ctx.shadowBlur = 8;
-  ctx.fillText('☠ ПИРАТСКИЙ ФЛАГМАН ☠', 0, -52);
+  ctx.fillText('☠ PIRATE FLAGSHIP ☠', 0, -52);
   ctx.shadowBlur = 0;
 
   ctx.restore();
@@ -944,9 +944,9 @@ function triggerLevelPirates(w, h) {
   playSfxPirateAlert();
 
   if (count === 1) {
-    spawnFloatingText(w / 2, 70, '☠ ВРАЖЕСКИЙ ПИРАТ! ☠', '#ef4444');
+    spawnFloatingText(w / 2, 70, '☠ ENEMY PIRATE! ☠', '#ef4444');
   } else {
-    spawnFloatingText(w / 2, 70, '☠ ПАТРУЛЬ ПИРАТОВ (x2)! ☠', '#ef4444');
+    spawnFloatingText(w / 2, 70, '☠ PIRATE PATROL (x2)! ☠', '#ef4444');
     // Stagger second pirate by 0.8s so they enter distinctly
     setTimeout(() => {
       if (gameState === 'PLAYING' && rocket && rocket.alive) {
@@ -1739,12 +1739,12 @@ function drawConstrictionZone(ctx, w, h) {
     ctx.fillStyle = '#fbbf24';
     ctx.shadowColor = '#f59e0b';
     ctx.shadowBlur = 10;
-    ctx.fillText(`ВХОДИ В ЗОНУ: ${eb.graceTimer.toFixed(1)}с`, eb.cx, y0 - 16);
+    ctx.fillText(`ENTER THE ZONE: ${eb.graceTimer.toFixed(1)}s`, eb.cx, y0 - 16);
   } else {
     ctx.fillStyle = '#ff3355';
     ctx.shadowColor = '#ff1133';
     ctx.shadowBlur = 12;
-    ctx.fillText('☠ СМЕРТЕЛЬНЫЙ БАРЬЕР ☠', eb.cx, y0 - 16);
+    ctx.fillText('☠ DEATH BARRIER ☠', eb.cx, y0 - 16);
   }
   ctx.restore();
 }
@@ -1763,38 +1763,38 @@ function drawEventBanner(ctx, w, h) {
   let bannerColor = '#ff4422';
   let bannerGlow = 'rgba(255,80,40,0.7)';
   let icon = '⚠';
-  let line1 = '! ЗОНА СЖАТИЯ !';
-  let line2 = 'Зайди в зону за 5 сек!';
+  let line1 = '! CONSTRICTION ZONE !';
+  let line2 = 'Enter the zone in 5 sec!';
   let borderColor = '255,70,40';
 
   if (type === 'PIRATES') {
     bannerColor = '#ff2288';
     bannerGlow = 'rgba(255,40,130,0.7)';
     icon = '☠';
-    line1 = '! ПИРАТСКИЙ ФЛАГМАН !';
-    line2 = 'Уходи от залпа главного калибра (1.5 сек)!';
+    line1 = '! PIRATE FLAGSHIP !';
+    line2 = 'Dodge the main cannon volley (1.5 sec)!';
     borderColor = '255,40,150';
   } else if (type === 'SOLAR_FLARE') {
     bannerColor = '#ff8800';
     bannerGlow = 'rgba(255,160,0,0.8)';
     icon = '☀';
-    line1 = '! СОЛНЕЧНЫЙ ЛУЧ !';
-    line2 = 'Заманивай врагов в луч!';
+    line1 = '! SOLAR FLARE !';
+    line2 = 'Lure enemies into the beam!';
     borderColor = '255,140,0';
   } else if (type === 'AXIS_INVERSION') {
     if (activeEvent.invertAxis === 'X') {
       bannerColor = '#38bdf8';
       bannerGlow = 'rgba(56,189,248,0.85)';
       icon = '⇄';
-      line1 = '! ИНВЕРСИЯ: ГОРИЗОНТАЛЬ !';
-      line2 = 'Лево и Право поменялись местами!';
+      line1 = '! INVERSION: HORIZONTAL !';
+      line2 = 'Left and Right are swapped!';
       borderColor = '56,189,248';
     } else {
       bannerColor = '#f43f5e';
       bannerGlow = 'rgba(244,63,94,0.85)';
       icon = '⇅';
-      line1 = '! ИНВЕРСИЯ: ВЕРТИКАЛЬ !';
-      line2 = 'Вверх и Вниз поменялись местами!';
+      line1 = '! INVERSION: VERTICAL !';
+      line2 = 'Up and Down are swapped!';
       borderColor = '244,63,94';
     }
   } else if (type === 'GRAVITY_SHIFT') {
@@ -1852,8 +1852,8 @@ function drawAxisInversionHud(ctx, w, h) {
   const colPrimary = isX ? '#38bdf8' : '#f43f5e';
   const colGlow = isX ? 'rgba(56,189,248,0.45)' : 'rgba(244,63,94,0.45)';
   const icon = isX ? '⇄' : '⇅';
-  const axisTitle = isX ? 'ИНВЕРСИЯ: ЛЕВО ↔ ПРАВО' : 'ИНВЕРСИЯ: ВВЕРХ ↕ ВНИЗ';
-  const normalText = isX ? 'Вверх/Вниз: как обычно' : 'Лево/Право: как обычно';
+  const axisTitle = isX ? 'INVERSION: LEFT ↔ RIGHT' : 'INVERSION: UP ↕ DOWN';
+  const normalText = isX ? 'Up/Down: normal' : 'Left/Right: normal';
 
   ctx.save();
   const hudY = 64;
@@ -2401,7 +2401,7 @@ function isPurpleSpaceTheme() {
 function isGreenZoneTheme() {
   if (!currentBgTheme) return false;
   return currentBgTheme === SPACE_THEMES[1] ||
-    currentBgTheme.name === 'Изумрудная туманность' ||
+    currentBgTheme.name === 'Emerald Nebula' ||
     (currentBgTheme.circle && currentBgTheme.circle[0] === 16 && currentBgTheme.circle[1] === 185);
 }
 
@@ -2830,7 +2830,7 @@ function drawControlInversionHUD(ctx, w, h) {
   ctx.textBaseline = 'middle';
   ctx.shadowColor = '#f43f5e';
   ctx.shadowBlur = 7;
-  ctx.fillText('⚠ ИНВЕРСИЯ УПРАВЛЕНИЯ ⚠', w / 2, by + bh / 2 + 1);
+  ctx.fillText('⚠ CONTROLS INVERTED ⚠', w / 2, by + bh / 2 + 1);
 
   ctx.restore();
 }

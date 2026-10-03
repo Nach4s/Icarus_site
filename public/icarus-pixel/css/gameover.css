@@ -161,3 +161,10 @@
   text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
 }
 
+
+/* ─── Small / short screens ─────────────────────────────────── */
+@media (max-height: 700px), (max-width: 480px) {
+  .gameover-content { gap: 14px; padding: 20px 16px 56px; }
+  .result-value { font-size: 14px; }
+  .coins-val { font-size: 10px; white-space: nowrap; }
+}

@@ -40,7 +40,9 @@
 }
 
 .tab-animate {
-  animation: tabFadeIn 0.45s ease-out both;
+  /* "backwards" (not "both"): no transform lingers after the animation,
+     so position: fixed children (game fullscreen overlay) use the viewport */
+  animation: tabFadeIn 0.45s ease-out backwards;
 }
 
 /* 

@@ -1698,6 +1698,59 @@ app.post(
 );
 
 /**
+ * GET /api/game/progress
+ * PUT /api/game/progress
+ * ──────────────────────
+ * Load / save the authenticated user's Icarus Pixel progress.
+ */
+function sanitizeGameProgress(body) {
+  const int = (v, max) => Math.max(0, Math.min(max, Math.floor(Number(v) || 0)));
+  const skins = Array.isArray(body.unlockedSkins)
+    ? [...new Set(body.unlockedSkins.filter((s) => typeof s === "string" && s.length <= 40))].slice(0, 50)
+    : ["classic"];
+  if (!skins.includes("classic")) skins.push("classic");
+  const selectedSkin =
+    typeof body.selectedSkin === "string" && skins.includes(body.selectedSkin) ? body.selectedSkin : "classic";
+  const scores = Array.isArray(body.scores)
+    ? body.scores.filter((s) => s && typeof s === "object").slice(0, 20)
+    : [];
+  const stats = body.stats && typeof body.stats === "object" && !Array.isArray(body.stats) ? body.stats : null;
+  if (JSON.stringify({ scores, stats }).length > 50000) return null;
+  return {
+    coins: int(body.coins, 1e9),
+    unlockedSkins: skins,
+    selectedSkin,
+    bestScore: int(body.bestScore, 1e9),
+    scores,
+    stats: stats ?? undefined,
+  };
+}
+
+app.get(
+  "/api/game/progress",
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const progress = await prisma.gameProgress.findUnique({ where: { userId: req.userId } });
+    return res.json({ progress });
+  })
+);
+
+app.put(
+  "/api/game/progress",
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const data = sanitizeGameProgress(req.body || {});
+    if (!data) return res.status(400).json({ error: "Invalid progress data." });
+    const progress = await prisma.gameProgress.upsert({
+      where: { userId: req.userId },
+      create: { userId: req.userId, ...data },
+      update: data,
+    });
+    return res.json({ progress });
+  })
+);
+
+/**
  * GET /api/club/status
  * ─────────────────────
  * Returns whether the authenticated user is already registered for the club.

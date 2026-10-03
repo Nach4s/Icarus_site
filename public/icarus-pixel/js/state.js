@@ -11,6 +11,41 @@ let animFrameId = null;
 
 // Input state
 const keys = {};
+// Floating touch joystick: x/y is the analog direction (-1…1), set in input.js
+const touchStick = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0 };
+
+// ─── Touch-screen scaling ─────────────────────────────────────
+// On phones the game canvas renders at a larger logical resolution and CSS
+// scales it down, so the playfield is roughly as roomy as on a desktop.
+const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
+const MIN_LOGICAL_SIDE = 620; // px — smallest playfield side on touch screens
+
+let canvasTextBoost = 1;      // enlarges pixel-font labels on the scaled canvas
+
+function sizeGameCanvas(c) {
+  const minSide = Math.min(window.innerWidth, window.innerHeight);
+  const k = IS_TOUCH ? Math.max(1, MIN_LOGICAL_SIDE / minSide) : 1;
+  c.width = Math.round(window.innerWidth * k);
+  c.height = Math.round(window.innerHeight * k);
+  canvasTextBoost = 1 + (k - 1) * 0.65;
+}
+
+// Canvas labels are drawn in logical pixels, so after the CSS downscale the
+// 7–10px pixel font becomes unreadable on phones — enlarge it to compensate.
+if (IS_TOUCH) {
+  const fontProp = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, 'font');
+  Object.defineProperty(CanvasRenderingContext2D.prototype, 'font', {
+    configurable: true,
+    get() { return fontProp.get.call(this); },
+    set(v) {
+      if (canvasTextBoost > 1 && this.canvas && this.canvas.id === 'game-canvas' &&
+          typeof v === 'string' && v.includes('Press Start 2P')) {
+        v = v.replace(/(\d+(?:\.\d+)?)px/, (m, n) => (n * canvasTextBoost).toFixed(1) + 'px');
+      }
+      fontProp.set.call(this, v);
+    },
+  });
+}
 
 // Entity containers
 let rocket = null;

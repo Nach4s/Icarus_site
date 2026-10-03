@@ -186,7 +186,7 @@ function drawStars(ctx, w, h) {
       ctx.fillStyle = 'rgba(0, 229, 255, 0.9)';
       ctx.shadowColor = 'rgba(0, 229, 255, 0.8)';
       ctx.shadowBlur = 10;
-      ctx.fillText(`★ СЕКТОР ${diffLevel} ★`, w / 2, h * 0.28);
+      ctx.fillText(`★ SECTOR ${diffLevel} ★`, w / 2, h * 0.28);
 
       // Theme name title
       ctx.font = '11px "Press Start 2P", monospace';

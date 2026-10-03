@@ -265,3 +265,13 @@ body::after {
 ::-webkit-scrollbar-track { background: var(--col-bg); }
 ::-webkit-scrollbar-thumb { background: var(--col-cyan-dim); border-radius: 2px; }
 
+
+/* ─── Touch devices ─────────────────────────────────────────── */
+html { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+body { overscroll-behavior: none; -webkit-touch-callout: none; }
+
+
+/* Scrollable screen panels: never squash their sections on short screens */
+.menu-content > *,
+.gameover-content > *,
+.records-content > * { flex-shrink: 0; }

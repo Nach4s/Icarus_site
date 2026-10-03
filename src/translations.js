@@ -69,6 +69,24 @@ const translations = {
     en: 'Controls: WASD or arrow keys. Dodge the comets!',
     ro: 'Control: WASD sau săgeți. Ferește-te de comete!',
   },
+  'spaceWeek.gameHintTouch': {
+    kk: 'Басқару: экранды басып, саусақты сырғытыңыз. Кометалардан қашыңыз!',
+    ru: 'Управление: коснитесь экрана и ведите пальцем. Уворачивайтесь от комет!',
+    en: 'Controls: touch the screen and drag. Dodge the comets!',
+    ro: 'Control: atinge ecranul și glisează. Ferește-te de comete!',
+  },
+  'spaceWeek.exitFullscreen': {
+    kk: 'Толық экраннан шығу',
+    ru: 'Выйти из полноэкранного режима',
+    en: 'Exit fullscreen',
+    ro: 'Ieși din ecran complet',
+  },
+  'spaceWeek.signInToSave': {
+    kk: 'Прогресс сақталуы үшін аккаунтқа кіріңіз.',
+    ru: 'Войдите в аккаунт, чтобы прогресс сохранялся.',
+    en: 'Sign in to save your progress to your account.',
+    ro: 'Autentifică-te pentru a salva progresul în cont.',
+  },
   'nav.contact': {
     kk: 'БІЗ ТУРАЛЫ',
     ru: 'О НАС',

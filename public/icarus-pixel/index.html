@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Icarus Pixel — Космическая аркада на выживание</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Icarus Pixel — Space Survival Arcade</title>
   <meta name="description"
-    content="Icarus Pixel — браузерная 2D пиксельная аркада. Управляй ракетой «Икар» и уворачивайся от комет в бесконечном космосе." />
+    content="Icarus Pixel — a browser-based 2D pixel arcade game. Pilot the rocket Icarus and dodge comets in endless space." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
@@ -26,34 +26,34 @@
 
     <div class="menu-content">
       <div class="logo-wrap">
-        <div class="logo-subtitle">— КОСМИЧЕСКАЯ АРКАДА —</div>
+        <div class="logo-subtitle">— SPACE ARCADE —</div>
         <h1 class="logo-title" id="logo-title">ICARUS<br /><span>PIXEL</span></h1>
         <div class="logo-glow"></div>
       </div>
 
       <canvas id="menu-rocket-canvas" width="120" height="160"></canvas>
 
-      <div class="menu-coins-badge" id="menu-coins-badge" onclick="showSkinsScreen()" title="Открыть ангар">
+      <div class="menu-coins-badge" id="menu-coins-badge" onclick="showSkinsScreen()" title="Open hangar">
         <span class="coin-icon">🪙</span> <span id="menu-coins-val">0</span>
       </div>
 
       <div class="menu-actions">
         <button id="btn-start" class="btn-primary" onclick="startGame()">
-          <span class="btn-icon">▶</span> СТАРТ
+          <span class="btn-icon">▶</span> START
         </button>
         <button id="btn-skins" class="btn-primary btn-skins" onclick="showSkinsScreen()">
-          <span class="btn-icon">✨</span> АНГАР
+          <span class="btn-icon">✨</span> HANGAR
         </button>
         <button id="btn-records" class="btn-primary btn-records" onclick="showRecordsScreen()">
-          <span class="btn-icon">🏆</span> РЕКОРДЫ
+          <span class="btn-icon">🏆</span> RECORDS
         </button>
         <button id="btn-mute" class="btn-secondary" onclick="toggleMute()">
-          <span id="mute-icon">🔊</span> ЗВУК
+          <span id="mute-icon">🔊</span> SOUND
         </button>
       </div>
 
       <div class="controls-panel">
-        <div class="controls-title">УПРАВЛЕНИЕ</div>
+        <div class="controls-title">CONTROLS</div>
         <div class="controls-grid">
           <div class="control-row">
             <div class="key-group">
@@ -80,11 +80,15 @@
             </div>
           </div>
         </div>
-        <div class="controls-hint">Уворачивайся от комет и астероидов!</div>
+        <div class="controls-touch">
+          <div class="touch-demo"><span></span></div>
+          Touch the screen and drag<br />to steer the rocket
+        </div>
+        <div class="controls-hint">Dodge the comets and asteroids!</div>
       </div>
 
       <div class="best-score-display" id="menu-best">
-        РЕКОРД: <span id="menu-best-val">0</span>
+        BEST: <span id="menu-best-val">0</span>
       </div>
     </div>
   </div>
@@ -95,20 +99,20 @@
 
     <div id="hud">
       <div id="hud-score">
-        <div class="hud-label">СЧЁТ</div>
+        <div class="hud-label">SCORE</div>
         <div class="hud-value" id="score-val">0</div>
       </div>
       <div id="hud-level">
-        <div class="hud-label">УРОВЕНЬ</div>
+        <div class="hud-label">LEVEL</div>
         <div class="hud-value" id="level-val">1</div>
       </div>
       <div id="hud-best">
-        <div class="hud-label">РЕКОРД</div>
+        <div class="hud-label">BEST</div>
         <div class="hud-value" id="best-val">0</div>
       </div>
     </div>
 
-    <div id="pause-hint">ESC — пауза</div>
+    <div id="pause-hint">ESC — pause</div>
 
     <!-- Mobile pause button -->
     <button id="btn-mobile-pause" class="btn-mobile-pause" onclick="pauseGame()">⏸</button>
@@ -116,20 +120,17 @@
     <!-- Pause overlay -->
     <div id="pause-overlay" class="overlay hidden">
       <div class="overlay-panel">
-        <div class="overlay-title">ПАУЗА</div>
-        <button id="btn-resume" class="btn-primary" onclick="resumeGame()">▶ ПРОДОЛЖИТЬ</button>
-        <button id="btn-menu-from-pause" class="btn-secondary" onclick="goToMenu()">⌂ МЕНЮ</button>
+        <div class="overlay-title">PAUSED</div>
+        <button id="btn-resume" class="btn-primary" onclick="resumeGame()">▶ RESUME</button>
+        <button id="btn-menu-from-pause" class="btn-secondary" onclick="goToMenu()">⌂ MENU</button>
       </div>
     </div>
 
-    <!-- Mobile D-Pad -->
-    <div id="mobile-dpad">
-      <div class="dpad-center"></div>
-      <button id="dpad-up" class="dpad-btn dpad-up" data-key="ArrowUp">▲</button>
-      <button id="dpad-down" class="dpad-btn dpad-down" data-key="ArrowDown">▼</button>
-      <button id="dpad-left" class="dpad-btn dpad-left" data-key="ArrowLeft">◀</button>
-      <button id="dpad-right" class="dpad-btn dpad-right" data-key="ArrowRight">▶</button>
+    <!-- Touch joystick (appears where the finger lands) -->
+    <div id="touch-stick">
+      <div id="touch-stick-knob"></div>
     </div>
+    <div id="touch-hint">DRAG ANYWHERE TO FLY</div>
 
     <!-- DEBUG: Level control -->
     <div id="debug-level-panel">
@@ -146,54 +147,54 @@
 
     <div class="gameover-content">
       <div class="gameover-title-wrap">
-        <div class="gameover-label">ИГРА ОКОНЧЕНА</div>
+        <div class="gameover-label">GAME OVER</div>
         <div class="explosion-icon">💥</div>
       </div>
 
       <div class="result-panel">
         <div class="result-row">
-          <span class="result-label">ВАШ СЧЁТ</span>
+          <span class="result-label">YOUR SCORE</span>
           <span class="result-value" id="final-score">0</span>
         </div>
         <div class="result-row coins-row">
-          <span class="result-label">🪙 МОНЕТЫ</span>
-          <span class="result-value coins-val" id="final-coins">+0 (Всего: 0)</span>
+          <span class="result-label">🪙 COINS</span>
+          <span class="result-value coins-val" id="final-coins">+0 (Total: 0)</span>
         </div>
         <div class="result-divider"></div>
         <div class="result-row record-row" id="record-row">
-          <span class="result-label">🏆 РЕКОРД</span>
+          <span class="result-label">🏆 BEST</span>
           <span class="result-value highlight" id="final-best">0</span>
         </div>
         <div class="result-row">
-          <span class="result-label">⏱ ВРЕМЯ</span>
-          <span class="result-value" id="final-time">0 сек</span>
+          <span class="result-label">⏱ TIME</span>
+          <span class="result-value" id="final-time">0 sec</span>
         </div>
-        <div class="new-record-badge hidden" id="new-record-badge">✨ НОВЫЙ РЕКОРД! ✨</div>
+        <div class="new-record-badge hidden" id="new-record-badge">✨ NEW RECORD! ✨</div>
       </div>
 
       <!-- Achievements earned this run -->
       <div class="achievements-earned hidden" id="achievements-earned">
-        <div class="ae-title">ДОСТИЖЕНИЯ</div>
+        <div class="ae-title">ACHIEVEMENTS</div>
         <div class="ae-list" id="ae-list"></div>
       </div>
 
       <div class="gameover-actions">
         <button id="btn-restart" class="btn-primary btn-glow" onclick="startGame()">
-          ↺ СЫГРАТЬ ЗАНОВО
+          ↺ PLAY AGAIN
         </button>
         <button id="btn-skins-from-go" class="btn-secondary btn-skins-go" onclick="showSkinsScreen()">
-          ✨ АНГАР
+          ✨ HANGAR
         </button>
         <button id="btn-records-from-go" class="btn-secondary" onclick="showRecordsScreen()">
-          🏆 РЕКОРДЫ
+          🏆 RECORDS
         </button>
         <button id="btn-menu-from-go" class="btn-secondary" onclick="goToMenu()">
-          ⌂ В МЕНЮ
+          ⌂ MAIN MENU
         </button>
       </div>
 
       <div class="survival-time" id="survival-time">
-        Продержался: <span id="time-val">0 сек</span>
+        Survived: <span id="time-val">0 sec</span>
       </div>
     </div>
   </div>
@@ -202,34 +203,34 @@
   <div id="screen-records" class="screen">
     <canvas id="records-bg-canvas"></canvas>
     <div class="records-content">
-      <div class="records-title">🏆 ТАБЛИЦА РЕКОРДОВ</div>
-      <div class="records-subtitle">ТОП 5 РЕЗУЛЬТАТОВ</div>
+      <div class="records-title">🏆 HIGH SCORES</div>
+      <div class="records-subtitle">TOP 5 RESULTS</div>
 
       <div class="records-table-wrap">
         <table class="records-table" id="records-table">
           <thead>
             <tr>
               <th>#</th>
-              <th>СЧЁТ</th>
-              <th>УРОВЕНЬ</th>
-              <th>ВРЕМЯ</th>
-              <th>ДАТА</th>
+              <th>SCORE</th>
+              <th>LEVEL</th>
+              <th>TIME</th>
+              <th>DATE</th>
             </tr>
           </thead>
           <tbody id="records-tbody"></tbody>
         </table>
         <div class="records-empty hidden" id="records-empty">
-          Ещё нет рекордов.<br />Сыграй первым!
+          No records yet.<br />Be the first to play!
         </div>
       </div>
 
       <div class="achievements-panel">
-        <div class="achievements-title">ДОСТИЖЕНИЯ</div>
+        <div class="achievements-title">ACHIEVEMENTS</div>
         <div class="achievements-grid" id="achievements-grid"></div>
       </div>
 
       <div class="records-actions">
-        <button id="btn-records-back" class="btn-primary" onclick="goToMenu()">⌂ МЕНЮ</button>
+        <button id="btn-records-back" class="btn-primary" onclick="goToMenu()">⌂ MENU</button>
       </div>
     </div>
   </div>
@@ -240,8 +241,8 @@
     <div class="skins-content">
       <div class="skins-header">
         <div class="skins-title-wrap">
-          <div class="skins-title">✨ АНГАР ИКАРА</div>
-          <div class="skins-subtitle">ВЫБЕРИТЕ ОБЛИК ДЛЯ ПОЛЁТА</div>
+          <div class="skins-title">✨ ICARUS HANGAR</div>
+          <div class="skins-subtitle">CHOOSE YOUR SHIP</div>
         </div>
         <div class="skins-coins-badge" id="skins-coins-badge">
           <span class="coin-icon">🪙</span>
@@ -254,7 +255,7 @@
       </div>
 
       <div class="skins-actions">
-        <button id="btn-skins-back" class="btn-primary" onclick="goToMenu()">⌂ В МЕНЮ</button>
+        <button id="btn-skins-back" class="btn-primary" onclick="goToMenu()">⌂ MAIN MENU</button>
       </div>
     </div>
   </div>
@@ -263,7 +264,7 @@
   <div id="achievement-toast" class="achievement-toast hidden">
     <div class="toast-icon" id="toast-icon">🏅</div>
     <div class="toast-body">
-      <div class="toast-label">ДОСТИЖЕНИЕ</div>
+      <div class="toast-label">ACHIEVEMENT</div>
       <div class="toast-name" id="toast-name">—</div>
     </div>
   </div>
@@ -289,6 +290,7 @@
   <script src="js/gameloop.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/input.js"></script>
+  <script src="js/host-bridge.js"></script>
 </body>
 
 </html>
