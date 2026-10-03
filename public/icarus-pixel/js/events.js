@@ -1756,6 +1756,9 @@ function drawEventBanner(ctx, w, h) {
   const raw = activeEvent.bannerTimer;
   const alpha = Math.min(1, raw * 1.5) * (raw < 1 ? raw : 1);
 
+  // Banner centre line: below the DOM HUD and any top event pill on phones
+  const bannerY = Math.max(h * 0.18, topSafeY ? topSafeY + 80 : 0);
+
   ctx.save();
   ctx.globalAlpha = alpha;
 
@@ -1809,12 +1812,12 @@ function drawEventBanner(ctx, w, h) {
 
   // Background bar
   ctx.fillStyle = 'rgba(0,0,0,0.55)';
-  ctx.fillRect(0, h * 0.18 - 36, w, 80);
+  ctx.fillRect(0, bannerY - 36, w, 80);
 
   // Border flash
   ctx.strokeStyle = `rgba(${borderColor},${0.6 * (0.5 + 0.5 * Math.sin(t * 8))})`;
   ctx.lineWidth = 3;
-  ctx.strokeRect(0, h * 0.18 - 36, w, 80);
+  ctx.strokeRect(0, bannerY - 36, w, 80);
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -1824,20 +1827,20 @@ function drawEventBanner(ctx, w, h) {
   ctx.fillStyle = bannerColor;
   ctx.shadowColor = bannerGlow;
   ctx.shadowBlur = 18;
-  ctx.fillText(icon, w / 2, h * 0.18 - 10);
+  ctx.fillText(icon, w / 2, bannerY - 10);
 
   // Title
   ctx.font = `10px "Press Start 2P", monospace`;
   ctx.fillStyle = '#ffffff';
   ctx.shadowColor = bannerGlow;
   ctx.shadowBlur = 12;
-  ctx.fillText(line1, w / 2, h * 0.18 + 10);
+  ctx.fillText(line1, w / 2, bannerY + 10);
 
   // Subtitle
   ctx.font = `6px "Press Start 2P", monospace`;
   ctx.fillStyle = bannerColor;
   ctx.shadowBlur = 8;
-  ctx.fillText(line2, w / 2, h * 0.18 + 26);
+  ctx.fillText(line2, w / 2, bannerY + 26);
 
   ctx.restore();
 }
@@ -1856,7 +1859,7 @@ function drawAxisInversionHud(ctx, w, h) {
   const normalText = isX ? 'Up/Down: normal' : 'Left/Right: normal';
 
   ctx.save();
-  const hudY = 64;
+  const hudY = Math.max(64, topSafeY);
   const pillW = Math.min(280, w * 0.82);
   const pillH = 34;
   const pillX = (w - pillW) / 2;
@@ -2015,7 +2018,7 @@ function drawGravityShiftHud(ctx, w, h) {
   const pulse = Math.sin(t * 6);
 
   ctx.save();
-  const hudY = 64;
+  const hudY = Math.max(64, topSafeY);
   const pillW = Math.min(290, w * 0.84);
   const pillH = 34;
   const pillX = (w - pillW) / 2;
@@ -2805,7 +2808,7 @@ function drawControlInversionHUD(ctx, w, h) {
   const bw = 240;
   const bh = 24;
   const bx = (w - bw) / 2;
-  const by = 48;
+  const by = Math.max(48, topSafeY);
 
   // Background capsule
   ctx.fillStyle = 'rgba(24, 6, 36, 0.88)';
@@ -3196,7 +3199,9 @@ function drawPushWaveHUD(ctx, w, h) {
   const boxW = Math.min(420, w - 24);
   const boxH = 50;
   const boxX = (w - boxW) / 2;
-  const boxY = 16;
+  // On phones: below the HUD, and below an active event pill if there is one
+  const pillActive = activeEvent && (activeEvent.type === 'AXIS_INVERSION' || activeEvent.type === 'GRAVITY_SHIFT');
+  const boxY = topSafeY ? topSafeY + (pillActive ? 42 : 0) : 16;
 
   ctx.fillStyle = 'rgba(20, 5, 8, 0.88)';
   ctx.strokeStyle = pw.state === 'SWEEPING' ? 'rgba(254, 240, 138, ' + pulse + ')' : 'rgba(239, 68, 68, ' + pulse + ')';

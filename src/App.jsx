@@ -3138,7 +3138,6 @@ export default function App() {
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundAttachment: 'scroll',
-                    willChange: 'transform',
                 }}
             >
                 <Header
@@ -3186,11 +3185,11 @@ export default function App() {
                     onClose={() => setIsAlreadyRegisteredModalOpen(false)}
                 />
 
-                {/* ── Guide Button ── */}
+                {/* ── Guide Button (hidden on phones in the Space Week tab so it does not cover the game) ── */}
                 {createPortal(
                     <button
                         onClick={() => setIsLanguageModalOpen(true)}
-                        className="fixed z-[9999] right-4 bottom-4 md:right-6 md:bottom-6 w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center shadow-2xl shadow-yellow-600/30 border border-yellow-500/30 text-black hover:scale-110 transition-transform cursor-pointer"
+                        className={`${activePage === 'home' && activeTab === 'spaceweek' ? 'hidden md:flex' : 'flex'} fixed z-[9999] right-4 bottom-4 md:right-6 md:bottom-6 w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 items-center justify-center shadow-2xl shadow-yellow-600/30 border border-yellow-500/30 text-black hover:scale-110 transition-transform cursor-pointer`}
                         title="Platform Guide"
                     >
                         <BookOpen size={24} />

@@ -21,13 +21,18 @@ const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
 const MIN_LOGICAL_SIDE = 620; // px — smallest playfield side on touch screens
 
 let canvasTextBoost = 1;      // enlarges pixel-font labels on the scaled canvas
+let topSafeY = 0;             // canvas y below the DOM HUD (touch screens only)
 
 function sizeGameCanvas(c) {
   const minSide = Math.min(window.innerWidth, window.innerHeight);
   const k = IS_TOUCH ? Math.max(1, MIN_LOGICAL_SIDE / minSide) : 1;
   c.width = Math.round(window.innerWidth * k);
   c.height = Math.round(window.innerHeight * k);
-  canvasTextBoost = 1 + (k - 1) * 0.65;
+  canvasTextBoost = 1 + (k - 1) * 0.85;
+  // Event pills/banners are drawn at fixed canvas y; on the downscaled phone
+  // canvas they would land under SCORE/LEVEL, so keep them below the HUD
+  const hud = document.getElementById('hud');
+  topSafeY = IS_TOUCH && hud ? Math.round(hud.offsetHeight * k) : 0;
 }
 
 // Canvas labels are drawn in logical pixels, so after the CSS downscale the

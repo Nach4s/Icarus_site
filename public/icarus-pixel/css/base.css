@@ -280,7 +280,7 @@ body { overscroll-behavior: none; -webkit-touch-callout: none; }
 /* The screen itself scrolls instead of an inner panel capped at 100vh:
    inside an iframe on mobile (iOS Safari) "vh" may refer to the whole phone
    screen, so the panel overflowed the frame and could not be scrolled. */
-.screen:not(#screen-game) {
+.screen.active:not(#screen-game) {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
@@ -301,3 +301,15 @@ body { overscroll-behavior: none; -webkit-touch-callout: none; }
 #gameover-bg-canvas,
 #records-bg-canvas,
 #skins-bg-canvas { position: fixed; }
+
+/* Inactive screens: fully out of hit-testing. iOS Safari still routes scroll
+   gestures to invisible scrollable layers with pointer-events: none, which
+   blocked scrolling the active screen underneath. */
+.screen {
+  visibility: hidden;
+  transition: opacity 0.45s ease, visibility 0s linear 0.45s;
+}
+.screen.active {
+  visibility: visible;
+  transition: opacity 0.45s ease, visibility 0s;
+}
