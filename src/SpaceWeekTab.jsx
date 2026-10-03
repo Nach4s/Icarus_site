@@ -185,7 +185,8 @@ export default function SpaceWeekTab() {
                     </div>
                     <p className="text-[11px] text-neutral-500 mb-4 uppercase tracking-widest">{t('spaceWeek.timezone')}</p>
 
-                    <ul className="space-y-3 lg:max-h-[640px] lg:overflow-y-auto lg:pr-1">
+                    {/* data-lenis-prevent: Lenis smooth scroll otherwise swallows the mouse wheel here */}
+                    <ul data-lenis-prevent className="space-y-3 lg:max-h-[640px] lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
                         {SEMINARS.map((s) => (
                             <li
                                 key={s.link}

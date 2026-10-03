@@ -546,8 +546,8 @@ function drawLeafFeather(ctx, x, y, len, wid, ang) {
 
 // ── SKIN 2: Wings of Icarus (styled after the Icarus Team logo) ─────
 // Top-down view in the logo's style — white silhouette, thin grey outline,
-// leaf-shaped feathers: Icarus flies head-first with both wings spread, legs
-// trailing, and loose feathers breaking off the wings behind him.
+// leaf-shaped feathers: Icarus flies head-first with both wings spread and legs
+// trailing (the shed-feather trail comes from spawnRocketTrail).
 function drawSkinIcarusWings(ctx, t, S) {
   const beat = Math.sin(t * 7);
 
@@ -565,16 +565,6 @@ function drawSkinIcarusWings(ctx, t, S) {
   ctx.strokeStyle = 'rgba(148, 163, 184, 0.95)';
   ctx.lineWidth = 0.75 * S;
   ctx.lineJoin = 'round';
-
-  // Loose feathers drifting off behind each wing
-  const loose = [[8, 5, 5.5], [15, 8, 6], [22, 4, 5], [11, 13, 5], [19, 14, 4.5], [6, 16, 4], [14, 20, 4]];
-  [-1, 1].forEach(side => {
-    loose.forEach(([lx, ly, len], i) => {
-      const drift = Math.sin(t * 2.4 + i * 1.4 + side);
-      drawLeafFeather(ctx, (side * lx + drift * 0.7) * S, (ly + drift * 0.8) * S,
-        len * S, 1.4 * S, Math.PI / 2 - side * 0.3 + drift * 0.15);
-    });
-  });
 
   // ── Wings: right one drawn, left one mirrored; they sweep slightly as they beat ──
   [-1, 1].forEach(side => {

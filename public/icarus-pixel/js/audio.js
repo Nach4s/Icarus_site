@@ -58,12 +58,19 @@ function playSfxClick() {
   osc.start(); osc.stop(audioCtx.currentTime + 0.12);
 }
 
+// The decaying noise burst is generated once and reused — building 0.5s of
+// samples on every explosion caused hitches when several blew up at once
+let explosionNoiseBuf = null;
+
 function playSfxExplosion() {
   if (!audioCtx || muted) return;
-  const bufLen = audioCtx.sampleRate * 0.5;
-  const buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufLen, 2);
+  if (!explosionNoiseBuf) {
+    const bufLen = audioCtx.sampleRate * 0.5;
+    explosionNoiseBuf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+    const data = explosionNoiseBuf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufLen, 2);
+  }
+  const buf = explosionNoiseBuf;
   const src = audioCtx.createBufferSource();
   const gain = audioCtx.createGain();
   const filt = audioCtx.createBiquadFilter();

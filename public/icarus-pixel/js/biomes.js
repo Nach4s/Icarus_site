@@ -281,7 +281,8 @@ function drawIonGates(ctx) {
 //  GOLDEN SUPERNOVA — SUPERNOVA SHOCK RING
 // ══════════════════════════════════════════════════════════════
 const NOVA_WARN_TIME = 2.4;
-const NOVA_RING_SPEED = 260;   // px/s
+const NOVA_RING_SPEED = 260;   // px/s at level 5 and below
+const NOVA_RING_SPEED_MAX = 420; // px/s at level 20 (grows linearly with the level)
 const NOVA_RING_HALF = 8;
 
 function spawnSupernova(w, h) {
@@ -300,7 +301,8 @@ function spawnSupernova(w, h) {
   const gaps = [];
   for (let i = 0; i < gapCount; i++) gaps.push(base + (Math.PI * 2 / gapCount) * i + (Math.random() - 0.5) * 0.6);
   const maxR = Math.max(Math.hypot(x, y), Math.hypot(w - x, y), Math.hypot(x, h - y), Math.hypot(w - x, h - y)) + 20;
-  supernova = { x, y, gaps, gapWidth, state: 'WARNING', timer: 0, radius: 0, maxR, alpha: 1 };
+  const speed = NOVA_RING_SPEED + (NOVA_RING_SPEED_MAX - NOVA_RING_SPEED) * intensity;
+  supernova = { x, y, gaps, gapWidth, speed, state: 'WARNING', timer: 0, radius: 0, maxR, alpha: 1 };
 }
 
 function angleInGap(nova, ang) {
@@ -344,7 +346,7 @@ function updateSupernova(dt, w, h, active) {
         spawnExplosion(n.x, n.y, 20);
       }
     } else if (n.state === 'EXPANDING') {
-      n.radius += NOVA_RING_SPEED * dt;
+      n.radius += n.speed * dt;
       if (canHurtRocket()) {
         const d = Math.hypot(rocket.x - n.x, rocket.y - n.y);
         if (Math.abs(d - n.radius) < NOVA_RING_HALF + rocketHitR() &&
@@ -510,47 +512,57 @@ function drawNovaWarning(ctx, n, t) {
 }
 
 // Explosion: flash, an expanding remnant cloud and the layered shock ring
+// Radial glows are pre-rendered once into small textures and then just stretched
+// with drawImage — rebuilding big gradients every frame made the blast stutter
+const novaSprites = {};
+function getNovaSprite(name, stops) {
+  if (!novaSprites[name]) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d');
+    const grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    stops.forEach(([at, col]) => grd.addColorStop(at, col));
+    g.fillStyle = grd;
+    g.fillRect(0, 0, 128, 128);
+    novaSprites[name] = c;
+  }
+  return novaSprites[name];
+}
+
+function drawNovaSprite(ctx, sprite, x, y, r, alpha) {
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(sprite, x - r, y - r, r * 2, r * 2);
+}
+
+// Explosion: flash, an expanding remnant cloud and the layered shock ring
 function drawNovaRing(ctx, n) {
   const e = n.timer;                                 // seconds since detonation
+  const baseAlpha = ctx.globalAlpha;
 
-  const remnantA = 0.35 * clamp01(1 - e / 2.5);
-  if (remnantA > 0) {
-    const rr = 80 + 70 * e;
-    const neb = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, rr);
-    neb.addColorStop(0, `rgba(255, 237, 213, ${remnantA})`);
-    neb.addColorStop(0.5, `rgba(244, 114, 182, ${remnantA * 0.5})`);
-    neb.addColorStop(1, 'rgba(168, 85, 247, 0)');
-    ctx.fillStyle = neb;
-    ctx.beginPath();
-    ctx.arc(n.x, n.y, rr, 0, Math.PI * 2);
-    ctx.fill();
+  if (e < 1.8) {
+    const remnant = getNovaSprite('remnant', [
+      [0, 'rgba(255, 237, 213, 0.35)'], [0.5, 'rgba(244, 114, 182, 0.17)'], [1, 'rgba(168, 85, 247, 0)'],
+    ]);
+    drawNovaSprite(ctx, remnant, n.x, n.y, 70 + 50 * e, baseAlpha * (1 - e / 1.8));
   }
 
-  if (e < 0.45) {
+  if (e < 0.35) {
     // Detonation flash: white-hot centre fading through gold to nothing
-    const f = e / 0.45;
-    const fr = 40 + 300 * easeOutCubic(f);
-    const a = 1 - f;
-    const flash = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, fr);
-    flash.addColorStop(0, `rgba(255, 255, 255, ${0.95 * a})`);
-    flash.addColorStop(0.25, `rgba(254, 240, 138, ${0.7 * a})`);
-    flash.addColorStop(0.6, `rgba(251, 146, 60, ${0.25 * a})`);
-    flash.addColorStop(1, 'rgba(251, 146, 60, 0)');
-    ctx.fillStyle = flash;
-    ctx.beginPath();
-    ctx.arc(n.x, n.y, fr, 0, Math.PI * 2);
-    ctx.fill();
+    const f = e / 0.35;
+    const flash = getNovaSprite('flash', [
+      [0, 'rgba(255, 255, 255, 0.95)'], [0.25, 'rgba(254, 240, 138, 0.7)'],
+      [0.6, 'rgba(251, 146, 60, 0.25)'], [1, 'rgba(251, 146, 60, 0)'],
+    ]);
+    drawNovaSprite(ctx, flash, n.x, n.y, 40 + 220 * easeOutCubic(f), baseAlpha * (1 - f));
   }
 
   // Ring fades out softly as it reaches the far edge of the screen
   const ringA = 1 - clamp01((n.radius - n.maxR * 0.85) / (n.maxR * 0.15));
   if (ringA <= 0) return;
   ctx.save();
-  ctx.globalAlpha *= ringA;
+  ctx.globalAlpha = baseAlpha * ringA;
   ctx.lineCap = 'round';
-  strokeNovaRing(ctx, n, Math.max(1, n.radius * 0.86), 3, 'rgba(253, 224, 71, 0.3)'); // echo
-  strokeNovaRing(ctx, n, n.radius, NOVA_RING_HALF * 2 + 22, 'rgba(251, 191, 36, 0.14)');
-  strokeNovaRing(ctx, n, n.radius, NOVA_RING_HALF * 2 + 8, 'rgba(249, 115, 22, 0.35)');
+  strokeNovaRing(ctx, n, n.radius, NOVA_RING_HALF * 2 + 14, 'rgba(249, 115, 22, 0.28)');
   strokeNovaRing(ctx, n, n.radius, NOVA_RING_HALF * 2, '#fde047');
   strokeNovaRing(ctx, n, n.radius, 4, 'rgba(255, 255, 255, 0.9)');
   ctx.restore();
