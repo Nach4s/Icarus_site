@@ -94,12 +94,14 @@ function withBreaks(lines, keyBase) {
     return lines.flatMap((l, i) => (i === 0 ? renderInline(l, `${keyBase}-${i}`) : [<br key={`${keyBase}-br${i}`} />, ...renderInline(l, `${keyBase}-${i}`)]))
 }
 
-export default function PostContent({ content }) {
+// alignLeft: on wide screens keep the text against the left edge (used beside a
+// portrait cover) instead of centring it
+export default function PostContent({ content, alignLeft = false }) {
     if (!content) return null
     const blocks = parseBlocks(content)
 
     return (
-        <div className="max-w-2xl mx-auto text-neutral-300 text-base md:text-[17px] leading-8 font-sans">
+        <div className={`max-w-2xl mx-auto ${alignLeft ? 'lg:mx-0' : ''} text-neutral-300 text-base md:text-[17px] leading-8 font-sans`}>
             {blocks.map((b, i) => {
                 const key = `b${i}`
                 switch (b.type) {

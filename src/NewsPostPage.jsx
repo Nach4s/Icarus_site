@@ -74,10 +74,12 @@ export default function NewsPostPage({ onBack }) {
     );
 
     const content = post && (
-        // Content: Markdown rendered as styled elements (see PostContent.jsx)
-        <div className="relative rounded-3xl border border-neutral-800 bg-neutral-950/60 backdrop-blur-sm px-5 py-8 sm:px-10 md:py-12">
-            <span className="absolute top-0 left-10 right-10 h-px bg-gradient-to-r from-transparent via-yellow-600/60 to-transparent" />
-            <PostContent content={post.content} />
+        // Content: Markdown rendered as styled elements (see PostContent.jsx).
+        // Beside a portrait cover on desktop the text drops its card and flows on
+        // the page, so the sticky cover doesn't look like a second box sliding past it.
+        <div className={`relative rounded-3xl border border-neutral-800 bg-neutral-950/60 backdrop-blur-sm px-5 py-8 sm:px-10 md:py-12 ${isPortrait ? 'lg:rounded-none lg:border-0 lg:bg-transparent lg:backdrop-blur-none lg:p-0' : ''}`}>
+            <span className={`absolute top-0 left-10 right-10 h-px bg-gradient-to-r from-transparent via-yellow-600/60 to-transparent ${isPortrait ? 'lg:hidden' : ''}`} />
+            <PostContent content={post.content} alignLeft={isPortrait} />
         </div>
     );
 
@@ -96,16 +98,21 @@ export default function NewsPostPage({ onBack }) {
                     {isPortrait ? (
                         // Desktop: cover on the left (stays in view while reading), text on the right.
                         // Phones: header, cover, then text in one column.
-                        <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[380px_minmax(0,1fr)] lg:gap-12 lg:items-start">
+                        <div className="lg:grid lg:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
                             <div className="lg:hidden">{header}</div>
-                            <div className="lg:sticky lg:top-28 w-full max-w-sm mx-auto lg:max-w-none mb-12 lg:mb-0 aspect-[9/16] rounded-3xl overflow-hidden shadow-2xl shadow-black/50 border border-neutral-800">
-                                <img
-                                    src={post.coverImage}
-                                    alt={post.title}
-                                    className="w-full h-full object-cover"
-                                />
+                            {/* Sticky cover rail: no hard border (just a faint ring + soft depth),
+                                never taller than the screen so it always fits while it follows */}
+                            <div className="lg:sticky lg:top-28 lg:pr-12 mb-12 lg:mb-0">
+                                <div className="w-full max-w-sm mx-auto lg:max-w-none aspect-[9/16] lg:max-h-[calc(100vh-9rem)] rounded-3xl overflow-hidden ring-1 ring-white/5 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
+                                    <img
+                                        src={post.coverImage}
+                                        alt={post.title}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
                             </div>
-                            <div className="min-w-0">
+                            {/* Text column with a thin divider separating it from the cover rail */}
+                            <div className="min-w-0 lg:border-l lg:border-neutral-800/70 lg:pl-12">
                                 <div className="hidden lg:block">{header}</div>
                                 {content}
                             </div>
