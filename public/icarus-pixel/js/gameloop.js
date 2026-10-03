@@ -247,6 +247,14 @@ function gameLoop(ts) {
     for (let i = obstacles.length - 1; i >= 0; i--) {
       const ob = obstacles[i];
 
+      // Comets turned into energy orbs by a solar storm (Crimson Pulsar) only live
+      // while the wave is sweeping — afterwards they burst instead of hanging in place
+      if (ob.wasComet && !(pushWave && pushWave.state === 'SWEEPING')) {
+        spawnExplosion(ob.x, ob.y, 12);
+        obstacles.splice(i, 1);
+        continue;
+      }
+
       // If captured by a black hole: position is set by orbit, skip normal movement
       if (ob.capturedByBH) {
         if (rocket && rocket.alive && rocket.invincible <= 0 && checkCollision(rocket, ob)) {

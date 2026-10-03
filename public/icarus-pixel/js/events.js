@@ -1523,13 +1523,6 @@ function drawPirate(ctx, p) {
       ctx.arc(0, 0, p.r * 1.25, 0, Math.PI * 2);
       ctx.stroke();
       ctx.shadowBlur = 0;
-
-      // Shield symbol badge on hull
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = `${Math.round(p.r * 0.55)}px serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      drawShieldIcon(ctx, 0, p.r * 0.05, p.r * 0.55, '#38bdf8');
     } else {
       // Scorch mark / cracked armor decal
       ctx.fillStyle = 'rgba(239, 68, 68, 0.7)';
@@ -2994,22 +2987,30 @@ function updatePushWave(dt, w, h) {
       }
     }
 
-    // Pirates interaction: blown by the solar storm; explode if pushed off screen
+    // Pirates interaction: blown by the solar storm. Any pirate that leaves the
+    // map after being hit by the storm explodes — except shielded ones, which brace
+    // at the edge. (Pirates still flying in from off-screen are not affected.)
     for (let i = 0; i < pirates.length; i++) {
       const p = pirates[i];
       if (!p.alive || !p.active) continue;
       const pPos = getEntityPos(p);
       if (pPos <= pw.frontPos + 40) {
+        if (p.x >= 0 && p.x <= w && p.y >= 0 && p.y <= h) p.stormBlown = true;
         p.x += pw.dir.dx * PUSH_PIRATE_SPD * dt;
         p.y += pw.dir.dy * PUSH_PIRATE_SPD * dt;
         const pBlend = Math.min(1, dt * 2.8);
         p.vx = (p.vx || 0) * (1 - pBlend) + pw.dir.dx * 280 * pBlend;
         p.vy = (p.vy || 0) * (1 - pBlend) + pw.dir.dy * 280 * pBlend;
+      }
 
-        if (p.x < -60 || p.x > w + 60 || p.y < -60 || p.y > h + 60) {
+      if (p.stormBlown && (p.x < 0 || p.x > w || p.y < 0 || p.y > h)) {
+        if (p.hasArmor) {
+          p.x = Math.max(p.r, Math.min(w - p.r, p.x));
+          p.y = Math.max(p.r, Math.min(h - p.r, p.y));
+        } else {
           p.alive = false;
           playSfxExplosion();
-          spawnExplosion(p.x, p.y, p.r * 2);
+          spawnExplosion(Math.max(0, Math.min(w, p.x)), Math.max(0, Math.min(h, p.y)), p.r * 2);
           score += 3;
           EL.scoreVal.textContent = score;
           spawnFloatingText(Math.max(20, Math.min(w - 20, p.x)), Math.max(20, Math.min(h - 20, p.y)), '+3 SOLAR BLAST!', '#ef4444');
@@ -3214,9 +3215,11 @@ function drawPushWaveHUD(ctx, w, h) {
   const boxW = Math.min(420, w - 24);
   const boxH = 50;
   const boxX = (w - boxW) / 2;
-  // On phones: below the HUD, and below an active event pill if there is one
+  // Below the SCORE/LEVEL HUD (it used to cover the level value), and below an
+  // active event pill if there is one
   const pillActive = activeEvent && (activeEvent.type === 'AXIS_INVERSION' || activeEvent.type === 'GRAVITY_SHIFT');
-  const boxY = topSafeY ? topSafeY + (pillActive ? 42 : 0) : 16;
+  const pillBottom = Math.max(64, topSafeY) + 34;
+  const boxY = pillActive ? pillBottom + 8 : hudBottomY + 4;
 
   ctx.fillStyle = 'rgba(20, 5, 8, 0.88)';
   ctx.strokeStyle = pw.state === 'SWEEPING' ? 'rgba(254, 240, 138, ' + pulse + ')' : 'rgba(239, 68, 68, ' + pulse + ')';

@@ -22,6 +22,7 @@ const MIN_LOGICAL_SIDE = 620; // px — smallest playfield side on touch screens
 
 let canvasTextBoost = 1;      // enlarges pixel-font labels on the scaled canvas
 let topSafeY = 0;             // canvas y below the DOM HUD (touch screens only)
+let hudBottomY = 0;           // canvas y below the DOM HUD (all devices)
 
 function sizeGameCanvas(c) {
   const minSide = Math.min(window.innerWidth, window.innerHeight);
@@ -32,7 +33,8 @@ function sizeGameCanvas(c) {
   // Event pills/banners are drawn at fixed canvas y; on the downscaled phone
   // canvas they would land under SCORE/LEVEL, so keep them below the HUD
   const hud = document.getElementById('hud');
-  topSafeY = IS_TOUCH && hud ? Math.round(hud.offsetHeight * k) : 0;
+  hudBottomY = hud ? Math.round(hud.offsetHeight * k) : 0;
+  topSafeY = IS_TOUCH ? hudBottomY : 0;
 }
 
 // Phones (iOS/Android) draw symbols like ☠ ⚡ ☣ ⚠ as colour emoji, ignoring
