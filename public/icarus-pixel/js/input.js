@@ -70,16 +70,45 @@ document.addEventListener('keyup', e => {
 
 
 // ─── Resize Handler ───────────────────────────────────────────
+// Coordinate fields scaled with the playfield (velocities and radii are not)
+const WORLD_X_KEYS = ['x', 'cx', 'aimX', 'splitX', 'targetX', 'cannonMuzzleX',
+                      'minX', 'maxX', 'targetMinX', 'targetMaxX', 'zoneW'];
+const WORLD_Y_KEYS = ['y', 'cy', 'aimY', 'splitY', 'targetY', 'cannonMuzzleY',
+                      'minY', 'maxY', 'targetMinY', 'targetMaxY', 'zoneH'];
+
+function scaleEntity(e, sx, sy) {
+  if (!e) return;
+  for (const k of WORLD_X_KEYS) if (typeof e[k] === 'number') e[k] *= sx;
+  for (const k of WORLD_Y_KEYS) if (typeof e[k] === 'number') e[k] *= sy;
+}
+
+// When the playfield changes size mid-run (fullscreen on/off, phone rotation)
+// move everything proportionally — otherwise objects keep their old coordinates
+// and get culled as "off-screen" once the field shrinks.
+function rescaleWorld(sx, sy) {
+  scaleEntity(rocket, sx, sy);
+  scaleEntity(pirateMothership, sx, sy);
+  scaleEntity(eventBounds, sx, sy);
+  [obstacles, particles, dangerZones, pirates, blackHoles, toxicBarrels,
+   toxicClouds, floatingTexts, pirateWarnings].forEach(list => {
+    list.forEach(e => scaleEntity(e, sx, sy));
+  });
+  solarFlares.forEach(f => { f.pos *= f.axis === 'H' ? sy : sx; });
+  if (pushWave) {
+    const s = pushWave.edge < 2 ? sx : sy; // edges 0/1 sweep horizontally
+    pushWave.frontPos *= s;
+    pushWave.totalDist *= s;
+  }
+}
+
 window.addEventListener('resize', () => {
   if (gameState === 'PLAYING' || gameState === 'PAUSED') {
+    // Ignore transient zero-size frames (e.g. mid fullscreen transition)
+    if (window.innerWidth < 50 || window.innerHeight < 50) return;
     const oldW = canvas.width, oldH = canvas.height;
     sizeGameCanvas(canvas);
     initStars(canvas.width, canvas.height);
-    // Keep the rocket at the same relative spot (e.g. on phone rotation)
-    if (rocket && oldW && oldH) {
-      rocket.x *= canvas.width / oldW;
-      rocket.y *= canvas.height / oldH;
-    }
+    if (oldW && oldH) rescaleWorld(canvas.width / oldW, canvas.height / oldH);
   }
   if (goCanvas) { goCanvas.width = window.innerWidth; goCanvas.height = window.innerHeight; }
   if (recCanvas) { recCanvas.width = window.innerWidth; recCanvas.height = window.innerHeight; }

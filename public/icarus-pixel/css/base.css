@@ -275,3 +275,29 @@ body { overscroll-behavior: none; -webkit-touch-callout: none; }
 .menu-content > *,
 .gameover-content > *,
 .records-content > * { flex-shrink: 0; }
+
+/* ─── Scrollable menu screens ───────────────────────────────── */
+/* The screen itself scrolls instead of an inner panel capped at 100vh:
+   inside an iframe on mobile (iOS Safari) "vh" may refer to the whole phone
+   screen, so the panel overflowed the frame and could not be scrolled. */
+.screen:not(#screen-game) {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+.screen > .menu-content,
+.screen > .gameover-content,
+.screen > .records-content,
+.screen > .skins-content {
+  margin: auto;          /* centred when it fits, top-aligned when it scrolls */
+  max-height: none;
+  overflow: visible;
+}
+
+/* Backgrounds stay put while the screen content scrolls */
+.screen > .stars-bg,
+#gameover-bg-canvas,
+#records-bg-canvas,
+#skins-bg-canvas { position: fixed; }

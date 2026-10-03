@@ -140,10 +140,10 @@ function startEvent(level, w, h) {
     playSfxPolarityWarp();
   } else if (type === 'GRAVITY_SHIFT') {
     const directions = [
-      { id: 'DOWN',  x: 0,  y: 1,  label: '\u0412\u041d\u0418\u0417',   icon: '\u25bc', arrow: '\u2193\u2193\u2193' },
-      { id: 'UP',    x: 0,  y: -1, label: '\u0412\u0412\u0415\u0420\u0425',  icon: '\u25b2', arrow: '\u2191\u2191\u2191' },
-      { id: 'LEFT',  x: -1, y: 0,  label: '\u0412\u041b\u0415\u0412\u041e',  icon: '\u25c0', arrow: '\u2190\u2190\u2190' },
-      { id: 'RIGHT', x: 1,  y: 0,  label: '\u0412\u041f\u0420\u0410\u0412\u041e', icon: '\u25b6', arrow: '\u2192\u2192\u2192' },
+      { id: 'DOWN',  x: 0,  y: 1,  label: 'DOWN',   icon: '\u25bc', arrow: '\u2193\u2193\u2193' },
+      { id: 'UP',    x: 0,  y: -1, label: 'UP',  icon: '\u25b2', arrow: '\u2191\u2191\u2191' },
+      { id: 'LEFT',  x: -1, y: 0,  label: 'LEFT',  icon: '\u25c0', arrow: '\u2190\u2190\u2190' },
+      { id: 'RIGHT', x: 1,  y: 0,  label: 'RIGHT', icon: '\u25b6', arrow: '\u2192\u2192\u2192' },
     ];
     activeEvent.gravity = directions[Math.floor(Math.random() * directions.length)];
     activeEvent.gravityPower = 280 + intensity * 60; // 280..340 px/s^2 acceleration
@@ -1798,12 +1798,12 @@ function drawEventBanner(ctx, w, h) {
       borderColor = '244,63,94';
     }
   } else if (type === 'GRAVITY_SHIFT') {
-    const grav = activeEvent.gravity || { label: '\u0412\u041d\u0418\u0417', icon: '\u25bc', arrow: '\u2193\u2193\u2193' };
+    const grav = activeEvent.gravity || { label: 'DOWN', icon: '\u25bc', arrow: '\u2193\u2193\u2193' };
     bannerColor = '#c084fc';
     bannerGlow = 'rgba(192, 132, 252, 0.85)';
     icon = grav.icon;
-    line1 = `! \u0413\u0420\u0410\u0412\u0418\u0422\u0410\u0426\u0418\u041e\u041d\u041d\u042b\u0419 \u0421\u0414\u0412\u0418\u0413: ${grav.label} !`;
-    line2 = `\u0422\u044f\u0433\u0430 ${grav.arrow} \u2022 \u041a\u043e\u043c\u043f\u0435\u043d\u0441\u0438\u0440\u0443\u0439\u0442\u0435 \u043a\u0440\u0435\u043d \u0434\u0432\u0438\u0433\u0430\u0442\u0435\u043b\u0435\u043c!`;
+    line1 = `! GRAVITY SHIFT: ${grav.label} !`;
+    line2 = `Pull ${grav.arrow} • Counter the drift with your engines!`;
     borderColor = '192,132,252';
   }
 
@@ -2041,13 +2041,13 @@ function drawGravityShiftHud(ctx, w, h) {
   ctx.font = '7px "Press Start 2P", monospace';
   ctx.fillStyle = colPrimary;
   ctx.shadowBlur = 6;
-  ctx.fillText(`${grav.icon} \u0413\u0420\u0410\u0412\u0418\u0422\u0410\u0426\u0418\u042f: ${grav.label} ${grav.arrow}`, w / 2, hudY + 12);
+  ctx.fillText(`${grav.icon} GRAVITY: ${grav.label} ${grav.arrow}`, w / 2, hudY + 12);
 
   // Subtitle line
   ctx.font = '5px "Press Start 2P", monospace';
   ctx.fillStyle = '#e9d5ff';
   ctx.shadowBlur = 0;
-  ctx.fillText('\u0414\u0440\u0435\u0439\u0444 \u043e\u0431\u044a\u0435\u043a\u0442\u043e\u0432 \u2022 \u041a\u043e\u043c\u043f\u0435\u043d\u0441\u0438\u0440\u0443\u0439 \u043a\u0440\u0435\u043d!', w / 2, hudY + 24);
+  ctx.fillText('Objects drifting • Compensate!', w / 2, hudY + 24);
 
   ctx.restore();
 }
@@ -3174,16 +3174,16 @@ function drawPushWaveHUD(ctx, w, h) {
   const pulse = 0.65 + 0.35 * Math.abs(Math.sin(t * 6));
 
   const escapeLabels = [
-    '\u2190 \u041b\u0415\u0422\u0418 \u041d\u0410 \u0412\u0421\u0415\u0419 \u041c\u041e\u0429\u041d\u041e\u0421\u0422\u0418 \u0412\u041b\u0415\u0412\u041e!',
-    '\u041b\u0415\u0422\u0418 \u041d\u0410 \u0412\u0421\u0415\u0419 \u041c\u041e\u0429\u041d\u041e\u0421\u0422\u0418 \u0412\u041f\u0420\u0410\u0412\u041e! \u2192',
-    '\u2191 \u041b\u0415\u0422\u0418 \u041d\u0410 \u0412\u0421\u0415\u0419 \u041c\u041e\u0429\u041d\u041e\u0421\u0422\u0418 \u0412\u0412\u0415\u0420\u0425!',
-    '\u041b\u0415\u0422\u0418 \u041d\u0410 \u0412\u0421\u0415\u0419 \u041c\u041e\u0429\u041d\u041e\u0421\u0422\u0418 \u0412\u041d\u0418\u0417! \u2193'
+    '← FULL THRUST LEFT!',
+    'FULL THRUST RIGHT! →',
+    '↑ FULL THRUST UP!',
+    'FULL THRUST DOWN! ↓'
   ];
   const dirLabels = [
-    '\u0421\u041e\u041b\u041d\u0415\u0427\u041d\u0410\u042f \u0412\u041e\u041b\u041d\u0410 \u0421\u041b\u0415\u0412\u0410 \u2192',
-    '\u2190 \u0421\u041e\u041b\u041d\u0415\u0427\u041d\u0410\u042f \u0412\u041e\u041b\u041d\u0410 \u0421\u041f\u0420\u0410\u0412\u0410',
-    '\u0421\u041e\u041b\u041d\u0415\u0427\u041d\u0410\u042f \u0412\u041e\u041b\u041d\u0410 \u0421\u0412\u0415\u0420\u0425\u0423 \u2193',
-    '\u2191 \u0421\u041e\u041b\u041d\u0415\u0427\u041d\u0410\u042f \u0412\u041e\u041b\u041d\u0410 \u0421\u041d\u0418\u0417\u0423'
+    'SOLAR WAVE FROM THE LEFT →',
+    '← SOLAR WAVE FROM THE RIGHT',
+    'SOLAR WAVE FROM ABOVE ↓',
+    '↑ SOLAR WAVE FROM BELOW'
   ];
 
   const escapeLabel = escapeLabels[pw.edge];
@@ -3232,7 +3232,7 @@ function drawPushWaveHUD(ctx, w, h) {
     ctx.shadowColor = '#fde047';
     ctx.shadowBlur = 16;
     ctx.fillStyle = 'rgba(254, 240, 138, ' + pulse + ')';
-    ctx.fillText('\u26a1 \u0421\u041e\u041b\u041d\u0415\u0427\u041d\u042b\u0419 \u0428\u0422\u041e\u0420\u041c! \u26a1', w / 2, boxY + 16);
+    ctx.fillText('⚡ SOLAR STORM! ⚡', w / 2, boxY + 16);
 
     ctx.font = '7.5px "Press Start 2P", monospace';
     ctx.shadowColor = '#ef4444';
