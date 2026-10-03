@@ -216,8 +216,9 @@ function gameLoop(ts) {
       }
     }
 
-    // Spawn black holes: frequent in Purple Space theme, occasional in other themes, disabled in Green Zone and Crimson Pulsar
-    const enableBlackHoles = !isGreen && !isCrimson;
+    // Spawn black holes: frequent in Purple Space theme, occasional in other themes,
+    // disabled in Green Zone, Crimson Pulsar and Fiery Magma (eruptions)
+    const enableBlackHoles = !isGreen && !isCrimson && !isMagmaTheme();
     const maxBH = isPurple ? 2 : 1;
     blackHoleTimer += dt;
     if (enableBlackHoles && blackHoles.length < maxBH && blackHoleTimer >= getBlackHoleInterval(isPurple)) {
@@ -228,9 +229,9 @@ function gameLoop(ts) {
     // ── Toxic Barrel Spawning ──
     // Green Zone: random timer every 15–25s. Other biomes: rare random timer every 40–80s.
     // Synthwave Magenta: toxic barrels are DISABLED (no poison in this biome)
-    // Crimson Pulsar: toxic barrels are DISABLED
+    // Crimson Pulsar & Neon Azure: toxic barrels are DISABLED
     toxicBarrelTimer += dt;
-    if (!isSynthwave && !isCrimson && toxicBarrelTimer >= nextToxicBarrelInterval) {
+    if (!isSynthwave && !isCrimson && !isNeonAzureTheme() && toxicBarrelTimer >= nextToxicBarrelInterval) {
       toxicBarrelTimer = 0;
       nextToxicBarrelInterval = getToxicBarrelInterval(isGreen);
       if (toxicBarrels.length < 2) {

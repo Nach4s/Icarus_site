@@ -2416,11 +2416,11 @@ function isGreenZoneTheme() {
 
 function getBlackHoleInterval(isPurple = isPurpleSpaceTheme()) {
   if (isPurple) {
-    // In Purple Space theme: from 15 to 20 seconds
-    return 15 + Math.random() * 5;
+    // In Purple Space theme: from 20 to 25 seconds
+    return 20 + Math.random() * 5;
   }
-  // Other themes: MUCH rarer ("намного реже", 45-75 seconds)
-  return Math.max(45, 75 - diffLevel * 1.2);
+  // Other themes: much rarer (50–80 seconds)
+  return Math.max(50, 80 - diffLevel * 1.2);
 }
 
 function spawnBlackHole(w, h) {

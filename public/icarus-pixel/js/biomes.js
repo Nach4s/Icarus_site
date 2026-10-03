@@ -109,17 +109,26 @@ const ION_PYLON_R = 13;
 const ION_ARC_HALF = 7;        // arc half-thickness for collision
 
 function spawnIonGate(w, h) {
-  const horizontalSweep = Math.random() < 0.5; // pair stands vertically, moves left↔right
-  const span = horizontalSweep ? h : w;
-  const len = span * (0.55 + Math.random() * 0.15);
-  const offset = Math.random() * (span - len);
-  const sweepDim = horizontalSweep ? w : h;
-  const speed = sweepDim / (13 + Math.random() * 3); // crosses the field in ~13–16s
-  const forward = Math.random() < 0.5 ? 1 : -1;
-  const start = forward > 0 ? -30 : sweepDim + 30;
-  const gate = horizontalSweep
-    ? { a: { x: start, y: offset }, b: { x: start, y: offset + len }, vx: speed * forward, vy: 0 }
-    : { a: { x: offset, y: start }, b: { x: offset + len, y: start }, vx: 0, vy: speed * forward };
+  // Travel in one of 8 directions (4 straight + 4 diagonal); the pylon pair stands
+  // across the direction of travel and sweeps over the whole field
+  const dirAngle = Math.floor(Math.random() * 8) * Math.PI / 4;
+  const diagonal = Math.floor(dirAngle / (Math.PI / 4)) % 2 === 1;
+  const dx = Math.cos(dirAngle), dy = Math.sin(dirAngle);
+  const nx = -dy, ny = dx;                                   // across the travel direction
+  const spanAcross = Math.abs(nx) * w + Math.abs(ny) * h;    // field width seen across
+  const len = spanAcross * (diagonal ? 0.45 + Math.random() * 0.12 : 0.55 + Math.random() * 0.15);
+  const shift = (Math.random() - 0.5) * (spanAcross - len) * 0.8;
+  // Start fully off-screen behind the field, end fully off-screen past it
+  const reach = 0.5 * (Math.abs(dx) * w + Math.abs(dy) * h) + 40;
+  const cx = w / 2 - dx * reach + nx * shift;
+  const cy = h / 2 - dy * reach + ny * shift;
+  const speed = 2 * reach / (13 + Math.random() * 3);       // crosses the field in ~13–16s
+  const gate = {
+    a: { x: cx - nx * len / 2, y: cy - ny * len / 2 },
+    b: { x: cx + nx * len / 2, y: cy + ny * len / 2 },
+    vx: dx * speed, vy: dy * speed,
+    travel: 0, distance: 2 * reach,
+  };
   const intensity = biomeIntensity();
   gate.onTime = 1.1 + intensity * 0.5;  // deadly window grows with level
   gate.cycle = Math.random() * ION_OFF_TIME; // start somewhere in the safe window
@@ -158,8 +167,8 @@ function updateIonGates(dt, w, h, active) {
     g.alpha = g.fading ? g.alpha - dt * 2 : Math.min(1, g.alpha + dt * 2);
     g.a.x += g.vx * dt; g.a.y += g.vy * dt;
     g.b.x += g.vx * dt; g.b.y += g.vy * dt;
-    const off = g.a.x < -60 && g.vx < 0 || g.a.x > w + 60 && g.vx > 0 ||
-                g.a.y < -60 && g.vy < 0 || g.a.y > h + 60 && g.vy > 0;
+    g.travel += Math.hypot(g.vx, g.vy) * dt;
+    const off = g.travel >= g.distance;   // swept all the way across and out
     if (off || (g.fading && g.alpha <= 0)) { ionGates.splice(i, 1); continue; }
 
     const prevOn = isIonArcOn(g);
@@ -378,68 +387,185 @@ function updateSupernova(dt, w, h, active) {
   }
 }
 
-function drawSupernova(ctx) {
-  const t = performance.now() / 1000;
-  const n = supernova;
-  if (n) {
+const easeOutCubic = x => 1 - Math.pow(1 - x, 3);
+const easeInCubic = x => x * x * x;
+const clamp01 = x => Math.max(0, Math.min(1, x));
+
+// Solid stretches of the ring between its gaps, as [start, end] angles
+function novaRingArcs(n) {
+  const gaps = n.gaps
+    .map(g => ((g % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2))
+    .sort((a, b) => a - b);
+  return gaps.map((g, i) => {
+    const next = i + 1 < gaps.length ? gaps[i + 1] : gaps[0] + Math.PI * 2;
+    return [g + n.gapWidth / 2, next - n.gapWidth / 2];
+  });
+}
+
+function strokeNovaRing(ctx, n, radius, width, style) {
+  ctx.strokeStyle = style;
+  ctx.lineWidth = width;
+  novaRingArcs(n).forEach(([a0, a1]) => {
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, radius, a0, a1);
+    ctx.stroke();
+  });
+}
+
+// Warning: corridors fade in, the star swells with a turning corona and
+// in-falling motes, then implodes just before it blows
+function drawNovaWarning(ctx, n, t) {
+  const k = clamp01(n.timer / NOVA_WARN_TIME);
+  const show = easeOutCubic(clamp01(k * 2.2));
+
+  // Safe corridors with dashed edges and light motes running outwards
+  n.gaps.forEach((g, gi) => {
     ctx.save();
-    ctx.globalAlpha = Math.max(0, n.alpha);
-    if (n.state === 'WARNING' || n.state === 'FADING') {
-      const k = Math.min(1, n.timer / NOVA_WARN_TIME);
-      const pulse = 0.5 + 0.5 * Math.sin(t * (8 + k * 20));
-      // Safe corridors: glowing rays along each gap
-      n.gaps.forEach(g => {
-        ctx.save();
-        ctx.translate(n.x, n.y);
-        ctx.rotate(g);
-        const grd = ctx.createLinearGradient(0, 0, n.maxR, 0);
-        grd.addColorStop(0, 'rgba(134, 239, 172, 0.35)');
-        grd.addColorStop(1, 'rgba(134, 239, 172, 0)');
-        ctx.fillStyle = grd;
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.arc(0, 0, n.maxR, -n.gapWidth / 2, n.gapWidth / 2);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-      });
-      // Collapsing star
-      const coreR = 26 - k * 12;
-      ctx.shadowColor = '#fde047';
-      ctx.shadowBlur = 30 * pulse + 10;
-      ctx.fillStyle = `rgba(255, 240, 160, ${0.7 + 0.3 * pulse})`;
+    ctx.translate(n.x, n.y);
+    ctx.rotate(g);
+    const grd = ctx.createLinearGradient(0, 0, n.maxR, 0);
+    grd.addColorStop(0, `rgba(134, 239, 172, ${0.38 * show})`);
+    grd.addColorStop(1, 'rgba(134, 239, 172, 0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, n.maxR, -n.gapWidth / 2, n.gapWidth / 2);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = `rgba(187, 247, 208, ${0.55 * show})`;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([8, 10]);
+    ctx.lineDashOffset = -t * 40;
+    [-1, 1].forEach(side => {
       ctx.beginPath();
-      ctx.arc(n.x, n.y, coreR, 0, Math.PI * 2);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(Math.cos(side * n.gapWidth / 2) * n.maxR, Math.sin(side * n.gapWidth / 2) * n.maxR);
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    for (let m = 0; m < 5; m++) {
+      const p = (t * 0.45 + m / 5 + gi * 0.1) % 1;
+      ctx.fillStyle = `rgba(220, 252, 231, ${show * Math.sin(p * Math.PI) * 0.9})`;
+      ctx.beginPath();
+      ctx.arc(60 + p * (n.maxR - 60), 0, 2.5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = 'rgba(253, 224, 71, 0.7)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(n.x, n.y, coreR + 14 + pulse * 6, 0, Math.PI * 2);
-      ctx.stroke();
-    } else if (n.state === 'EXPANDING') {
-      // Shock ring with gaps cut out. Glow is a wide translucent stroke instead
-      // of shadowBlur — blurring a screen-sized ring every frame caused lag.
-      const segStep = 0.04;
-      ctx.beginPath();
-      let drawing = false;
-      for (let a = 0; a <= Math.PI * 2 + segStep; a += segStep) {
-        const inGap = angleInGap(n, a);
-        const px = n.x + Math.cos(a) * n.radius, py = n.y + Math.sin(a) * n.radius;
-        if (inGap) { drawing = false; continue; }
-        if (!drawing) { ctx.moveTo(px, py); drawing = true; } else ctx.lineTo(px, py);
-      }
-      ctx.strokeStyle = 'rgba(251, 191, 36, 0.25)';
-      ctx.lineWidth = NOVA_RING_HALF * 2 + 16;
-      ctx.stroke();
-      ctx.strokeStyle = '#fde047';
-      ctx.lineWidth = NOVA_RING_HALF * 2;
-      ctx.stroke();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-      ctx.lineWidth = 3;
-      ctx.stroke();
     }
     ctx.restore();
+  });
+
+  // Star size: swells smoothly, then implodes in the last 20%
+  const breathe = 1 + 0.05 * Math.sin(t * 5);
+  const coreR = (k < 0.8 ? 12 + 12 * easeOutCubic(k / 0.8) : 24 - 17 * easeInCubic((k - 0.8) / 0.2)) * breathe;
+
+  // Outer glow
+  const glowR = coreR * 4.5;
+  const glow = ctx.createRadialGradient(n.x, n.y, coreR * 0.5, n.x, n.y, glowR);
+  glow.addColorStop(0, `rgba(253, 224, 71, ${0.45 * show})`);
+  glow.addColorStop(0.5, `rgba(251, 146, 60, ${0.18 * show})`);
+  glow.addColorStop(1, 'rgba(251, 146, 60, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(n.x, n.y, glowR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Turning corona rays
+  ctx.save();
+  ctx.translate(n.x, n.y);
+  ctx.rotate(t * 0.6);
+  ctx.fillStyle = `rgba(254, 240, 138, ${0.55 * show})`;
+  for (let r = 0; r < 12; r++) {
+    const len = coreR * (1.9 + 0.5 * Math.sin(t * 3 + r * 1.7));
+    ctx.rotate(Math.PI * 2 / 12);
+    ctx.beginPath();
+    ctx.moveTo(coreR * 0.8, -coreR * 0.18);
+    ctx.lineTo(len, 0);
+    ctx.lineTo(coreR * 0.8, coreR * 0.18);
+    ctx.closePath();
+    ctx.fill();
   }
+  ctx.restore();
+
+  // Matter spiralling into the star
+  for (let i = 0; i < 14; i++) {
+    const p = (t * 0.6 + i / 14) % 1;
+    const rad = 130 * (1 - easeInCubic(p)) + coreR;
+    const ang = (i / 14) * Math.PI * 2 + p * 2.2;
+    ctx.fillStyle = `rgba(255, 237, 213, ${Math.sin(p * Math.PI) * show * 0.8})`;
+    ctx.beginPath();
+    ctx.arc(n.x + Math.cos(ang) * rad, n.y + Math.sin(ang) * rad, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Core
+  const core = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, coreR);
+  core.addColorStop(0, '#ffffff');
+  core.addColorStop(0.45, '#fef08a');
+  core.addColorStop(1, '#f59e0b');
+  ctx.fillStyle = core;
+  ctx.beginPath();
+  ctx.arc(n.x, n.y, coreR, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// Explosion: flash, an expanding remnant cloud and the layered shock ring
+function drawNovaRing(ctx, n) {
+  const e = n.timer;                                 // seconds since detonation
+
+  const remnantA = 0.35 * clamp01(1 - e / 2.5);
+  if (remnantA > 0) {
+    const rr = 80 + 70 * e;
+    const neb = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, rr);
+    neb.addColorStop(0, `rgba(255, 237, 213, ${remnantA})`);
+    neb.addColorStop(0.5, `rgba(244, 114, 182, ${remnantA * 0.5})`);
+    neb.addColorStop(1, 'rgba(168, 85, 247, 0)');
+    ctx.fillStyle = neb;
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, rr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  if (e < 0.45) {
+    // Detonation flash: white-hot centre fading through gold to nothing
+    const f = e / 0.45;
+    const fr = 40 + 300 * easeOutCubic(f);
+    const a = 1 - f;
+    const flash = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, fr);
+    flash.addColorStop(0, `rgba(255, 255, 255, ${0.95 * a})`);
+    flash.addColorStop(0.25, `rgba(254, 240, 138, ${0.7 * a})`);
+    flash.addColorStop(0.6, `rgba(251, 146, 60, ${0.25 * a})`);
+    flash.addColorStop(1, 'rgba(251, 146, 60, 0)');
+    ctx.fillStyle = flash;
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, fr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Ring fades out softly as it reaches the far edge of the screen
+  const ringA = 1 - clamp01((n.radius - n.maxR * 0.85) / (n.maxR * 0.15));
+  if (ringA <= 0) return;
+  ctx.save();
+  ctx.globalAlpha *= ringA;
+  ctx.lineCap = 'round';
+  strokeNovaRing(ctx, n, Math.max(1, n.radius * 0.86), 3, 'rgba(253, 224, 71, 0.3)'); // echo
+  strokeNovaRing(ctx, n, n.radius, NOVA_RING_HALF * 2 + 22, 'rgba(251, 191, 36, 0.14)');
+  strokeNovaRing(ctx, n, n.radius, NOVA_RING_HALF * 2 + 8, 'rgba(249, 115, 22, 0.35)');
+  strokeNovaRing(ctx, n, n.radius, NOVA_RING_HALF * 2, '#fde047');
+  strokeNovaRing(ctx, n, n.radius, 4, 'rgba(255, 255, 255, 0.9)');
+  ctx.restore();
+}
+
+function drawSupernova(ctx) {
+  const n = supernova;
+  if (!n) return;
+  const t = performance.now() / 1000;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, n.alpha);
+  // FADING (cancelled by an event) keeps showing whatever phase it was in
+  if (n.radius > 0) drawNovaRing(ctx, n);
+  else drawNovaWarning(ctx, n, t);
+  ctx.restore();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -917,7 +1043,12 @@ function scaleFireballPath(b, sx, sy) {
 
 // Keep hazards in place when the playfield is resized (see input.js)
 function rescaleBiomeHazards(sx, sy) {
-  ionGates.forEach(g => { g.a.x *= sx; g.a.y *= sy; g.b.x *= sx; g.b.y *= sy; });
+  ionGates.forEach(g => {
+    g.a.x *= sx; g.a.y *= sy; g.b.x *= sx; g.b.y *= sy;
+    g.vx *= sx; g.vy *= sy;
+    const k = (sx + sy) / 2;
+    g.travel *= k; g.distance *= k;
+  });
   if (supernova) { supernova.x *= sx; supernova.y *= sy; }
   [mines, sonarPings].forEach(list => list.forEach(e => { e.x *= sx; e.y *= sy; }));
   magmaVents.forEach(v => {

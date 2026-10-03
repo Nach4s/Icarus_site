@@ -233,7 +233,7 @@ function drawSkinExhaust(ctx, skinId, x, y, t, S, angle) {
     // No engine: just a soft white wake behind the flyer (feathers do the rest)
     const pulse = 0.85 + 0.15 * Math.sin(t * 6);
     const wake = ctx.createRadialGradient(0, 16 * S, 0, 0, 16 * S, 16 * S);
-    wake.addColorStop(0, `rgba(255, 255, 255, ${0.35 * pulse})`);
+    wake.addColorStop(0, `rgba(255, 255, 255, ${0.16 * pulse})`);
     wake.addColorStop(1, 'rgba(255, 255, 255, 0)');
     ctx.fillStyle = wake;
     ctx.beginPath();
@@ -544,101 +544,108 @@ function drawLeafFeather(ctx, x, y, len, wid, ang) {
   ctx.restore();
 }
 
-// ── SKIN 2: Wings of Icarus (based on the Icarus Team logo) ─────
-// White silhouette with a thin outline, traced from the logo: Icarus flying
-// head-first with his head thrown back, one great wing raised over his back
-// whose feathers break loose and scatter behind him. Shapes are laid out as in
-// the logo (flying to the right) and turned so the head points along the flight.
+// ── SKIN 2: Wings of Icarus (styled after the Icarus Team logo) ─────
+// Top-down view in the logo's style — white silhouette, thin grey outline,
+// leaf-shaped feathers: Icarus flies head-first with both wings spread, legs
+// trailing, and loose feathers breaking off the wings behind him.
 function drawSkinIcarusWings(ctx, t, S) {
-  const flap = Math.sin(t * 7) * 0.07;
+  const beat = Math.sin(t * 7);
 
   // Soft white glow so the silhouette reads on every background
-  const aura = ctx.createRadialGradient(0, 0, 4 * S, 0, 0, 30 * S);
+  const aura = ctx.createRadialGradient(0, 0, 4 * S, 0, 0, 32 * S);
   aura.addColorStop(0, 'rgba(255, 255, 255, 0.26)');
   aura.addColorStop(0.6, 'rgba(226, 232, 240, 0.09)');
   aura.addColorStop(1, 'rgba(255, 255, 255, 0)');
   ctx.fillStyle = aura;
   ctx.beginPath();
-  ctx.arc(0, 0, 30 * S, 0, Math.PI * 2);
+  ctx.arc(0, 0, 32 * S, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.save();
-  ctx.rotate(-Math.PI / 2);               // logo "forward" (+x) → flight direction
   ctx.fillStyle = '#ffffff';
   ctx.strokeStyle = 'rgba(148, 163, 184, 0.95)';
   ctx.lineWidth = 0.75 * S;
   ctx.lineJoin = 'round';
-  const P = (x, y) => [x * S, y * S];
 
-  // Loose feathers scattered behind and below the wing
-  const loose = [
-    [-24, -3, 6.5, 1.6], [-17, 0, 6, 1.5], [-9, 1.5, 5, 1.4], [-22, 6, 5.5, 1.5],
-    [-14, 8, 6, 1.6], [-6, 7, 4.5, 1.3], [-18, 13, 5, 1.4], [-10, 14, 4.5, 1.3],
-    [-3, 12, 3.5, 1.1], [-13, 19, 4, 1.2],
-  ];
-  loose.forEach(([lx, ly, len, wid], i) => {
-    const drift = Math.sin(t * 2.6 + i * 1.3);
-    drawLeafFeather(ctx, (lx - drift * 0.8) * S, (ly + drift * 0.6) * S, len * S, wid * S, -0.7 + drift * 0.12);
+  // Loose feathers drifting off behind each wing
+  const loose = [[8, 5, 5.5], [15, 8, 6], [22, 4, 5], [11, 13, 5], [19, 14, 4.5], [6, 16, 4], [14, 20, 4]];
+  [-1, 1].forEach(side => {
+    loose.forEach(([lx, ly, len], i) => {
+      const drift = Math.sin(t * 2.4 + i * 1.4 + side);
+      drawLeafFeather(ctx, (side * lx + drift * 0.7) * S, (ly + drift * 0.8) * S,
+        len * S, 1.4 * S, Math.PI / 2 - side * 0.3 + drift * 0.15);
+    });
   });
 
-  // ── The wing, hinged at the shoulder ──
-  ctx.save();
-  ctx.translate(...P(8.6, -8.6));
-  ctx.rotate(-flap);
-  ctx.translate(...P(-8.6, 8.6));
+  // ── Wings: right one drawn, left one mirrored; they sweep slightly as they beat ──
+  [-1, 1].forEach(side => {
+    ctx.save();
+    ctx.scale(side, 1);
+    ctx.translate(3.5 * S, -9 * S);              // shoulder joint
+    ctx.rotate(beat * 0.09);
+    ctx.scale(0.9 + 0.1 * Math.cos(t * 7), 1);   // span "breathes" with each beat
+    ctx.translate(-3.5 * S, 9 * S);
 
-  // Long primary feathers sweeping back from under the wing
-  for (let i = 0; i < 7; i++) {
-    const k = i / 6;
-    drawLeafFeather(ctx, (-1 - 19 * k) * S, (-7 - 8 * k) * S, (10 + 4 * k) * S, 2 * S, Math.PI - 0.5 + k * 0.3);
-  }
+    // Trailing feathers fanning backwards, longer towards the wing tip
+    for (let i = 0; i < 7; i++) {
+      const k = i / 6;
+      drawLeafFeather(ctx, (6 + 19 * k) * S, (-3.5 - 3 * k) * S, (7 + 6 * k) * S, 2 * S, Math.PI / 2 - 0.15 - 0.35 * k);
+    }
 
-  // Wing body: leading edge rising to the tall spike, ragged trailing edge
+    // Wing body with the logo's sharp spikes on the leading edge
+    ctx.beginPath();
+    ctx.moveTo(3.5 * S, -10 * S);                               // shoulder
+    ctx.quadraticCurveTo(11 * S, -15 * S, 18 * S, -13.5 * S);
+    ctx.lineTo(21 * S, -18 * S);                                // forward spike
+    ctx.lineTo(22.5 * S, -12.5 * S);
+    ctx.lineTo(29 * S, -10 * S);                                // wing tip
+    ctx.lineTo(25 * S, -7 * S);                                 // ragged trailing edge
+    ctx.lineTo(21 * S, -6.5 * S);
+    ctx.lineTo(18 * S, -4.5 * S);
+    ctx.lineTo(14 * S, -5 * S);
+    ctx.lineTo(10 * S, -3 * S);
+    ctx.lineTo(6.5 * S, -3.5 * S);
+    ctx.lineTo(3.5 * S, -5 * S);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  });
+
+  // ── Body from above: shoulders, torso, two legs trailing behind ──
   ctx.beginPath();
-  ctx.moveTo(...P(8.6, -8.6));                       // shoulder
-  ctx.quadraticCurveTo(...P(0, -12), ...P(-10.9, -19.5)); // tall spike
-  ctx.lineTo(...P(-10.2, -15.5));
-  ctx.lineTo(...P(-16, -17));
-  ctx.lineTo(...P(-26, -19));                        // far wing tip
-  ctx.lineTo(...P(-21, -14.5));
-  ctx.lineTo(...P(-14.5, -12));
-  ctx.lineTo(...P(-9, -9.5));
-  ctx.lineTo(...P(-5, -6.5));
-  ctx.lineTo(...P(-1, -7.5));
-  ctx.lineTo(...P(2, -3.5));
-  ctx.lineTo(...P(4.5, -5));
-  ctx.lineTo(...P(6.5, -1.5));
+  ctx.moveTo(0, -12 * S);
+  ctx.lineTo(2 * S, -12 * S);
+  ctx.quadraticCurveTo(5.5 * S, -11 * S, 5 * S, -8 * S);   // right shoulder
+  ctx.lineTo(3.6 * S, -2 * S);
+  ctx.lineTo(3.2 * S, 3 * S);                               // right hip
+  ctx.lineTo(3.4 * S, 10 * S);
+  ctx.lineTo(2.8 * S, 17 * S);
+  ctx.lineTo(1.6 * S, 18.6 * S);                            // right foot
+  ctx.lineTo(1.2 * S, 10.5 * S);
+  ctx.lineTo(0, 5 * S);
+  ctx.lineTo(-1.2 * S, 10.5 * S);
+  ctx.lineTo(-1.6 * S, 18.6 * S);                           // left foot
+  ctx.lineTo(-2.8 * S, 17 * S);
+  ctx.lineTo(-3.4 * S, 10 * S);
+  ctx.lineTo(-3.2 * S, 3 * S);                              // left hip
+  ctx.lineTo(-3.6 * S, -2 * S);
+  ctx.lineTo(-5 * S, -8 * S);
+  ctx.quadraticCurveTo(-5.5 * S, -11 * S, -2 * S, -12 * S); // left shoulder
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
-  ctx.restore();
 
-  // ── Body: head thrown back, chest forward, one knee bent, one leg trailing ──
+  // Head seen from above: hair covers the back half, swept back by the wind
   ctx.beginPath();
-  ctx.ellipse(...P(15, -11.5), 2.8 * S, 3.4 * S, 0.4, 0, Math.PI * 2);
+  ctx.arc(0, -15.5 * S, 3.3 * S, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
-
+  ctx.fillStyle = '#e2e8f0';
   ctx.beginPath();
-  ctx.moveTo(...P(9.5, -8.5));                       // nape
-  ctx.lineTo(...P(12.6, -8));                        // throat
-  ctx.quadraticCurveTo(...P(14.5, -4), ...P(13.6, -1));  // chest
-  ctx.quadraticCurveTo(...P(13, 3), ...P(10.5, 5.5)); // belly
-  ctx.lineTo(...P(8, 7.5));                          // front thigh → knee
-  ctx.lineTo(...P(5.6, 13.5));                       // shin → foot
-  ctx.lineTo(...P(4.2, 13));
-  ctx.lineTo(...P(6, 7.6));
-  ctx.lineTo(...P(4.5, 5.5));                        // crotch
-  ctx.lineTo(...P(1, 9.5));                          // back leg, trailing
-  ctx.lineTo(...P(-5.5, 18.5));                      // foot
-  ctx.lineTo(...P(-6.4, 17.4));
-  ctx.lineTo(...P(-0.2, 7.5));
-  ctx.quadraticCurveTo(...P(3, 3), ...P(3.6, 2));     // buttock
-  ctx.quadraticCurveTo(...P(6.5, -3), ...P(9.5, -8.5)); // back
-  ctx.closePath();
+  ctx.arc(0, -15.5 * S, 3.3 * S, 0.15, Math.PI - 0.15);
+  ctx.quadraticCurveTo(0, -11 * S, 3.3 * S * Math.cos(0.15), -15.5 * S + 3.3 * S * Math.sin(0.15));
   ctx.fill();
   ctx.stroke();
-  ctx.restore();
 }
 
 // ── SKIN 3: Space Shuttle (Directly based on the user's NASA photo) ──

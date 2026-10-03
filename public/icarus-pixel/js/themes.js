@@ -222,6 +222,10 @@ function triggerThemeTransition() {
     pushWave = null;
     pushWaveTimer = 0;
     pushWaveInterval = 6 + Math.random() * 4;
+  } else if (isMagmaTheme()) {
+    // Fiery Magma: no black holes (eruptions own this sector) — collapse leftovers
+    blackHoles.forEach(bh => { bh.life = Math.min(bh.life, 0.4); });
+    blackHoleTimer = 0;
   }
 
   playSfxWarp();
