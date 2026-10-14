@@ -261,11 +261,21 @@ const TABS = [
 
 /* ── Shared Components ─────────────────────────────────── */
 
+// Modals close on Escape as well as on a backdrop click
+function useEscapeToClose(isOpen, onClose) {
+    useEffect(() => {
+        if (!isOpen) return
+        const onKey = (e) => { if (e.key === 'Escape') onClose() }
+        document.addEventListener('keydown', onKey)
+        return () => document.removeEventListener('keydown', onKey)
+    }, [isOpen, onClose])
+}
+
 function ProgressBar({ value, height = 'h-1.5', gold = true }) {
     return (
         <div className={`w-full ${height} bg-neutral-800 rounded-full overflow-hidden`}>
             <div
-                className="h-full rounded-full transition-all duration-700 ease-out"
+                className="h-full rounded-full transition-[width] duration-700 ease-out"
                 style={{
                     width: `${value}%`,
                     background: value === 100
@@ -330,12 +340,12 @@ function ProfileDropdown({ isOpen, onClose, onNavigate }) {
     return (
         <div
             ref={ref}
-            className="absolute right-0 mt-2 w-72 bg-neutral-950 border border-neutral-800 rounded-xl shadow-2xl shadow-black/60 z-[60]
+            className="absolute right-0 mt-3 w-72 glass-panel !bg-[#0c0d12]/95 rounded-2xl overflow-hidden z-[60]
                        animate-in fade-in slide-in-from-top-2"
             style={{ animation: 'fadeSlideIn 0.2s ease-out' }}
         >
             {/* User info */}
-            <div className="px-5 py-4 border-b border-neutral-800 flex items-center gap-4">
+            <div className="px-5 py-4 border-b border-white/[0.07] flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center overflow-hidden border border-neutral-700 shrink-0 shadow-inner">
                     {user?.avatarUrl ? (
                         <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
@@ -362,7 +372,7 @@ function ProfileDropdown({ isOpen, onClose, onNavigate }) {
                                 onClose()
                             }}
                             className="w-full flex items-center gap-4 px-5 py-3 text-base text-neutral-300 font-medium cursor-pointer
-                                       transition-colors duration-200 hover:bg-neutral-900 hover:text-white"
+                                       transition-colors duration-200 hover:bg-white/[0.05] hover:text-white"
                         >
                             <Icon size={18} className="text-neutral-500" />
                             {item.label}
@@ -372,11 +382,11 @@ function ProfileDropdown({ isOpen, onClose, onNavigate }) {
             </div>
 
             {/* Sign out */}
-            <div className="border-t border-neutral-800 py-1">
+            <div className="border-t border-white/[0.07] py-1">
                 <button
                     onClick={() => { logout(); onClose(); }}
                     className="w-full flex items-center gap-4 px-5 py-3 text-base font-bold uppercase tracking-wider text-red-400/80 cursor-pointer
-                                   transition-colors duration-200 hover:bg-neutral-900 hover:text-red-400"
+                                   transition-colors duration-200 hover:bg-red-500/10 hover:text-red-400"
                 >
                     <LogOut size={18} />
                     {t('profile.signOut')}
@@ -454,12 +464,11 @@ function CompetitionModal({ isOpen, onClose }) {
         setRegistrationEmail('')
     }, [isOpen, isAuthenticated, user?.teamId, onClose])
 
+    useEscapeToClose(isOpen, onClose)
+
     if (!isOpen) return null
 
-    const inputClass = `w-full px-5 py-4 rounded-2xl text-base text-white placeholder-neutral-500
-        bg-neutral-950 border border-neutral-700
-        focus:border-yellow-600 focus:ring-1 focus:ring-yellow-600 focus:outline-none
-        transition-all duration-300`
+    const inputClass = "field px-5 py-4 text-base"
 
     // ── Auth handlers ───────────────────────────────────────
     async function handleLogin(e) {
@@ -593,25 +602,26 @@ function CompetitionModal({ isOpen, onClose }) {
 
     return (
         <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] px-4 py-4"
+            className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] px-4 py-4"
             onClick={onClose}
         >
             <div
-                className="bg-neutral-900 border border-neutral-800 rounded-[2rem] w-full max-w-xl p-8 md:p-14 relative
-                           shadow-2xl shadow-black/60 overflow-y-auto max-h-[90dvh]"
+                className="glass-panel !bg-[#0c0d12]/90 rounded-[2rem] w-full max-w-xl p-8 md:p-12 relative
+                           overflow-y-auto overscroll-contain max-h-[90dvh]"
                 onClick={e => e.stopPropagation()}
                 style={{ animation: 'fadeSlideIn 0.25s ease-out' }}
             >
                 {/* Close */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors duration-200 cursor-pointer"
+                    aria-label="Close"
+                    className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/[0.06] transition-colors duration-200 cursor-pointer"
                 >
-                    <X size={20} />
+                    <X size={18} aria-hidden="true" />
                 </button>
 
                 {/* Title */}
-                <h2 className="text-3xl md:text-4xl font-black uppercase tracking-widest text-white mb-2 text-center">
+                <h2 className="font-display text-2xl md:text-3xl font-extrabold uppercase tracking-tight text-white mb-2 text-center [text-wrap:balance]">
                     {isLanguagePhase ? t('onboarding.selectLanguage') : isAuthPhase ? t('auth.accessIcarus') : user?.teamId ? t('auth.assignmentComplete') : t('auth.joinCompetition')}
                 </h2>
                 <p className="text-sm text-neutral-500 text-center mb-10 tracking-wider uppercase">
@@ -621,24 +631,24 @@ function CompetitionModal({ isOpen, onClose }) {
 
 {/* Mode Toggle */}
                 {!(!isAuthPhase && user?.teamId) && phase !== 'verify' && phase !== 'forgot' && !isLanguagePhase && (
-                    <div className="flex rounded-xl bg-neutral-950 border border-neutral-800 p-1 mb-6">
+                    <div className="flex rounded-full bg-black/40 border border-white/[0.08] p-1 mb-6">
                     {isAuthPhase ? (
                         <>
                             <button
                                 onClick={() => { setPhase('login'); setError(''); setSuccessMsg(''); }}
-                                className={`flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
+                                className={`flex-1 py-3 rounded-full text-sm font-bold uppercase tracking-wider cursor-pointer transition-[color,background-color,box-shadow] duration-300
                                     ${phase === 'login'
-                                        ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
-                                        : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
+                                        ? 'bg-gradient-to-b from-yellow-400 to-yellow-600 text-black shadow-[0_6px_18px_-8px_rgba(234,179,8,0.7)]'
+                                        : 'text-neutral-400 hover:text-white'}`}
                             >
                                 {t('auth.signIn')}
                             </button>
                             <button
                                 onClick={() => { setPhase('register'); setError(''); setSuccessMsg(''); }}
-                                className={`flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
+                                className={`flex-1 py-3 rounded-full text-sm font-bold uppercase tracking-wider cursor-pointer transition-[color,background-color,box-shadow] duration-300
                                     ${phase === 'register'
-                                        ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
-                                        : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
+                                        ? 'bg-gradient-to-b from-yellow-400 to-yellow-600 text-black shadow-[0_6px_18px_-8px_rgba(234,179,8,0.7)]'
+                                        : 'text-neutral-400 hover:text-white'}`}
                             >
                                 {t('auth.register')}
                             </button>
@@ -647,19 +657,19 @@ function CompetitionModal({ isOpen, onClose }) {
                         <>
                             <button
                                 onClick={() => { setPhase('create'); setError(''); setSuccessMsg(''); }}
-                                className={`flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
+                                className={`flex-1 py-3 rounded-full text-sm font-bold uppercase tracking-wider cursor-pointer transition-[color,background-color,box-shadow] duration-300
                                     ${phase === 'create'
-                                        ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
-                                        : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
+                                        ? 'bg-gradient-to-b from-yellow-400 to-yellow-600 text-black shadow-[0_6px_18px_-8px_rgba(234,179,8,0.7)]'
+                                        : 'text-neutral-400 hover:text-white'}`}
                             >
                                 {t('auth.createTeam')}
                             </button>
                             <button
                                 onClick={() => { setPhase('join'); setError(''); setSuccessMsg(''); }}
-                                className={`flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer
+                                className={`flex-1 py-3 rounded-full text-sm font-bold uppercase tracking-wider cursor-pointer transition-[color,background-color,box-shadow] duration-300
                                     ${phase === 'join'
-                                        ? 'bg-yellow-600/15 text-yellow-600 border border-yellow-600/30'
-                                        : 'text-neutral-500 hover:text-neutral-300 border border-transparent'}`}
+                                        ? 'bg-gradient-to-b from-yellow-400 to-yellow-600 text-black shadow-[0_6px_18px_-8px_rgba(234,179,8,0.7)]'
+                                        : 'text-neutral-400 hover:text-white'}`}
                             >
                                 {t('auth.joinWithCode')}
                             </button>
@@ -704,12 +714,7 @@ function CompetitionModal({ isOpen, onClose }) {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="mt-6 w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
-                                               bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
-                                               shadow-lg shadow-yellow-600/20
-                                               transition-all duration-300 ease-out
-                                               hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
-                                               active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                                    className="btn-gold mt-6 w-full py-4 text-base tracking-[0.15em]"
                                 >
                                     {loading ? t('auth.verifying') : t('auth.verifyAccess')}
                                 </button>
@@ -744,10 +749,10 @@ function CompetitionModal({ isOpen, onClose }) {
                                         <button
                                             key={lng.code}
                                             onClick={() => { setSelectedLanguage(lng.code); setError(''); }}
-                                            className={`p-4 rounded-xl text-center transition-all duration-200 cursor-pointer
+                                            className={`p-4 rounded-2xl text-center border cursor-pointer transition-[background-color,border-color,color,transform] duration-200
                                                 ${selectedLanguage === lng.code
-                                                    ? 'bg-yellow-600/20 border-2 border-yellow-600 text-yellow-400 scale-[1.03] shadow-lg shadow-yellow-600/20'
-                                                    : 'bg-neutral-800/60 border border-neutral-700 text-neutral-400 hover:border-yellow-600/40 hover:text-neutral-200 hover:bg-neutral-800'}`}
+                                                    ? 'bg-yellow-500/15 border-yellow-500/70 text-yellow-300 scale-[1.03] shadow-lg shadow-yellow-600/20'
+                                                    : 'bg-black/30 border-white/[0.08] text-neutral-300 hover:border-yellow-500/40 hover:text-white'}`}
                                         >
                                             <div className="text-3xl mb-2">{lng.flag}</div>
                                             <div className="text-sm font-bold tracking-wide">{lng.label}</div>
@@ -765,12 +770,7 @@ function CompetitionModal({ isOpen, onClose }) {
                                 <button
                                     onClick={handleLanguageSelection}
                                     disabled={loading || !selectedLanguage}
-                                    className="mt-2 w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
-                                               bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
-                                               shadow-lg shadow-yellow-600/20
-                                               transition-all duration-300 ease-out
-                                               hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
-                                               active:scale-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
+                                    className="btn-gold mt-2 w-full py-4 text-base tracking-[0.15em]"
                                 >
                                     {loading ? t('generic.loading') : t('onboarding.continue')}
                                 </button>
@@ -807,12 +807,7 @@ function CompetitionModal({ isOpen, onClose }) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="mt-4 w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
-                                       bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
-                                       shadow-lg shadow-yellow-600/20
-                                       transition-all duration-300 ease-out
-                                       hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
-                                       active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                            className="btn-gold mt-4 w-full py-4 text-base tracking-[0.15em]"
                         >
                             {loading ? t('auth.signingIn') : t('auth.signIn')}
                         </button>
@@ -852,12 +847,7 @@ function CompetitionModal({ isOpen, onClose }) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="mt-4 w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
-                                       bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
-                                       shadow-lg shadow-yellow-600/20
-                                       transition-all duration-300 ease-out
-                                       hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
-                                       active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                            className="btn-gold mt-4 w-full py-4 text-base tracking-[0.15em]"
                         >
                             {loading ? t('auth.sendingLink') : t('auth.sendResetLink')}
                         </button>
@@ -914,12 +904,7 @@ function CompetitionModal({ isOpen, onClose }) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="mt-4 w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
-                                       bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
-                                       shadow-lg shadow-yellow-600/20
-                                       transition-all duration-300 ease-out
-                                       hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
-                                       active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                            className="btn-gold mt-4 w-full py-4 text-base tracking-[0.15em]"
                         >
                             {loading ? t('auth.creatingAccount') : t('auth.createAccount')}
                         </button>
@@ -943,12 +928,7 @@ function CompetitionModal({ isOpen, onClose }) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="mt-4 w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
-                                       bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
-                                       shadow-lg shadow-yellow-600/20
-                                       transition-all duration-300 ease-out
-                                       hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
-                                       active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                            className="btn-gold mt-4 w-full py-4 text-base tracking-[0.15em]"
                         >
                             {loading ? t('auth.creating') : t('auth.createTeam')}
                         </button>
@@ -973,12 +953,7 @@ function CompetitionModal({ isOpen, onClose }) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="mt-4 w-full py-4 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
-                                       bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
-                                       shadow-lg shadow-yellow-600/20
-                                       transition-all duration-300 ease-out
-                                       hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
-                                       active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                            className="btn-gold mt-4 w-full py-4 text-base tracking-[0.15em]"
                         >
                             {loading ? t('auth.joining') : t('auth.joinTeam')}
                         </button>
@@ -996,6 +971,46 @@ function CompetitionModal({ isOpen, onClose }) {
 
 
 /* ── Header ──────────────────────────────────────────────── */
+
+// Switches the home tab and keeps the URL in sync (/news is deep-linkable)
+function navigateToTab(tabId, setActiveTab, onNavigatePage) {
+    onNavigatePage('home')
+    setActiveTab(tabId)
+    if (tabId === 'news') {
+        window.history.pushState({}, '', '/news')
+    } else if (window.location.pathname.startsWith('/news')) {
+        window.history.pushState({}, '', '/')
+    }
+}
+
+/* ── Main navigation as a pill bar (in the header from 1280px, its own row below that) ── */
+function NavPills({ activeTab, setActiveTab, onNavigatePage, className = '' }) {
+    const { t } = useLang()
+    return (
+        <nav aria-label="Main" className={`flex items-center gap-1 p-1 rounded-full glass-panel ${className}`}>
+            {TABS.map(tab => {
+                const Icon = tab.icon
+                // An open article still belongs to the News section
+                const isActive = activeTab === tab.id || (tab.id === 'news' && activeTab === 'newsPost')
+                return (
+                    <button
+                        key={tab.id}
+                        onClick={() => navigateToTab(tab.id, setActiveTab, onNavigatePage)}
+                        aria-current={isActive ? 'page' : undefined}
+                        className={`flex items-center gap-2 px-4 xl:px-5 py-2.5 rounded-full text-[13px] font-bold uppercase tracking-[0.14em] whitespace-nowrap cursor-pointer
+                                    transition-[color,background-color,box-shadow] duration-300
+                                    ${isActive
+                                ? 'bg-gradient-to-b from-yellow-400 to-yellow-600 text-black shadow-[0_8px_24px_-8px_rgba(234,179,8,0.7)]'
+                                : 'text-neutral-400 hover:text-white hover:bg-white/[0.06]'}`}
+                    >
+                        <Icon size={15} aria-hidden="true" />
+                        {t(tab.labelKey)}
+                    </button>
+                )
+            })}
+        </nav>
+    )
+}
 
 function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActiveTab, onNavigatePage }) {
     const { user, isAuthenticated } = useAuth()
@@ -1016,58 +1031,73 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
     }, [isMobileMenuOpen])
 
     return (
-        <header className="sticky top-0 z-50 backdrop-blur-2xl bg-neutral-950/80 border-b border-neutral-800/50">
-            <div className="max-w-7xl mx-auto w-full px-4 md:px-6">
-                <div className="flex items-center justify-between h-16 md:h-24">
+        <header className="sticky top-0 z-50 backdrop-blur-2xl bg-[#07080d]/70 border-b border-white/[0.06]">
+            {/* Thin gold hairline along the bottom edge */}
+            <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-yellow-500/30 to-transparent" aria-hidden="true" />
+            {/* Wider than the page content so the centred nav pills have room beside the logo */}
+            <div className="max-w-7xl xl:max-w-[94rem] mx-auto w-full px-4 md:px-6">
+                <div className="flex xl:grid xl:grid-cols-[1fr_auto_1fr] items-center justify-between gap-4 h-16 md:h-20">
                     {/* Logo + Motto */}
-                    <div className="flex items-center gap-4">
-                        <div 
-                            className="flex items-center gap-3 group cursor-pointer"
+                    <div className="flex items-center gap-4 min-w-0">
+                        <button
+                            type="button"
                             onClick={() => onNavigatePage('home')}
+                            aria-label="ICARUS — home"
+                            className="flex items-center gap-3 group cursor-pointer rounded-lg"
                         >
                             <img
                                 src="/logo_white.png"
-                                alt="ICARUS"
-                                className="h-8 md:h-11 w-auto transition-transform duration-500 group-hover:scale-110"
+                                alt=""
+                                width="44"
+                                height="44"
+                                className="h-8 md:h-10 w-auto transition-transform duration-500 group-hover:scale-110"
                             />
-                            <span className="text-xl md:text-3xl font-black uppercase tracking-[0.2em] text-white">
+                            <span translate="no" className="font-display text-lg md:text-2xl font-extrabold uppercase tracking-[0.18em] text-white">
                                 ICARUS
                             </span>
-                        </div>
-                        <div className="hidden md:block h-8 w-px bg-neutral-700" />
-                        <span className="hidden md:block text-xs md:text-sm italic text-neutral-500 tracking-wide">
+                        </button>
+                        <div className="hidden 2xl:block h-7 w-px bg-white/10" aria-hidden="true" />
+                        <span className="hidden 2xl:block text-sm italic text-neutral-500 tracking-wide truncate">
                             {t('header.motto')}
                         </span>
                     </div>
 
+                    {/* Centre: navigation (1280px and up) */}
+                    <NavPills
+                        activeTab={activeTab}
+                        setActiveTab={setActiveTab}
+                        onNavigatePage={onNavigatePage}
+                        className="hidden xl:flex"
+                    />
+
                     {/* Right side — tighter gaps on mobile */}
-                    <div className="flex items-center gap-2 md:gap-5">
+                    <div className="flex items-center justify-end gap-2 md:gap-4">
                         {isAuthenticated ? (
                             <>
                                 {/* JOIN CTA */}
                                 <button
                                     onClick={onJoinClick}
-                                    className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wider cursor-pointer
-                                               bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
-                                               shadow-md shadow-yellow-600/15
-                                               transition-all duration-300
-                                               hover:scale-105 hover:shadow-lg hover:shadow-yellow-600/25
-                                               active:scale-100"
+                                    className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider cursor-pointer
+                                               bg-gradient-to-b from-yellow-400 to-yellow-600 text-black
+                                               shadow-[0_8px_24px_-10px_rgba(234,179,8,0.7)]
+                                               transition-[transform,box-shadow] duration-300
+                                               hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-10px_rgba(234,179,8,0.85)]
+                                               active:translate-y-0"
                                 >
-                                    {isRegistered ? <CheckCircle2 size={16} /> : <Rocket size={16} />}
+                                    {isRegistered ? <CheckCircle2 size={16} aria-hidden="true" /> : <Rocket size={16} aria-hidden="true" />}
                                     {isRegistered ? t('header.registered') : t('header.joinCompetition')}
                                 </button>
                                 {/* Streak — smaller on mobile */}
-                                <div className="flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-full bg-yellow-600/10 border border-yellow-600/25">
-                                    <Flame size={16} className="text-yellow-600 animate-gold-pulse sm:w-[20px] sm:h-[20px]" />
-                                    <span className="text-xs sm:text-base font-bold text-yellow-600 tracking-wide">
+                                <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full bg-yellow-500/10 border border-yellow-500/20">
+                                    <Flame size={16} className="text-yellow-500 animate-gold-pulse sm:w-[18px] sm:h-[18px]" aria-hidden="true" />
+                                    <span className="text-xs sm:text-sm font-bold text-yellow-500 tracking-wide tabular-nums">
                                         {currentUser.currentStreak ?? 0}d
                                     </span>
                                 </div>
                                 {/* Score */}
-                                <div className="hidden sm:flex items-center gap-2.5 px-4.5 py-2.5 rounded-full bg-neutral-800/60 border border-neutral-700/50">
-                                    <Star size={18} className="text-yellow-600" />
-                                    <span className="text-base font-semibold text-white tabular-nums">
+                                <div className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/[0.04] border border-white/[0.08]">
+                                    <Star size={16} className="text-yellow-500" aria-hidden="true" />
+                                    <span className="text-sm font-semibold text-white tabular-nums">
                                         {(currentUser.xp ?? 0).toLocaleString()}
                                     </span>
                                 </div>
@@ -1075,20 +1105,22 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
                                 <div className="relative ml-1">
                                     <button
                                         onClick={() => setIsProfileOpen(!isProfileOpen)}
-                                        className="relative cursor-pointer group"
+                                        aria-label="Profile menu"
+                                        aria-expanded={isProfileOpen}
+                                        className="relative cursor-pointer group rounded-full"
                                     >
-                                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-lg shadow-yellow-600/15 overflow-hidden">
+                                        <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-800 ring-2 ring-white/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shadow-lg shadow-yellow-600/15 overflow-hidden">
                                             {currentUser?.avatarUrl ? (
-                                                <img src={currentUser.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                                <img src={currentUser.avatarUrl} alt="" width="44" height="44" className="w-full h-full object-cover" />
                                             ) : (
-                                                <User size={20} className="text-black md:w-[22px] md:h-[22px]" />
+                                                <User size={20} className="text-black" aria-hidden="true" />
                                             )}
                                         </div>
-                                        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-neutral-950" />
+                                        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-[#07080d]" aria-hidden="true" />
                                     </button>
-                                    <ProfileDropdown 
-                                        isOpen={isProfileOpen} 
-                                        onClose={() => setIsProfileOpen(false)} 
+                                    <ProfileDropdown
+                                        isOpen={isProfileOpen}
+                                        onClose={() => setIsProfileOpen(false)}
                                         onNavigate={onNavigatePage}
                                     />
                                 </div>
@@ -1097,12 +1129,12 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
                             /* Guest: show Sign In button */
                             <button
                                 onClick={onSignInClick}
-                                className="flex items-center gap-2 px-6 py-2.5 md:px-8 md:py-3 rounded-2xl text-sm md:text-base font-bold uppercase tracking-wider cursor-pointer
-                                           border-2 border-neutral-700 text-neutral-300
-                                           transition-all duration-300
-                                           hover:border-yellow-600/50 hover:text-white hover:bg-neutral-800/60"
+                                className="flex items-center gap-2 px-5 py-2.5 md:px-6 rounded-full text-sm font-bold uppercase tracking-wider cursor-pointer
+                                           bg-white/[0.04] border border-white/10 text-neutral-200
+                                           transition-[color,background-color,border-color] duration-300
+                                           hover:border-yellow-500/50 hover:text-white hover:bg-yellow-500/10"
                             >
-                                <User size={18} />
+                                <User size={16} aria-hidden="true" />
                                 {t('header.signIn')}
                             </button>
                         )}
@@ -1111,45 +1143,41 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
                         <div className="relative md:hidden" ref={mobileMenuRef}>
                             <button
                                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                                className="p-2 rounded-lg transition-colors duration-200 hover:bg-neutral-800 cursor-pointer"
-                                aria-label="Open navigation"
+                                className="p-2 rounded-lg transition-colors duration-200 hover:bg-white/[0.06] cursor-pointer"
+                                aria-label={isMobileMenuOpen ? 'Close navigation' : 'Open navigation'}
+                                aria-expanded={isMobileMenuOpen}
                             >
                                 {isMobileMenuOpen
-                                    ? <X size={22} className="text-white" />
-                                    : <Menu size={22} className="text-white" />
+                                    ? <X size={22} className="text-white" aria-hidden="true" />
+                                    : <Menu size={22} className="text-white" aria-hidden="true" />
                                 }
                             </button>
 
                             {/* Mobile slide-down menu */}
                             {isMobileMenuOpen && (
                                 <div
-                                    className="absolute right-0 mt-2 w-56 bg-neutral-950 border border-neutral-800 rounded-xl shadow-2xl shadow-black/60 z-[60] overflow-hidden"
+                                    className="absolute right-0 mt-3 w-60 glass-panel rounded-2xl z-[60] overflow-hidden p-1.5"
                                     style={{ animation: 'fadeSlideIn 0.2s ease-out' }}
                                 >
                                     {TABS.map(tab => {
                                         const Icon = tab.icon
-                                        const isActive = activeTab === tab.id
+                                        const isActive = activeTab === tab.id || (tab.id === 'news' && activeTab === 'newsPost')
                                         return (
                                             <button
                                                 key={tab.id}
                                                 onClick={() => {
-                                                    onNavigatePage('home')
-                                                    setActiveTab(tab.id)
+                                                    navigateToTab(tab.id, setActiveTab, onNavigatePage)
                                                     setIsMobileMenuOpen(false)
-                                                    if (tab.id === 'news') {
-                                                        window.history.pushState({}, '', '/news')
-                                                    } else if (window.location.pathname.startsWith('/news')) {
-                                                        window.history.pushState({}, '', '/')
-                                                    }
                                                 }}
-                                                className={`w-full flex items-center gap-3 px-5 py-3.5 text-xs font-bold uppercase tracking-[0.15em]
-                                                           transition-all duration-200 cursor-pointer
+                                                aria-current={isActive ? 'page' : undefined}
+                                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-[0.15em]
+                                                           transition-colors duration-200 cursor-pointer
                                                            ${isActive
-                                                        ? 'bg-yellow-600/10 text-yellow-600 border-l-2 border-yellow-600'
-                                                        : 'text-neutral-400 hover:bg-neutral-900 hover:text-white border-l-2 border-transparent'
+                                                        ? 'bg-yellow-500/15 text-yellow-400'
+                                                        : 'text-neutral-400 hover:bg-white/[0.05] hover:text-white'
                                                     }`}
                                             >
-                                                <Icon size={15} />
+                                                <Icon size={15} aria-hidden="true" />
                                                 {t(tab.labelKey)}
                                             </button>
                                         )
@@ -1157,17 +1185,17 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
 
                                     {/* Join CTA in mobile menu */}
                                     {isAuthenticated && (
-                                    <div className="border-t border-neutral-800 p-3">
+                                    <div className="border-t border-white/[0.06] mt-1.5 pt-2 px-1 pb-1">
                                         <button
                                             onClick={() => {
                                                 onJoinClick()
                                                 setIsMobileMenuOpen(false)
                                             }}
                                             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer
-                                                       bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
-                                                       transition-all duration-300 hover:scale-[1.02]"
+                                                       bg-gradient-to-b from-yellow-400 to-yellow-600 text-black
+                                                       transition-transform duration-300 hover:scale-[1.02]"
                                         >
-                                            {isRegistered ? <CheckCircle2 size={14} /> : <Rocket size={14} />}
+                                            {isRegistered ? <CheckCircle2 size={14} aria-hidden="true" /> : <Rocket size={14} aria-hidden="true" />}
                                             {isRegistered ? t('header.registered') : t('header.joinCompetition')}
                                         </button>
                                     </div>
@@ -1183,75 +1211,60 @@ function Header({ onSignInClick, onJoinClick, isRegistered, activeTab, setActive
 }
 
 
-/* ── Tab Navigation (hidden on mobile — accessible via hamburger) ── */
+/* ── Tab Navigation row: 768–1279px only (wider screens have it in the header,
+      phones use the hamburger menu) ── */
 
 function TabNav({ activeTab, setActiveTab, onNavigatePage }) {
-    const { t } = useLang()
     return (
-        <nav className="hidden md:block border-b border-neutral-800/50 bg-neutral-950/50 backdrop-blur-lg">
-            <div className="max-w-7xl mx-auto w-full px-6">
-                <div className="flex items-center justify-center gap-1">
-                    {TABS.map(tab => {
-                        const Icon = tab.icon
-                        const isActive = activeTab === tab.id
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => {
-                                    onNavigatePage('home')
-                                    setActiveTab(tab.id)
-                                    if (tab.id === 'news') {
-                                        window.history.pushState({}, '', '/news')
-                                    } else if (window.location.pathname.startsWith('/news')) {
-                                        window.history.pushState({}, '', '/')
-                                    }
-                                }}
-                                className={`relative flex items-center gap-3 px-8 py-5 text-sm md:text-base font-bold uppercase tracking-[0.15em]
-                           transition-all duration-300 ease-out cursor-pointer
-                           ${isActive ? 'text-yellow-600' : 'text-neutral-500 hover:text-neutral-300'}`}
-                            >
-                                <Icon size={18} />
-                                {t(tab.labelKey)}
-                                {isActive && (
-                                    <div className="absolute bottom-0 left-4 right-4 h-[3px] rounded-full bg-yellow-600" />
-                                )}
-                            </button>
-                        )
-                    })}
-                </div>
-            </div>
-        </nav>
+        <div className="hidden md:flex xl:hidden justify-center px-6 pt-5">
+            <NavPills activeTab={activeTab} setActiveTab={setActiveTab} onNavigatePage={onNavigatePage} />
+        </div>
     )
 }
 
 
 /* ── Tab 1: THE JOURNEY ──────────────────────────────────── */
 
+// "Build team, start journey." → second half after the comma in gold
+function HeroTitle({ text }) {
+    const comma = text.indexOf(',')
+    if (comma === -1) return <span className="text-gradient-gold">{text}</span>
+    return (
+        <>
+            <span className="block">{text.slice(0, comma + 1)}</span>
+            <span className="block text-gradient-gold">{text.slice(comma + 1).trim()}</span>
+        </>
+    )
+}
+
 function JourneyTab({ onPostClick }) {
     const { t } = useLang()
     return (
-        <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-8 sm:py-16 md:py-24">
-            {/* Cinematic Title — mobile-first font sizes */}
-            <div className="relative text-center mb-16 sm:mb-24 lg:mb-32 max-w-6xl mx-auto">
-                <div className="flex justify-center items-center gap-4 lg:gap-6 text-[10px] sm:text-xs lg:text-sm font-bold uppercase tracking-[0.4em] text-yellow-600 mb-8 lg:mb-10">
-                    <div className="w-8 sm:w-16 lg:w-24 h-[1px] bg-yellow-600/50"></div>
-                    {t('journey.welcomeTo')}
-                    <div className="w-8 sm:w-16 lg:w-24 h-[1px] bg-yellow-600/50"></div>
+        <div className="max-w-7xl mx-auto w-full px-4 md:px-6 pt-6 pb-16 sm:pt-10 md:pb-24">
+            {/* Hero */}
+            <section aria-labelledby="hero-title" className="relative text-center max-w-5xl mx-auto py-16 sm:py-24 lg:py-28 mb-6 sm:mb-10">
+                <div className="relative">
+                    <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full glass-panel text-[11px] sm:text-xs font-bold uppercase tracking-[0.3em] text-yellow-400 mb-8 sm:mb-10">
+                        <span className="relative flex w-2 h-2" aria-hidden="true">
+                            <span className="absolute inset-0 rounded-full bg-yellow-400 opacity-60 animate-ping" />
+                            <span className="relative w-2 h-2 rounded-full bg-yellow-400" />
+                        </span>
+                        {t('journey.welcomeTo')}
+                    </div>
+                    <h1
+                        id="hero-title"
+                        className="font-display text-[2.4rem] leading-[1.08] sm:text-6xl lg:text-7xl font-extrabold uppercase tracking-tight text-white mb-8 [text-wrap:balance]"
+                    >
+                        <HeroTitle text={t('journey.subtitle')} />
+                    </h1>
+                    <p className="text-base lg:text-lg text-neutral-400 max-w-xl lg:max-w-2xl mx-auto leading-relaxed [text-wrap:pretty]">
+                        {t('journey.navigate')}
+                    </p>
                 </div>
-                <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-white uppercase tracking-widest mb-6 drop-shadow-lg flex flex-col items-center justify-center gap-2 sm:gap-4 lg:gap-6">
-                    <span className="text-center">{t('journey.subtitle')}</span>
-                </h1>
-                <div className="w-full max-w-sm lg:max-w-lg mx-auto h-[1px] bg-gradient-to-r from-transparent via-neutral-800 to-transparent mb-8 lg:mb-10"></div>
-                <p className="text-sm lg:text-lg text-neutral-400 max-w-md lg:max-w-2xl mx-auto leading-relaxed font-medium tracking-wide px-4">
-                    {t('journey.navigate')}
-                </p>
-                
-
-            </div>
+            </section>
 
             {/* Latest News block replaces the old video block */}
             <LatestNewsBlock onPostClick={onPostClick} />
-
         </div>
     )
 }
@@ -1271,7 +1284,7 @@ function CategoryAccordion({ category, onSelectCourse }) {
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full flex items-center justify-between px-6 py-5 bg-neutral-900 cursor-pointer
-                           transition-all duration-300 hover:bg-neutral-800/80"
+                           transition duration-300 hover:bg-neutral-800/80"
             >
                 <div className="flex items-center gap-4">
                     <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-yellow-600/10 border border-yellow-600/30 text-yellow-500">
@@ -1301,7 +1314,7 @@ function CategoryAccordion({ category, onSelectCourse }) {
                                 key={course.id}
                                 onClick={() => onSelectCourse(course)}
                                 className="w-full flex items-center justify-between py-3.5 px-3 rounded-lg cursor-pointer
-                                           transition-all duration-200 hover:bg-neutral-900/60 hover:pl-5 group"
+                                           transition duration-200 hover:bg-neutral-900/60 hover:pl-5 group"
                             >
                                 <span className="text-sm font-semibold text-neutral-300 tracking-wide transition-colors duration-200 group-hover:text-yellow-600">
                                     {course.title}
@@ -1545,32 +1558,29 @@ function TrainingTab() {
         }
     }
 
-    const inputClass = `w-full px-5 py-4 rounded-2xl text-base text-white placeholder-neutral-500
-        bg-neutral-950 border border-neutral-700
-        focus:border-yellow-600 focus:ring-1 focus:ring-yellow-600 focus:outline-none
-        transition-all duration-300`
+    const inputClass = 'field px-5 py-4 text-base'
 
     return (
-        <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-20 lg:py-32 flex flex-col items-center justify-center text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-20 lg:py-28 flex flex-col items-center justify-center text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Glowing Icon Container */}
-            <div className="relative mb-8 group">
-                <div className="absolute inset-0 bg-yellow-600/20 rounded-full blur-2xl group-hover:bg-yellow-600/30 transition-colors duration-700" />
-                <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-neutral-900 border border-neutral-700/50 flex items-center justify-center shadow-2xl shadow-black/50 overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/10 to-transparent opacity-50" />
-                    <Rocket size={48} className="text-yellow-600/50 animate-pulse" />
+            <div className="relative mb-10 group" aria-hidden="true">
+                <div className="absolute inset-0 bg-yellow-500/25 rounded-full blur-3xl transition-colors duration-700 group-hover:bg-yellow-500/35" />
+                <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-[2rem] glass-panel flex items-center justify-center overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/15 to-transparent" />
+                    <Rocket size={46} className="relative text-yellow-400/80 animate-float" />
                 </div>
             </div>
 
+            {/* Status Badge */}
+            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full glass-panel mb-6">
+                <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" aria-hidden="true" />
+                <span className="text-yellow-400 text-[11px] md:text-xs font-bold uppercase tracking-[0.3em]">{t('training.comingSoon')}</span>
+            </div>
+
             {/* Title */}
-            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black text-white uppercase tracking-widest mb-6 drop-shadow-lg flex flex-col sm:flex-row items-center justify-center gap-3 break-words w-full">
+            <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white uppercase tracking-tight leading-[1.08] mb-6 w-full [text-wrap:balance] break-words">
                 {t('training.modules')}
             </h1>
-
-            {/* Status Badge */}
-            <div className="px-6 py-2 rounded-full bg-yellow-600/10 border border-yellow-600/20 inline-flex items-center gap-2 mb-8">
-                <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
-                <span className="text-yellow-600 text-xs md:text-sm font-bold uppercase tracking-widest">{t('training.comingSoon')}</span>
-            </div>
 
             {/* Subtitle */}
             <p className="text-base sm:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed mb-8">
@@ -1592,31 +1602,23 @@ function TrainingTab() {
                     {isInitialized && (
                         <>
                             {!registrationStatus?.isRegistered && !showForm && (
-                                <div className="group relative">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/20 to-green-600/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500" />
-                                    <button
-                                        onClick={() => setShowForm(true)}
-                                        className="relative w-full py-5 rounded-2xl text-base font-bold uppercase tracking-[0.15em] cursor-pointer
-                                                   bg-gradient-to-r from-yellow-700 via-yellow-600 to-green-600 text-black
-                                                   shadow-lg shadow-yellow-600/20
-                                                   transition-all duration-300 ease-out
-                                                   hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
-                                                   active:scale-100 flex items-center justify-center gap-3"
-                                    >
-                                        <Users size={20} />
-                                        {t('club.join')}
-                                    </button>
-                                </div>
+                                <button
+                                    onClick={() => setShowForm(true)}
+                                    className="btn-gold w-full py-5 text-base gap-3"
+                                >
+                                    <Users size={20} aria-hidden="true" />
+                                    {t('club.join')}
+                                </button>
                             )}
 
                     {showForm && (
-                        <div className="bg-neutral-900/80 backdrop-blur-xl border border-neutral-800 rounded-3xl p-8 shadow-2xl shadow-black/50">
+                        <div className="glass-panel rounded-3xl p-6 sm:p-8 text-left">
                             <div className="flex items-center gap-4 mb-6">
-                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-600/20 to-green-600/20 border border-yellow-600/30 flex items-center justify-center">
-                                    <Users size={24} className="text-yellow-500" />
+                                <div className="w-12 h-12 rounded-2xl bg-yellow-500/10 border border-yellow-500/25 flex items-center justify-center" aria-hidden="true">
+                                    <Users size={24} className="text-yellow-400" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-white uppercase tracking-widest">
+                                    <h3 className="font-display text-lg font-bold text-white uppercase tracking-wide">
                                         {t('club.joinTitle')}
                                     </h3>
                                     <p className="text-xs text-neutral-500 mt-1">
@@ -1661,16 +1663,18 @@ function TrainingTab() {
                                                     key={option.id}
                                                     type="button"
                                                     onClick={() => setInterest(option.id)}
-                                                    className={`flex items-center gap-3 p-4 rounded-xl border transition-all duration-200 cursor-pointer
+                                                    aria-pressed={isSelected}
+                                                    className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer
+                                                        transition-[background-color,border-color,color] duration-200
                                                         ${isSelected
-                                                            ? 'bg-yellow-600/20 border-yellow-600/50 text-yellow-500'
-                                                            : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:bg-neutral-850'}`}
+                                                            ? 'bg-yellow-500/15 border-yellow-500/50 text-yellow-300'
+                                                            : 'bg-black/25 border-white/[0.08] text-neutral-300 hover:border-white/20 hover:bg-black/35'}`}
                                                 >
-                                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isSelected ? 'bg-yellow-600/30' : 'bg-neutral-800'}`}>
-                                                        <Icon size={20} className={isSelected ? 'text-yellow-500' : 'text-neutral-500'} />
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSelected ? 'bg-yellow-500/25' : 'bg-white/[0.05]'}`} aria-hidden="true">
+                                                        <Icon size={20} className={isSelected ? 'text-yellow-300' : 'text-neutral-500'} />
                                                     </div>
                                                     <span className="font-medium text-sm">{option.label}</span>
-                                                    {isSelected && <CheckCircle2 size={18} className="ml-auto text-yellow-500" />}
+                                                    {isSelected && <CheckCircle2 size={18} className="ml-auto text-yellow-400" aria-hidden="true" />}
                                                 </button>
                                             )
                                         })}
@@ -1680,20 +1684,14 @@ function TrainingTab() {
                                     <button
                                         type="button"
                                         onClick={() => { setShowForm(false); setError(''); }}
-                                        className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest
-                                                   bg-neutral-800 text-white hover:bg-neutral-700 transition-colors cursor-pointer"
+                                        className="btn-ghost flex-1 py-4 text-sm"
                                     >
                                         {t('generic.cancel')}
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={loading || !interest}
-                                        className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest
-                                                   bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
-                                                   shadow-lg shadow-yellow-600/20
-                                                   transition-all duration-300 ease-out
-                                                   hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
-                                                   active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 cursor-pointer flex items-center justify-center gap-2"
+                                        className="btn-gold flex-1 py-4 text-sm"
                                     >
                                         {loading ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
                                         {loading ? t('club.submitting') : t('club.submit')}
@@ -1704,7 +1702,7 @@ function TrainingTab() {
                     )}
 
                     {registrationStatus?.isRegistered && (
-                        <div className="bg-gradient-to-br from-emerald-500/10 to-green-600/10 backdrop-blur-xl border border-emerald-500/30 rounded-3xl p-8 shadow-2xl shadow-emerald-500/10">
+                        <div className="glass-panel rounded-3xl p-6 sm:p-8 !border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-green-600/5">
                             <div className="flex items-center justify-center gap-4 mb-6">
                                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-green-600/20 border border-emerald-500/30 flex items-center justify-center shadow-lg shadow-emerald-500/20">
                                     <CheckCircle2 size={32} className="text-emerald-400" />
@@ -1723,7 +1721,7 @@ function TrainingTab() {
                                 {t('club.successMessage')}
                             </p>
 
-                            <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800">
+                            <div className="bg-black/30 rounded-2xl p-6 border border-white/[0.08]">
                                 <div className="flex items-center gap-3 mb-4">
                                     <div className="w-10 h-10 rounded-xl bg-green-600/20 border border-green-600/30 flex items-center justify-center">
                                         <MessageCircle size={20} className="text-green-500" />
@@ -1741,10 +1739,10 @@ function TrainingTab() {
                                     href="https://chat.whatsapp.com/CAuuHtcTiD50bCtA013yeI?s=cl&p=i&mlu=4&ilr=4"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-3 w-full px-6 py-4 rounded-2xl text-sm font-bold uppercase tracking-widest
+                                    className="inline-flex items-center gap-3 w-full px-6 py-4 rounded-full text-sm font-bold uppercase tracking-widest
                                               bg-gradient-to-r from-green-600 to-green-500 text-white
                                               shadow-lg shadow-green-600/20
-                                              transition-all duration-300 ease-out
+                                              transition-[transform,box-shadow] duration-300 ease-out
                                               hover:scale-[1.02] hover:shadow-xl hover:shadow-green-600/30
                                               active:scale-100 cursor-pointer justify-center"
                                 >
@@ -1837,7 +1835,7 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered, onNavigateToTrain
     function Content() {
         if (phase === 'loading') return (
             <div className="flex flex-col items-center gap-4 py-6">
-                <Loader2 size={36} className="text-yellow-600 animate-spin" />
+                <Loader2 size={36} className="text-yellow-400 animate-spin" />
                 <p className="text-sm text-neutral-400 uppercase tracking-widest">{t('comp.checkingStatus')}</p>
             </div>
         )
@@ -1918,7 +1916,7 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered, onNavigateToTrain
                 <div className="w-20 h-20 rounded-full bg-yellow-600/10 border border-yellow-600/25
                                 flex items-center justify-center mx-auto mb-7
                                 shadow-[0_0_30px_rgba(202,138,4,0.1)]">
-                    <Crown size={36} className="text-yellow-600" />
+                    <Crown size={36} className="text-yellow-400" />
                 </div>
                 <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
                     {t('comp.captainOnly')}
@@ -1949,14 +1947,14 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered, onNavigateToTrain
                 <div className="w-20 h-20 rounded-full bg-yellow-600/10 border border-yellow-600/30
                                 flex items-center justify-center mx-auto mb-7
                                 shadow-[0_0_40px_rgba(202,138,4,0.15)]">
-                    <Trophy size={36} className="text-yellow-600" />
+                    <Trophy size={36} className="text-yellow-400" />
                 </div>
                 <h3 className="text-2xl font-black uppercase tracking-widest text-white mb-4">
                     {competition?.isIndividual ? t('comp.joinWorkshop') : t('comp.regTeam')}
                 </h3>
                 {competition && (
                     <div className="mb-6 px-5 py-4 rounded-xl bg-neutral-800/60 border border-yellow-600/15 text-left">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-yellow-600/60 mb-1">{competition.isIndividual ? t('comp.activeWorkshop') : t('comp.activeComp')}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-yellow-400/60 mb-1">{competition.isIndividual ? t('comp.activeWorkshop') : t('comp.activeComp')}</p>
                         <p className="font-black text-white text-base uppercase tracking-wide">{competition.title}</p>
                         <p className="text-xs text-neutral-500 mt-2">
                             {t('comp.closes')}{new Date(competition.regEnd).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}
@@ -2051,7 +2049,7 @@ function CompetitionJoinModal({ isOpen, onClose, onRegistered, onNavigateToTrain
             onClick={onClose}
         >
             <div
-                className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md p-10 text-center
+                className="bg-neutral-900 border border-white/[0.07] rounded-2xl w-full max-w-md p-10 text-center
                            shadow-2xl shadow-black/60 relative"
                 onClick={e => e.stopPropagation()}
                 style={{ animation: 'fadeSlideIn 0.2s ease-out' }}
@@ -2075,11 +2073,11 @@ function AlreadyRegisteredModal({ isOpen, onClose }) {
     return createPortal(
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[150] px-4" onClick={onClose}>
             <div 
-                className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-sm md:max-w-md p-10 text-center shadow-2xl shadow-yellow-600/10"
+                className="glass-panel !bg-[#0c0d12]/90 rounded-3xl w-full max-w-sm md:max-w-md p-10 text-center"
                 onClick={e => e.stopPropagation()}
                 style={{ animation: 'fadeSlideIn 0.2s ease-out' }}
             >
-                <div className="w-20 h-20 rounded-full bg-yellow-600/10 border border-yellow-600/30 text-yellow-600 flex items-center justify-center mx-auto mb-8 shadow-[0_0_30px_rgba(202,138,4,0.15)]">
+                <div className="w-20 h-20 rounded-full bg-yellow-600/10 border border-yellow-600/30 text-yellow-400 flex items-center justify-center mx-auto mb-8 shadow-[0_0_30px_rgba(202,138,4,0.15)]">
                     <CheckCircle2 size={36} />
                 </div>
                 <h3 className="text-xl md:text-2xl font-black uppercase tracking-widest text-white mb-4 leading-snug">
@@ -2109,16 +2107,18 @@ function AlreadyRegisteredModal({ isOpen, onClose }) {
 function Footer() {
     const { t } = useLang()
     return (
-        <footer className="mt-auto border-t border-neutral-800/40 py-10 bg-neutral-950/80 backdrop-blur-sm">
+        <footer className="relative mt-auto py-10 bg-[#07080d]/70 backdrop-blur-sm">
+            {/* Gold hairline instead of a flat border */}
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-yellow-500/25 to-transparent" aria-hidden="true" />
             <div className="max-w-7xl mx-auto w-full px-6">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                        <img src="/logo_white.png" alt="ICARUS" className="h-5 w-auto opacity-70" />
-                        <span className="text-sm font-bold uppercase tracking-[0.15em] text-neutral-400">ICARUS</span>
-                        <span className="text-neutral-700 mx-1">|</span>
-                        <span className="text-xs italic text-neutral-600">{t('footer.motto')}</span>
+                        <img src="/logo_white.png" alt="" width="20" height="20" className="h-5 w-auto opacity-80" />
+                        <span translate="no" className="font-display text-sm font-bold uppercase tracking-[0.18em] text-neutral-300">ICARUS</span>
+                        <span className="w-px h-4 bg-white/10 mx-1" aria-hidden="true" />
+                        <span className="text-xs italic text-neutral-500">{t('footer.motto')}</span>
                     </div>
-                    <p className="text-xs text-neutral-600">{t('footer.copyright')}</p>
+                    <p className="text-xs text-neutral-500">{t('footer.copyright')}</p>
                 </div>
             </div>
         </footer>
@@ -2130,14 +2130,15 @@ function Footer() {
 
 function PageHeader({ title, onBack }) {
     return (
-        <div className="mb-8 flex items-center gap-4 border-b border-neutral-800/60 pb-6">
-            <button 
+        <div className="mb-10 flex items-center gap-4 border-b border-white/[0.07] pb-6">
+            <button
                 onClick={onBack}
-                className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-700 transition"
+                aria-label="Back"
+                className="w-11 h-11 shrink-0 rounded-full glass-panel flex items-center justify-center text-neutral-300 hover:text-white hover:!border-yellow-500/40 transition-colors cursor-pointer"
             >
-                <ArrowLeft size={18} />
+                <ArrowLeft size={18} aria-hidden="true" />
             </button>
-            <h1 className="text-2xl md:text-4xl font-black uppercase tracking-[0.15em] text-white">
+            <h1 className="font-display text-2xl md:text-4xl font-extrabold uppercase tracking-tight text-white">
                 {title}
             </h1>
         </div>
@@ -2190,7 +2191,7 @@ function ActivityHeatmap() {
                     {isExpanded ? (
                         <div>
                             <h2 className="text-2xl font-black uppercase tracking-widest text-white flex items-center gap-3">
-                                <Activity className="text-yellow-600" />
+                                <Activity className="text-yellow-400" />
                                 Activity Heatmap
                             </h2>
                             <p className="text-neutral-500 text-sm mt-1">Detailed view of your learning and mission progress.</p>
@@ -2266,7 +2267,7 @@ function ProfilePage({ onBack }) {
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <PageHeader title="Your Profile" onBack={onBack} />
             
-            <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 md:p-10 mb-8 backdrop-blur-sm">
+            <div className="glass-panel rounded-3xl p-6 md:p-10 mb-8 backdrop-blur-sm">
                 <div className="flex flex-col md:flex-row items-center gap-8">
                     <div className="w-32 h-32 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center shadow-2xl shadow-yellow-600/20 overflow-hidden shrink-0 border-2 border-yellow-600/20">
                         {user?.avatarUrl ? (
@@ -2278,20 +2279,20 @@ function ProfilePage({ onBack }) {
                     <div className="flex-1 text-center md:text-left">
                         <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
                             <h2 className="text-3xl font-bold text-white">{user?.name}</h2>
-                            <span className="px-3 py-1 rounded-full bg-yellow-600/10 border border-yellow-600/30 text-yellow-600 text-xs font-bold uppercase tracking-wider">
+                            <span className="px-3 py-1 rounded-full bg-yellow-600/10 border border-yellow-600/30 text-yellow-400 text-xs font-bold uppercase tracking-wider">
                                 {user?.role || 'Member'}
                             </span>
                         </div>
                         <p className="text-neutral-400 mb-6">{user?.email}</p>
                         
                         <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto md:mx-0">
-                            <div className="bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-center">
-                                <div className="text-2xl font-black text-yellow-600 tabular-nums">
+                            <div className="bg-black/30 border border-white/[0.08] rounded-2xl p-4 text-center">
+                                <div className="text-2xl font-black text-yellow-400 tabular-nums">
                                     {(user?.xp || 0).toLocaleString()}
                                 </div>
                                 <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mt-1">Total XP</div>
                             </div>
-                            <div className="bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-center">
+                            <div className="bg-black/30 border border-white/[0.08] rounded-2xl p-4 text-center">
                                 <div className="text-2xl font-black text-white tabular-nums">
                                     {user?.currentStreak || 0}
                                 </div>
@@ -2302,7 +2303,7 @@ function ProfilePage({ onBack }) {
                 </div>
             </div>
             
-            <div className="bg-neutral-900/30 border border-neutral-800 rounded-2xl p-6 md:p-10">
+            <div className="glass-panel rounded-3xl p-6 md:p-10">
                 <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-neutral-500 mb-6">Recent Activity</h3>
                 <div className="py-2">
                     <ActivityHeatmap />
@@ -2332,7 +2333,7 @@ function TeamDashboardPage({ onBack }) {
     const inputClass = `w-full px-4 py-3 rounded-xl text-sm text-white placeholder-neutral-500
         bg-neutral-950 border border-neutral-700
         focus:border-yellow-600 focus:ring-1 focus:ring-yellow-600 focus:outline-none
-        transition-all duration-300`
+        transition duration-300`
 
     const handleCreateTeam = async (e) => {
         e.preventDefault()
@@ -2388,11 +2389,11 @@ function TeamDashboardPage({ onBack }) {
             
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-20">
-                    <Loader2 size={32} className="text-yellow-600 animate-spin mb-4" />
+                    <Loader2 size={32} className="text-yellow-400 animate-spin mb-4" />
                     <p className="text-neutral-500 font-mono tracking-widest uppercase text-xs">{t('team.loading')}</p>
                 </div>
             ) : error || !team ? (
-                <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-8 md:p-12 max-w-2xl mx-auto backdrop-blur-sm text-center">
+                <div className="glass-panel rounded-3xl p-8 md:p-12 max-w-2xl mx-auto backdrop-blur-sm text-center">
                     <div className="w-20 h-20 bg-neutral-900 border border-neutral-700 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-black/50">
                         <Users size={32} className="text-neutral-500" />
                     </div>
@@ -2437,8 +2438,8 @@ function TeamDashboardPage({ onBack }) {
                             />
                             {actionError && <p className="text-red-400 text-xs mt-2 font-semibold">{actionError}</p>}
                             <div className="flex gap-3 mt-4">
-                                <button type="button" onClick={() => setActionPhase('choice')} className="px-4 py-3 rounded-xl border border-neutral-800 text-neutral-400 text-xs font-bold uppercase hover:bg-neutral-800 transition">{t('team.back')}</button>
-                                <button type="submit" disabled={actionLoading} className="flex-1 py-3 rounded-xl bg-yellow-600 text-black text-xs font-bold uppercase tracking-wider hover:bg-yellow-500 transition disabled:opacity-50">
+                                <button type="button" onClick={() => setActionPhase('choice')} className="btn-ghost px-4 py-3 text-xs">{t('team.back')}</button>
+                                <button type="submit" disabled={actionLoading} className="btn-gold flex-1 py-3 text-xs">
                                     {actionLoading ? t('team.creating') : t('team.createBtn')}
                                 </button>
                             </div>
@@ -2460,8 +2461,8 @@ function TeamDashboardPage({ onBack }) {
                             />
                             {actionError && <p className="text-red-400 text-xs mt-2 font-semibold">{actionError}</p>}
                             <div className="flex gap-3 mt-4">
-                                <button type="button" onClick={() => setActionPhase('choice')} className="px-4 py-3 rounded-xl border border-neutral-800 text-neutral-400 text-xs font-bold uppercase hover:bg-neutral-800 transition">{t('team.back')}</button>
-                                <button type="submit" disabled={actionLoading} className="flex-1 py-3 rounded-xl bg-yellow-600 text-black text-xs font-bold uppercase tracking-wider hover:bg-yellow-500 transition disabled:opacity-50">
+                                <button type="button" onClick={() => setActionPhase('choice')} className="btn-ghost px-4 py-3 text-xs">{t('team.back')}</button>
+                                <button type="submit" disabled={actionLoading} className="btn-gold flex-1 py-3 text-xs">
                                     {actionLoading ? t('team.joining') : t('team.joinBtn')}
                                 </button>
                             </div>
@@ -2471,7 +2472,7 @@ function TeamDashboardPage({ onBack }) {
             ) : (
                 <>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div className="md:col-span-2 bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800 rounded-2xl p-6 md:p-8 flex items-center justify-between">
+                        <div className="md:col-span-2 glass-panel rounded-3xl p-6 md:p-8 flex items-center justify-between">
                             <div>
                                 <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-wider mb-2">
                                     {team.name}
@@ -2480,7 +2481,7 @@ function TeamDashboardPage({ onBack }) {
                                     {t('team.statusLabel')}<span className="text-emerald-400 font-semibold">{t('team.active')}</span>
                                 </p>
                                 <p className="text-neutral-500 text-sm tracking-wide mb-4">
-                                    {t('team.captain')}<span className="text-yellow-600 font-semibold">{team.members.find(m => m.id === team.captainId)?.name || '—'}</span>
+                                    {t('team.captain')}<span className="text-yellow-400 font-semibold">{team.members.find(m => m.id === team.captainId)?.name || '—'}</span>
                                 </p>
                                 
                                 {team.isRegisteredForCompetition ? (
@@ -2495,7 +2496,7 @@ function TeamDashboardPage({ onBack }) {
                                             <span className="text-[11px] font-black uppercase tracking-widest text-yellow-400">{t('team.pendingReg')}</span>
                                         </div>
                                         {user?.id === team.captainId && (
-                                            <p className="text-[10px] text-yellow-600/80 font-bold uppercase tracking-wider mt-0.5">
+                                            <p className="text-[10px] text-yellow-400/80 font-bold uppercase tracking-wider mt-0.5">
                                                 {t('team.dontForgetReg')}
                                             </p>
                                         )}
@@ -2503,20 +2504,20 @@ function TeamDashboardPage({ onBack }) {
                                 )}
                             </div>
                             <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-neutral-900 border-2 border-yellow-600/30 flex items-center justify-center shadow-lg shadow-yellow-600/10">
-                                <Users size={32} className="text-yellow-600" />
+                                <Users size={32} className="text-yellow-400" />
                             </div>
                         </div>
-                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 md:p-8 flex flex-col justify-center">
+                        <div className="glass-panel rounded-3xl p-6 md:p-8 flex flex-col justify-center">
                             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">{t('team.inviteCode')}</p>
-                            <div className="text-3xl font-mono text-yellow-600 tracking-[0.3em] font-bold">
+                            <div className="text-3xl font-mono text-yellow-400 tracking-[0.3em] font-bold">
                                 {team.inviteCode}
                             </div>
                             <p className="text-xs text-neutral-500 mt-3">{t('team.shareCode')}</p>
                         </div>
                     </div>
                     
-                    <div className="bg-neutral-900/40 border border-neutral-800 rounded-2xl overflow-hidden">
-                        <div className="px-6 py-5 border-b border-neutral-800 bg-neutral-900/80 flex items-center justify-between">
+                    <div className="glass-panel rounded-3xl overflow-hidden">
+                        <div className="px-6 py-5 border-b border-white/[0.07] bg-neutral-900/80 flex items-center justify-between">
                             <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-white">{t('team.membersTitle')}</h3>
                             <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{team.members.length}{t('team.membersCount')}</span>
                         </div>
@@ -2542,7 +2543,7 @@ function TeamDashboardPage({ onBack }) {
                                         <div className="flex items-center gap-2 mb-1">
                                             <h4 className="font-black text-white text-xl tracking-tight">{member.name}</h4>
                                             {member.id === team.captainId && (
-                                                <span className="px-2.5 py-1 rounded-lg bg-yellow-600/15 border border-yellow-600/30 text-yellow-600 text-[10px] font-bold uppercase flex items-center gap-1 shrink-0">
+                                                <span className="px-2.5 py-1 rounded-lg bg-yellow-600/15 border border-yellow-600/30 text-yellow-400 text-[10px] font-bold uppercase flex items-center gap-1 shrink-0">
                                                     <Crown size={10} /> Captain
                                                 </span>
                                             )}
@@ -2553,12 +2554,12 @@ function TeamDashboardPage({ onBack }) {
                                         <p className="text-sm text-neutral-500">{member.email}</p>
                                     </div>
                                     {/* Streak */}
-                                    <div className="text-center px-6 border-l border-neutral-800">
+                                    <div className="text-center px-6 border-l border-white/[0.07]">
                                         <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest mb-1">{t('team.streak')}</p>
-                                        <p className="font-mono text-yellow-600 font-black text-xl">{member.currentStreak ?? 0}<span className="text-sm">d</span></p>
+                                        <p className="font-mono text-yellow-400 font-black text-xl">{member.currentStreak ?? 0}<span className="text-sm">d</span></p>
                                     </div>
                                     {/* XP */}
-                                    <div className="text-center px-6 border-l border-neutral-800">
+                                    <div className="text-center px-6 border-l border-white/[0.07]">
                                         <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest mb-1">{t('team.xp')}</p>
                                         <p className="font-mono text-white font-black text-xl">{(member.xp || 0).toLocaleString()}</p>
                                     </div>
@@ -2588,7 +2589,7 @@ function TeamDashboardPage({ onBack }) {
                                             <div className="flex flex-wrap items-center gap-1.5">
                                                 <h4 className="font-bold text-white text-base leading-tight">{member.name}</h4>
                                                 {member.id === team.captainId && (
-                                                    <span className="px-1.5 py-0.5 rounded bg-yellow-600/15 border border-yellow-600/30 text-yellow-600 text-[9px] font-bold uppercase flex items-center gap-0.5">
+                                                    <span className="px-1.5 py-0.5 rounded bg-yellow-600/15 border border-yellow-600/30 text-yellow-400 text-[9px] font-bold uppercase flex items-center gap-0.5">
                                                         <Crown size={8} /> Captain
                                                     </span>
                                                 )}
@@ -2615,7 +2616,7 @@ function TeamDashboardPage({ onBack }) {
                             onClick={() => setShowLeaveConfirm(true)}
                             className="px-6 py-3 rounded-xl text-sm font-bold uppercase tracking-widest
                                        bg-red-500/10 border border-red-500/30 text-red-400
-                                       hover:bg-red-500/20 hover:border-red-500/50 transition-all cursor-pointer"
+                                       hover:bg-red-500/20 hover:border-red-500/50 transition cursor-pointer"
                         >
                             {t('team.leaveBtn')}
                         </button>
@@ -2627,7 +2628,7 @@ function TeamDashboardPage({ onBack }) {
             {showLeaveConfirm && (
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[80] px-4" onClick={() => setShowLeaveConfirm(false)}>
                     <div
-                        className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-sm p-7 text-center shadow-2xl shadow-black/60"
+                        className="glass-panel !bg-[#0c0d12]/90 rounded-3xl w-full max-w-sm p-7 text-center"
                         onClick={e => e.stopPropagation()}
                         style={{ animation: 'fadeSlideIn 0.2s ease-out' }}
                     >
@@ -2638,7 +2639,7 @@ function TeamDashboardPage({ onBack }) {
                         <p className="text-sm text-neutral-400 mb-6">
                             {t('team.leaveSure')}<span className="text-white font-semibold">{team?.name}</span>?
                             {user?.id === team?.captainId && (
-                                <span className="block mt-2 text-yellow-600">{t('team.leaveCaptain')}</span>
+                                <span className="block mt-2 text-yellow-400">{t('team.leaveCaptain')}</span>
                             )}
                         </p>
                         <div className="flex gap-3">
@@ -2787,8 +2788,8 @@ function SettingsPage({ onBack }) {
             <form onSubmit={handleSave} className="space-y-6">
 
                 {/* ── Profile Section ─────────────────────────── */}
-                <div className="bg-gradient-to-br from-neutral-900/80 to-neutral-900/60 backdrop-blur-xl border border-neutral-800/50 rounded-3xl overflow-hidden shadow-2xl shadow-black/30">
-                    <div className="px-6 py-5 border-b border-neutral-800/50 bg-gradient-to-r from-yellow-600/5 to-transparent">
+                <div className="glass-panel rounded-3xl overflow-hidden">
+                    <div className="px-6 py-5 border-b border-white/[0.07] bg-gradient-to-r from-yellow-600/5 to-transparent">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-yellow-600/15 border border-yellow-600/30 flex items-center justify-center">
                                 <User size={18} className="text-yellow-500" />
@@ -2802,8 +2803,8 @@ function SettingsPage({ onBack }) {
                         <div className="flex flex-col items-center gap-6 py-4">
                             {/* Big avatar with enhanced design */}
                             <div className="relative group">
-                                <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/30 to-green-600/30 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500" />
-                                <div className="relative w-28 h-28 md:w-40 md:h-40 rounded-full bg-neutral-800 border-4 border-neutral-700 flex items-center justify-center overflow-hidden shadow-2xl ring-4 ring-yellow-600/20 group-hover:ring-yellow-600/40 transition-all duration-300">
+                                <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/30 to-green-600/30 rounded-full blur-xl group-hover:blur-2xl transition duration-500" />
+                                <div className="relative w-28 h-28 md:w-40 md:h-40 rounded-full bg-neutral-800 border-4 border-neutral-700 flex items-center justify-center overflow-hidden shadow-2xl ring-4 ring-yellow-600/20 group-hover:ring-yellow-600/40 transition duration-300">
                                     {avatarFile ? (
                                         <img src={URL.createObjectURL(avatarFile)} alt="Preview" className="w-full h-full object-cover" />
                                     ) : user?.avatarUrl ? (
@@ -2816,7 +2817,7 @@ function SettingsPage({ onBack }) {
                                 <button
                                     type="button"
                                     onClick={() => dropzoneRef.current?.click()}
-                                    className="absolute bottom-2 right-2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 border-4 border-neutral-900 flex items-center justify-center cursor-pointer transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110"
+                                    className="absolute bottom-2 right-2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 border-4 border-neutral-900 flex items-center justify-center cursor-pointer transition duration-300 shadow-lg hover:shadow-xl hover:scale-110"
                                 >
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-black">
                                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -2827,7 +2828,7 @@ function SettingsPage({ onBack }) {
 
                             {/* Enhanced dropzone */}
                             <div
-                                className="w-full border-2 border-dashed border-neutral-700/50 hover:border-yellow-600/50 bg-gradient-to-br from-neutral-950/50 to-neutral-900/30 hover:from-yellow-600/5 hover:to-green-600/5 rounded-2xl p-6 md:p-8 flex flex-col items-center gap-3 md:gap-4 cursor-pointer transition-all duration-300 group"
+                                className="w-full border-2 border-dashed border-neutral-700/50 hover:border-yellow-600/50 bg-gradient-to-br from-neutral-950/50 to-neutral-900/30 hover:from-yellow-600/5 hover:to-green-600/5 rounded-2xl p-6 md:p-8 flex flex-col items-center gap-3 md:gap-4 cursor-pointer transition duration-300 group"
                                 onClick={() => dropzoneRef.current?.click()}
                             >
                                 <input
@@ -2837,7 +2838,7 @@ function SettingsPage({ onBack }) {
                                     ref={dropzoneRef}
                                     onChange={(e) => { if (e.target.files?.[0]) setAvatarFile(e.target.files[0]) }}
                                 />
-                                <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-neutral-800 to-neutral-900 border border-neutral-700 group-hover:border-yellow-600/30 group-hover:from-yellow-600/10 group-hover:to-green-600/10 flex items-center justify-center transition-all duration-300">
+                                <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-neutral-800 to-neutral-900 border border-neutral-700 group-hover:border-yellow-600/30 group-hover:from-yellow-600/10 group-hover:to-green-600/10 flex items-center justify-center transition duration-300">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-400 group-hover:text-yellow-500 transition-colors">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                                         <polyline points="17 8 12 3 7 8"/>
@@ -2870,14 +2871,14 @@ function SettingsPage({ onBack }) {
                         {/* Enhanced Display Name */}
                         <div>
                             <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-3 flex items-center gap-2">
-                                <User size={12} className="text-yellow-600" />
+                                <User size={12} className="text-yellow-400" />
                                 {t('settings.displayName')}
                             </label>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full bg-neutral-950/60 border border-neutral-800/50 rounded-xl px-5 py-4 text-white text-sm focus:outline-none focus:border-yellow-600/50 focus:ring-2 focus:ring-yellow-600/20 font-medium transition-all duration-300 placeholder:text-neutral-600"
+                                className="field px-5 py-4 text-sm font-medium"
                                 placeholder={t('settings.displayNamePlaceholder')}
                             />
                         </div>
@@ -2885,14 +2886,14 @@ function SettingsPage({ onBack }) {
                         {/* Enhanced Email (read-only) */}
                         <div>
                             <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-3 flex items-center gap-2">
-                                <Mail size={12} className="text-yellow-600" />
+                                <Mail size={12} className="text-yellow-400" />
                                 Email <span className="text-neutral-600 normal-case tracking-normal font-normal ml-1">— {t('settings.emailReadOnly')}</span>
                             </label>
                             <input
                                 type="text"
                                 value={user?.email || ''}
                                 disabled
-                                className="w-full bg-neutral-950/30 border border-neutral-800/30 rounded-xl px-5 py-4 text-neutral-500 text-sm focus:outline-none cursor-not-allowed"
+                                className="field px-5 py-4 text-sm !text-neutral-500 opacity-60 cursor-not-allowed"
                             />
                         </div>
 
@@ -2917,7 +2918,7 @@ function SettingsPage({ onBack }) {
                     disabled={saving}
                     className="w-full py-4 rounded-2xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
                                bg-gradient-to-r from-yellow-700 via-yellow-600 to-green-600 text-black
-                               shadow-lg shadow-yellow-600/20 hover:shadow-xl hover:shadow-yellow-600/30 hover:scale-[1.02] active:scale-100 transition-all duration-300
+                               shadow-lg shadow-yellow-600/20 hover:shadow-xl hover:shadow-yellow-600/30 hover:scale-[1.02] active:scale-100 transition duration-300
                                disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                 >
                     {saving ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
@@ -2927,8 +2928,8 @@ function SettingsPage({ onBack }) {
             </form>
 
             {/* ── Enhanced Language Section ─────────────────────────────── */}
-            <div className="mt-6 bg-gradient-to-br from-neutral-900/80 to-neutral-900/60 backdrop-blur-xl border border-neutral-800/50 rounded-3xl overflow-hidden shadow-2xl shadow-black/30">
-                <div className="px-6 py-5 border-b border-neutral-800/50 bg-gradient-to-r from-blue-600/5 to-transparent">
+            <div className="mt-6 glass-panel rounded-3xl overflow-hidden">
+                <div className="px-6 py-5 border-b border-white/[0.07] bg-gradient-to-r from-blue-600/5 to-transparent">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-blue-600/15 border border-blue-600/30 flex items-center justify-center">
                             <Globe size={18} className="text-blue-500" />
@@ -2943,10 +2944,10 @@ function SettingsPage({ onBack }) {
                                 key={lang.code}
                                 type="button"
                                 onClick={() => handleLanguageChange(lang.code)}
-                                className={`flex flex-col items-center gap-3 py-5 px-4 rounded-2xl border text-center transition-all duration-300 cursor-pointer ${
+                                className={`flex flex-col items-center gap-3 py-5 px-4 rounded-2xl border text-center transition duration-300 cursor-pointer ${
                                     language === lang.code
                                         ? 'bg-gradient-to-br from-blue-600/10 to-blue-600/5 border-blue-600/50 text-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.15)] scale-105'
-                                        : 'bg-neutral-950/40 border-neutral-800/50 text-neutral-500 hover:border-neutral-700 hover:text-neutral-300 hover:bg-neutral-900/60'
+                                        : 'bg-neutral-950/40 border-white/[0.07] text-neutral-500 hover:border-neutral-700 hover:text-neutral-300 hover:bg-neutral-900/60'
                                 }`}
                             >
                                 <span className="text-3xl filter drop-shadow-lg">{lang.flag}</span>
@@ -2974,7 +2975,7 @@ function SettingsPage({ onBack }) {
                 </div>
                 <button
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="shrink-0 px-6 py-3 rounded-xl border border-red-500/30 text-red-400/80 text-xs font-bold uppercase tracking-widest hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/50 transition-all cursor-pointer"
+                    className="shrink-0 px-6 py-3 rounded-xl border border-red-500/30 text-red-400/80 text-xs font-bold uppercase tracking-widest hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/50 transition cursor-pointer"
                 >
                     {t('settings.deleteAccount')}
                 </button>
@@ -3130,16 +3131,12 @@ export default function App() {
             {/* ── Cinematic Preloader Overlay ── */}
             <Preloader isVisible={showPreloader} />
 
-            {/* ── Main Shell ── */}
-            <div
-                className="min-h-screen w-full text-white bg-neutral-950 flex flex-col"
-                style={{
-                    backgroundImage: "linear-gradient(to bottom, rgba(18,18,18,0.85), rgba(18,18,18,1)), url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2048&auto=format&fit=crop')",
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundAttachment: 'scroll',
-                }}
-            >
+            {/* ── Main Shell ── (backdrop is the fixed CSS starfield in index.css) */}
+            <div className="min-h-screen w-full text-white flex flex-col">
+                <div className="cosmic-bg" aria-hidden="true">
+                    <div className="cosmic-bg__photo" />
+                    <div className="cosmic-bg__glow" />
+                </div>
                 <Header
                     onSignInClick={() => setIsModalOpen(true)}
                     onJoinClick={handleGlobalJoinClick}
@@ -3200,19 +3197,20 @@ export default function App() {
                 {/* ── Language Selection Modal ── */}
                 {isLanguageModalOpen && createPortal(
                     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-8">
-                        <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md cursor-pointer" onClick={() => setIsLanguageModalOpen(false)} />
-                        <div className="relative w-full max-w-md rounded-2xl overflow-hidden bg-neutral-900 shadow-2xl border border-neutral-800 animate-in zoom-in-95 duration-200 p-8">
+                        <div className="absolute inset-0 bg-black/70 backdrop-blur-md cursor-pointer" onClick={() => setIsLanguageModalOpen(false)} />
+                        <div className="relative w-full max-w-md rounded-3xl overflow-hidden glass-panel !bg-[#0c0d12]/90 animate-in zoom-in-95 duration-200 p-8">
                             <button
                                 onClick={() => setIsLanguageModalOpen(false)}
-                                className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-neutral-950/50 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-950/80 cursor-pointer transition-all"
+                                aria-label="Close"
+                                className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-neutral-950/50 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-950/80 cursor-pointer transition"
                             >
                                 <X size={20} />
                             </button>
                             <div className="flex flex-col items-center gap-6">
-                                <div className="w-16 h-16 rounded-full bg-yellow-600/20 border border-yellow-600/30 flex items-center justify-center">
-                                    <BookOpen size={32} className="text-yellow-600" />
+                                <div className="w-16 h-16 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center" aria-hidden="true">
+                                    <BookOpen size={32} className="text-yellow-400" />
                                 </div>
-                                <h3 className="text-2xl font-black uppercase tracking-widest text-white text-center">
+                                <h3 className="font-display text-xl font-extrabold uppercase tracking-tight text-white text-center">
                                     {t('guide.selectLanguage')}
                                 </h3>
                                 <div className="flex flex-col gap-3 w-full">
@@ -3222,10 +3220,7 @@ export default function App() {
                                             setIsLanguageModalOpen(false);
                                             setIsVideoModalOpen(true);
                                         }}
-                                        className="px-6 py-4 rounded-xl text-base font-bold uppercase tracking-widest
-                                                   bg-gradient-to-r from-yellow-600 to-yellow-800 text-white
-                                                   hover:from-yellow-500 hover:to-yellow-700 transition cursor-pointer
-                                                   shadow-lg shadow-yellow-600/20"
+                                        className="btn-gold px-6 py-4 text-base tracking-widest"
                                     >
                                         {t('guide.russian')}
                                     </button>
@@ -3235,10 +3230,7 @@ export default function App() {
                                             setIsLanguageModalOpen(false);
                                             setIsVideoModalOpen(true);
                                         }}
-                                        className="px-6 py-4 rounded-xl text-base font-bold uppercase tracking-widest
-                                                   bg-gradient-to-r from-yellow-600 to-yellow-800 text-white
-                                                   hover:from-yellow-500 hover:to-yellow-700 transition cursor-pointer
-                                                   shadow-lg shadow-yellow-600/20"
+                                        className="btn-gold px-6 py-4 text-base tracking-widest"
                                     >
                                         {t('guide.english')}
                                     </button>
@@ -3252,11 +3244,12 @@ export default function App() {
                 {/* ── Video Modal ── */}
                 {isVideoModalOpen && createPortal(
                     <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4 sm:p-8">
-                        <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md cursor-pointer" onClick={() => { setIsVideoModalOpen(false); setSelectedGuideLanguage(null); }} />
-                        <div className="relative w-full max-w-5xl rounded-2xl overflow-hidden bg-neutral-900 shadow-2xl border border-neutral-800 animate-in zoom-in-95 duration-200">
+                        <div className="absolute inset-0 bg-black/70 backdrop-blur-md cursor-pointer" onClick={() => { setIsVideoModalOpen(false); setSelectedGuideLanguage(null); }} />
+                        <div className="relative w-full max-w-5xl rounded-3xl overflow-hidden glass-panel !bg-[#0c0d12]/90 animate-in zoom-in-95 duration-200">
                             <button
                                 onClick={() => { setIsVideoModalOpen(false); setSelectedGuideLanguage(null); }}
-                                className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-neutral-950/50 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-950/80 cursor-pointer transition-all"
+                                aria-label="Close"
+                                className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-neutral-950/50 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-950/80 cursor-pointer transition"
                             >
                                 <X size={20} />
                             </button>

@@ -17,10 +17,7 @@ import AdminPostsManager from './AdminPostsManager'
 // ─── Shared style tokens ──────────────────────────────────────────────
 
 const inputClass =
-    'w-full px-4 py-3 rounded-xl text-sm text-white placeholder-neutral-500 ' +
-    'bg-neutral-950 border border-neutral-700 ' +
-    'focus:border-yellow-600 focus:ring-1 focus:ring-yellow-600 focus:outline-none ' +
-    'transition-all duration-300'
+    'field px-4 py-3 text-sm'
 
 const labelClass =
     'block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2'
@@ -196,7 +193,7 @@ function Wheel({ items, selected, onChange }) {
                     <div 
                         key={`${item}-${offset}`}
                         className={`flex items-center justify-center text-xl md:text-lg font-mono select-none cursor-pointer
-                                    transition-all duration-100 w-full h-[44px] md:h-[30px]
+                                    transition duration-100 w-full h-[44px] md:h-[30px]
                                     ${opacity} ${scale} ${weight}`}
                         onClick={() => onChange(item)}
                     >
@@ -229,7 +226,7 @@ function CustomTimePicker({ value, onChange }) {
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
                 className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-mono tracking-wider
-                            bg-neutral-950 border transition-all duration-300 w-full h-[46px]
+                            bg-neutral-950 border transition duration-300 w-full h-[46px]
                             ${isOpen ? 'border-yellow-600 text-yellow-500 shadow-[0_0_15px_rgba(202,138,4,0.15)] ring-1 ring-yellow-600/50' : 'border-neutral-700 text-white hover:border-neutral-600 hover:bg-neutral-900'}`}
             >
                 <Clock size={15} className={isOpen ? 'text-yellow-600' : 'text-neutral-500'} />
@@ -238,7 +235,7 @@ function CustomTimePicker({ value, onChange }) {
             
             {isOpen && (
                 <div className="absolute top-full right-0 sm:left-auto mt-2 z-[100] animate-in fade-in zoom-in-95 duration-200 origin-top">
-                    <div className="relative flex bg-[#161616] border border-neutral-800 rounded-[24px] p-4 
+                    <div className="relative flex bg-[#161616] border border-white/[0.07] rounded-[24px] p-4 
                                     w-[min(320px,calc(100vw-32px))] md:w-[160px] shadow-2xl mx-auto">
                         {/* Highlight pill in center */}
                         <div className="absolute top-1/2 left-3 right-3 -translate-y-1/2 h-[44px] md:h-[32px] bg-neutral-800/80 rounded-xl pointer-events-none z-0" />
@@ -324,7 +321,7 @@ function CreateCompetitionForm({ onCreated }) {
     }
 
     return (
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6">
+        <div className="glass-panel rounded-3xl p-6">
             <div className="flex items-center gap-3 mb-6">
                 <div className="w-9 h-9 rounded-xl bg-yellow-600/15 border border-yellow-600/30
                                 flex items-center justify-center">
@@ -414,7 +411,7 @@ function CreateCompetitionForm({ onCreated }) {
                     </div>
                 </div>
 
-                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 transition-colors">
+                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-white/[0.07] bg-neutral-950 hover:bg-neutral-900 transition-colors">
                     <input 
                         type="checkbox" 
                         checked={isIndividual} 
@@ -430,13 +427,7 @@ function CreateCompetitionForm({ onCreated }) {
                 <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-[0.15em]
-                               bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
-                               shadow-lg shadow-yellow-600/20
-                               transition-all duration-300 ease-out
-                               hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30
-                               active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed
-                               disabled:hover:scale-100 cursor-pointer flex items-center justify-center gap-2"
+                    className="btn-gold w-full py-3.5 text-sm tracking-[0.15em]"
                 >
                     {loading
                         ? <><Loader2 size={16} className="animate-spin" /> Creating…</>
@@ -472,10 +463,10 @@ function CompetitionCard({ comp, isSelected, onSelect, onStop, onDelete, onToggl
         <div
             onClick={() => onSelect(comp)}
             className={`group relative rounded-2xl border p-5 cursor-pointer
-                        transition-all duration-300
+                        transition duration-300
                         ${isSelected
                             ? 'bg-yellow-600/10 border-yellow-600/40 shadow-lg shadow-yellow-600/10'
-                            : 'bg-neutral-900 border-neutral-800 hover:border-neutral-700 hover:bg-neutral-850'}`}
+                            : 'bg-neutral-900 border-white/[0.07] hover:border-neutral-700 hover:bg-neutral-850'}`}
         >
             {/* Selection indicator */}
             {isSelected && (
@@ -557,7 +548,7 @@ function CompetitionCard({ comp, isSelected, onSelect, onStop, onDelete, onToggl
                         onClick={handleStop}
                         disabled={!comp.isSelectionActive || stopping}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold
-                                   uppercase tracking-wider transition-all duration-200
+                                   uppercase tracking-wider transition duration-200
                                    ${comp.isSelectionActive
                                         ? 'bg-red-500/15 border border-red-500/30 text-red-400 hover:bg-red-500/25 cursor-pointer'
                                         : 'bg-neutral-800 border border-neutral-700 text-neutral-600 cursor-not-allowed'}`}
@@ -580,20 +571,20 @@ function TeamDetailsModal({ team, onClose }) {
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-sm cursor-pointer" onClick={onClose} />
-            <div className="relative bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-5xl
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-md cursor-pointer" onClick={onClose} />
+            <div className="relative glass-panel rounded-3xl w-full max-w-5xl
                             shadow-2xl shadow-black/50 overflow-hidden flex flex-col"
                  style={{ maxHeight: '90vh', animation: 'zoomIn 0.25s ease-out' }}>
                 
                 {/* Header */}
-                <div className="flex items-center justify-between p-8 md:p-10 border-b border-neutral-800 bg-neutral-900/50">
+                <div className="flex items-center justify-between p-8 md:p-10 border-b border-white/[0.07] bg-neutral-900/50">
                     <div className="flex items-center gap-6">
                         <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-yellow-600/15 border border-yellow-600/30 flex items-center justify-center shadow-inner">
                             <Users size={32} className="text-yellow-500 md:w-10 md:h-10" />
                         </div>
                         <div>
                             <h2 className="text-3xl md:text-4xl font-black uppercase tracking-widest text-white">{team.name}</h2>
-                            <p className="text-sm md:text-base text-neutral-500 font-mono tracking-wider mt-2 bg-neutral-950 inline-block px-3 py-1 rounded-lg border border-neutral-800">CODE: <span className="text-yellow-600 font-bold">{team.inviteCode}</span></p>
+                            <p className="text-sm md:text-base text-neutral-500 font-mono tracking-wider mt-2 bg-neutral-950 inline-block px-3 py-1 rounded-lg border border-white/[0.07]">CODE: <span className="text-yellow-600 font-bold">{team.inviteCode}</span></p>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-3 text-neutral-500 hover:text-white bg-neutral-800/50 hover:bg-neutral-800 rounded-xl transition-colors cursor-pointer self-start border border-transparent hover:border-neutral-700">
@@ -604,11 +595,11 @@ function TeamDetailsModal({ team, onClose }) {
                 {/* Content */}
                 <div className="p-8 md:p-10 overflow-y-auto custom-scrollbar">
                     <div className="grid grid-cols-2 gap-6 mb-10">
-                        <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center shadow-inner">
+                        <div className="bg-neutral-950 border border-white/[0.07] rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center shadow-inner">
                             <p className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Total Score</p>
                             <p className="text-4xl md:text-5xl font-mono text-yellow-500 font-black drop-shadow-md">{team.totalScore.toLocaleString()}</p>
                         </div>
-                        <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center shadow-inner">
+                        <div className="bg-neutral-950 border border-white/[0.07] rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center shadow-inner">
                             <p className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">Members</p>
                             <p className="text-4xl md:text-5xl font-mono text-white font-black drop-shadow-md">{team.members?.length || 0}</p>
                         </div>
@@ -622,9 +613,9 @@ function TeamDetailsModal({ team, onClose }) {
                     
                     <div className="space-y-4">
                         {team.members?.map((member, i) => (
-                            <div key={member.id} className="flex items-center justify-between bg-neutral-950/50 border border-neutral-800/60 rounded-2xl p-6 hover:border-neutral-700 hover:bg-neutral-900/50 transition-all duration-300 group">
+                            <div key={member.id} className="flex items-center justify-between bg-neutral-950/50 border border-white/[0.07] rounded-2xl p-6 hover:border-neutral-700 hover:bg-neutral-900/50 transition duration-300 group">
                                 <div className="flex items-center gap-6">
-                                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center font-black text-xs md:text-sm text-neutral-500 shrink-0 shadow-inner group-hover:text-neutral-400 group-hover:border-neutral-700 transition-colors">
+                                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-neutral-900 border border-white/[0.07] flex items-center justify-center font-black text-xs md:text-sm text-neutral-500 shrink-0 shadow-inner group-hover:text-neutral-400 group-hover:border-neutral-700 transition-colors">
                                         {i + 1}
                                     </div>
                                     <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-neutral-800 overflow-hidden shrink-0 border-2 border-neutral-700 flex items-center justify-center shadow-lg">
@@ -646,7 +637,7 @@ function TeamDetailsModal({ team, onClose }) {
                                         <p className="text-sm text-neutral-400 font-medium truncate max-w-[200px] sm:max-w-[300px] md:max-w-[400px]">{member.email}</p>
                                     </div>
                                 </div>
-                                <div className="text-right shrink-0 bg-neutral-900 border border-neutral-800 px-5 py-3 rounded-xl shadow-inner">
+                                <div className="text-right shrink-0 bg-neutral-900 border border-white/[0.07] px-5 py-3 rounded-xl shadow-inner">
                                     <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-neutral-500 mb-1.5">XP</p>
                                     <p className="font-mono text-yellow-500 font-black text-xl md:text-2xl">{(member.xp || 0).toLocaleString()}</p>
                                 </div>
@@ -684,9 +675,9 @@ function ClubMembersSection() {
     }
 
     return (
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden">
+        <div className="glass-panel rounded-3xl overflow-hidden">
             {/* Header */}
-            <div className="flex items-center gap-3 px-6 py-5 border-b border-neutral-800">
+            <div className="flex items-center gap-3 px-6 py-5 border-b border-white/[0.07]">
                 <div className="w-9 h-9 rounded-xl bg-yellow-600/15 border border-yellow-600/30
                                 flex items-center justify-center">
                     <Users size={16} className="text-yellow-500" />
@@ -726,7 +717,7 @@ function ClubMembersSection() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-neutral-800">
+                                <tr className="border-b border-white/[0.07]">
                                     <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">#</th>
                                     <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">Name</th>
                                     <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">Email</th>
@@ -788,9 +779,9 @@ function TeamViewer({ competition }) {
     if (!competition) return null
 
     return (
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden">
+        <div className="glass-panel rounded-3xl overflow-hidden">
             {/* Header */}
-            <div className="flex items-center gap-3 px-6 py-5 border-b border-neutral-800">
+            <div className="flex items-center gap-3 px-6 py-5 border-b border-white/[0.07]">
                 <div className="w-9 h-9 rounded-xl bg-yellow-600/15 border border-yellow-600/30
                                 flex items-center justify-center">
                     <Users size={16} className="text-yellow-500" />
@@ -830,7 +821,7 @@ function TeamViewer({ competition }) {
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-neutral-800">
+                                <tr className="border-b border-white/[0.07]">
                                     <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">#</th>
                                     <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">Team</th>
                                     <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">Captain</th>
@@ -899,7 +890,7 @@ function TeamViewer({ competition }) {
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-neutral-800">
+                                <tr className="border-b border-white/[0.07]">
                                     <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">#</th>
                                     <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">Participant</th>
                                     <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">Email</th>
@@ -981,7 +972,7 @@ function EditDescriptionPanel({ competition, onUpdated, showToast }) {
     }
 
     return (
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 mb-6">
+        <div className="glass-panel rounded-3xl p-6 mb-6">
             <div className="flex items-center gap-3 mb-5">
                 <div className="w-9 h-9 rounded-xl bg-yellow-600/15 border border-yellow-600/30 flex items-center justify-center shrink-0">
                     <FileText size={16} className="text-yellow-500" />
@@ -1033,12 +1024,7 @@ function EditDescriptionPanel({ competition, onUpdated, showToast }) {
                     <button
                         type="submit"
                         disabled={saving || !isDirty || overLimit}
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest
-                                   bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
-                                   shadow-lg shadow-yellow-600/20
-                                   transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:shadow-yellow-600/30
-                                   active:scale-100 disabled:opacity-40 disabled:cursor-not-allowed
-                                   disabled:hover:scale-100 cursor-pointer"
+                        className="btn-gold flex items-center gap-2 px-5 py-2.5 text-xs tracking-widest"
                     >
                         {saving
                             ? <><Loader2 size={13} className="animate-spin" /> Saving…</>
@@ -1099,7 +1085,7 @@ function UserDeleteSection({ showToast }) {
             </div>
 
             {/* Search form */}
-            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6">
+            <div className="glass-panel rounded-3xl p-6">
                 <div className="flex items-center gap-3 mb-5">
                     <div className="w-9 h-9 rounded-xl bg-yellow-600/15 border border-yellow-600/30 flex items-center justify-center">
                         <Search size={16} className="text-yellow-500" />
@@ -1120,12 +1106,7 @@ function UserDeleteSection({ showToast }) {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="px-6 py-3 rounded-xl text-sm font-bold uppercase tracking-widest
-                                   bg-gradient-to-r from-yellow-700 to-yellow-600 text-black
-                                   shadow-lg shadow-yellow-600/20
-                                   transition-all duration-200 hover:scale-[1.02] hover:shadow-xl
-                                   active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed
-                                   disabled:hover:scale-100 cursor-pointer flex items-center gap-2 shrink-0"
+                        className="btn-gold px-6 py-3 text-sm tracking-widest"
                     >
                         {loading
                             ? <Loader2 size={15} className="animate-spin" />
@@ -1137,8 +1118,8 @@ function UserDeleteSection({ showToast }) {
 
             {/* Results */}
             {searched && (
-                <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden">
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800">
+                <div className="glass-panel rounded-3xl overflow-hidden">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.07]">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
                                 <UserX size={14} className="text-red-400" />
@@ -1216,7 +1197,7 @@ function UserDeleteSection({ showToast }) {
                                         className="ml-4 p-2.5 rounded-xl text-neutral-600 hover:text-red-400
                                                    hover:bg-red-500/10 border border-transparent
                                                    hover:border-red-500/20
-                                                   transition-all duration-200 cursor-pointer shrink-0
+                                                   transition duration-200 cursor-pointer shrink-0
                                                    disabled:opacity-30 disabled:cursor-not-allowed
                                                    disabled:hover:text-neutral-600 disabled:hover:bg-transparent"
                                     >
@@ -1233,11 +1214,11 @@ function UserDeleteSection({ showToast }) {
             {userToDelete && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div
-                        className="absolute inset-0 bg-neutral-950/80 backdrop-blur-sm cursor-pointer"
+                        className="absolute inset-0 bg-black/70 backdrop-blur-md cursor-pointer"
                         onClick={() => !deleting && setUserToDelete(null)}
                     />
                     <div
-                        className="relative bg-neutral-900 border border-neutral-800 rounded-3xl w-full max-w-md
+                        className="relative bg-neutral-900 border border-white/[0.07] rounded-3xl w-full max-w-md
                                    shadow-2xl shadow-black p-8 md:p-10 flex flex-col items-center text-center"
                         style={{ animation: 'zoomIn 0.25s ease-out' }}
                     >
@@ -1250,7 +1231,7 @@ function UserDeleteSection({ showToast }) {
                             Delete User?
                         </h3>
 
-                        <div className="bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 mb-5 w-full">
+                        <div className="bg-neutral-950 border border-white/[0.07] rounded-xl px-4 py-3 mb-5 w-full">
                             <p className="text-white font-bold text-sm">{userToDelete.name}</p>
                             <p className="text-neutral-400 text-xs mt-0.5">{userToDelete.email}</p>
                             {userToDelete.team && (
@@ -1289,7 +1270,7 @@ function UserDeleteSection({ showToast }) {
                                 disabled={deleting}
                                 className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest
                                            bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20
-                                           active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer
+                                           active:scale-[0.98] transition disabled:opacity-50 cursor-pointer
                                            flex items-center justify-center gap-2"
                             >
                                 {deleting ? <Loader2 size={18} className="animate-spin" /> : <><Trash2 size={16} /> Delete</>}
@@ -1319,7 +1300,7 @@ export default function AdminPage({ onBack }) {
     // ── guard ────────────────────────────────────────────────────────
     if (user?.role !== 'ADMIN') {
         return (
-            <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <ShieldCheck size={48} className="text-red-500 mx-auto mb-4" />
                     <h1 className="text-xl font-black uppercase tracking-widest text-white mb-2">
@@ -1420,7 +1401,7 @@ export default function AdminPage({ onBack }) {
     // ─────────────────────────────────────────────────────────────────
 
     return (
-        <div className="min-h-screen bg-neutral-950 text-white">
+        <div className="min-h-screen text-white">
             {/* Toast */}
             {toast && (
                 <Toast
@@ -1431,7 +1412,7 @@ export default function AdminPage({ onBack }) {
             )}
 
             {/* Top bar */}
-            <div className="sticky top-0 z-50 bg-neutral-950/90 backdrop-blur-md border-b border-neutral-800/60">
+            <div className="sticky top-0 z-50 bg-[#07080d]/75 backdrop-blur-2xl border-b border-white/[0.06]">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center gap-4">
                     <button
                         onClick={onBack}
@@ -1456,7 +1437,7 @@ export default function AdminPage({ onBack }) {
             {/* Content */}
             <div className="max-w-7xl mx-auto px-6 py-10">
                 {/* Tabs */}
-                <div className="flex gap-4 mb-10 border-b border-neutral-800 pb-px">
+                <div className="flex gap-4 mb-10 border-b border-white/[0.07] pb-px">
                     <button
                         onClick={() => setAdminTab('competitions')}
                         className={`pb-4 text-sm font-bold uppercase tracking-widest transition-colors cursor-pointer relative ${
@@ -1548,7 +1529,7 @@ export default function AdminPage({ onBack }) {
                                 </div>
                             ) : competitions.length === 0 ? (
                                 <div className="text-center py-12 bg-neutral-900/50 border
-                                                border-dashed border-neutral-800 rounded-2xl">
+                                                border-dashed border-white/[0.07] rounded-2xl">
                                     <Trophy size={28} className="text-neutral-700 mx-auto mb-3" />
                                     <p className="text-sm text-neutral-500">No competitions yet.</p>
                                     <p className="text-xs text-neutral-600 mt-1">
@@ -1592,7 +1573,7 @@ export default function AdminPage({ onBack }) {
                         ) : (
                             <div className="h-full min-h-64 flex flex-col items-center justify-center
                                             text-center bg-neutral-900/40 border border-dashed
-                                            border-neutral-800 rounded-2xl py-16 px-8">
+                                            border-white/[0.07] rounded-2xl py-16 px-8">
                                 <Calendar size={36} className="text-neutral-700 mb-4" />
                                 <p className="text-sm font-semibold text-neutral-500">
                                     Select a competition
@@ -1611,9 +1592,9 @@ export default function AdminPage({ onBack }) {
             {/* Delete Confirmation Modal */}
             {compToDelete && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-sm cursor-pointer"
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-md cursor-pointer"
                          onClick={() => !deleting && setCompToDelete(null)} />
-                    <div className="relative bg-neutral-900 border border-neutral-800 rounded-3xl w-full max-w-md
+                    <div className="relative bg-neutral-900 border border-white/[0.07] rounded-3xl w-full max-w-md
                                     shadow-2xl shadow-black p-8 md:p-10 flex flex-col items-center text-center"
                          style={{ animation: 'zoomIn 0.25s ease-out' }}>
                         
@@ -1650,7 +1631,7 @@ export default function AdminPage({ onBack }) {
                                 disabled={deleting}
                                 className="flex-1 py-4 rounded-xl text-sm font-bold uppercase tracking-widest
                                            bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20
-                                           active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer
+                                           active:scale-[0.98] transition disabled:opacity-50 cursor-pointer
                                            flex items-center justify-center gap-2"
                             >
                                 {deleting ? <Loader2 size={18} className="animate-spin" /> : 'Delete'}

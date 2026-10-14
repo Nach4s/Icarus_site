@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useLang } from './LanguageContext.jsx'
+import PageHeading from './PageHeading.jsx'
 import { useAuth } from './AuthContext.jsx'
 import { api } from './api.js'
-import { Rocket, Clock, Video, Maximize, Minimize, Gamepad2, CalendarDays, Sparkles, Loader2 } from 'lucide-react'
+import { Rocket, Clock, Video, Maximize, Minimize, Gamepad2, CalendarDays, Loader2 } from 'lucide-react'
 
 // localStorage keys used by the game (same origin as the site)
 const GAME_KEYS = ['icarus_coins', 'icarus_unlocked_skins', 'icarus_selected_skin', 'icarusBest', 'icarusScores', 'icarusStats']
@@ -160,46 +161,43 @@ export default function SpaceWeekTab() {
 
     return (
         <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-12 lg:py-20">
-            {/* Header */}
-            <div className="text-center mb-12">
-                <div className="px-5 py-1.5 rounded-full bg-yellow-600/10 border border-yellow-600/20 inline-flex items-center gap-2 mb-6">
-                    <Sparkles size={14} className="text-yellow-600" />
-                    <span className="text-yellow-600 text-xs font-bold uppercase tracking-widest">Oct 5 – 11</span>
-                </div>
-                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white uppercase tracking-widest mb-4 drop-shadow-lg">
-                    {t('spaceWeek.title')}
-                </h1>
-                <p className="text-base sm:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed">
-                    {t('spaceWeek.subtitle')}
-                </p>
-            </div>
+            <PageHeading
+                eyebrow={<span translate="no">Oct 5 – 11</span>}
+                title={t('spaceWeek.title')}
+                subtitle={t('spaceWeek.subtitle')}
+                align="center"
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
                 {/* Seminars */}
-                <section className="lg:col-span-2 bg-neutral-900/70 backdrop-blur-md border border-neutral-800 rounded-2xl p-5 shadow-2xl shadow-black/50" aria-labelledby="seminars-heading">
-                    <div className="flex items-center gap-2 mb-1">
-                        <CalendarDays size={18} className="text-yellow-600" />
-                        <h2 id="seminars-heading" className="text-sm font-black uppercase tracking-[0.2em] text-white">
+                <section className="lg:col-span-2 glass-panel rounded-3xl p-5 sm:p-6" aria-labelledby="seminars-heading">
+                    <div className="flex items-center gap-2.5 mb-1">
+                        <span className="w-8 h-8 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center" aria-hidden="true">
+                            <CalendarDays size={16} className="text-yellow-400" />
+                        </span>
+                        <h2 id="seminars-heading" className="font-display text-sm font-bold uppercase tracking-[0.18em] text-white">
                             {t('spaceWeek.seminars')}
                         </h2>
                     </div>
-                    <p className="text-[11px] text-neutral-500 mb-4 uppercase tracking-widest">{t('spaceWeek.timezone')}</p>
+                    <p className="text-[11px] text-neutral-500 mb-5 uppercase tracking-widest">{t('spaceWeek.timezone')}</p>
 
                     {/* data-lenis-prevent: Lenis smooth scroll otherwise swallows the mouse wheel here */}
                     <ul data-lenis-prevent className="space-y-3 lg:max-h-[640px] lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
                         {SEMINARS.map((s) => (
                             <li
                                 key={s.link}
-                                className="group bg-neutral-950/60 border border-neutral-800 hover:border-yellow-600/40 rounded-xl p-4 transition-all duration-300 hover:-translate-y-0.5"
+                                className="group rounded-2xl p-4 bg-black/30 border border-white/[0.06]
+                                           transition-[border-color,background-color,transform] duration-300
+                                           hover:border-yellow-500/35 hover:bg-black/40 hover:-translate-y-0.5"
                             >
-                                <p className="text-[11px] font-bold uppercase tracking-widest text-yellow-600 mb-1 capitalize">
+                                <p className="text-[11px] font-bold uppercase tracking-widest text-yellow-400 mb-1.5 capitalize">
                                     {formatDate(s.date)}
                                 </p>
                                 <h3 className="text-sm font-bold text-white leading-snug mb-1">{s.title}</h3>
                                 <p className="text-xs text-neutral-400 mb-3">{s.speaker}</p>
                                 <div className="flex items-center justify-between gap-3">
                                     <span className="flex items-center gap-1.5 text-xs text-neutral-300 tabular-nums">
-                                        <Clock size={13} className="text-neutral-500" />
+                                        <Clock size={13} className="text-neutral-500" aria-hidden="true" />
                                         {s.time}
                                     </span>
                                     <a
@@ -207,9 +205,9 @@ export default function SpaceWeekTab() {
                                         href={s.link}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-black text-xs font-black uppercase tracking-wider transition-colors"
+                                        className="btn-gold px-4 py-1.5 text-xs"
                                     >
-                                        <Video size={13} />
+                                        <Video size={13} aria-hidden="true" />
                                         {t('spaceWeek.join')}
                                     </a>
                                 </div>
@@ -220,19 +218,21 @@ export default function SpaceWeekTab() {
 
                 {/* Game */}
                 <section className="lg:col-span-3" aria-labelledby="game-heading">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                            <Gamepad2 size={18} className="text-yellow-600" />
-                            <h2 id="game-heading" className="text-sm font-black uppercase tracking-[0.2em] text-white">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2.5">
+                            <span className="w-8 h-8 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center" aria-hidden="true">
+                                <Gamepad2 size={16} className="text-yellow-400" />
+                            </span>
+                            <h2 id="game-heading" translate="no" className="font-display text-sm font-bold uppercase tracking-[0.18em] text-white">
                                 Icarus Pixel
                             </h2>
                         </div>
                         <button
                             id="game-fullscreen-btn"
                             onClick={toggleFullscreen}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-700 hover:border-yellow-600/50 text-neutral-300 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                            className="btn-ghost px-4 py-2 text-xs"
                         >
-                            {isFullscreen ? <Minimize size={13} /> : <Maximize size={13} />}
+                            {isFullscreen ? <Minimize size={13} aria-hidden="true" /> : <Maximize size={13} aria-hidden="true" />}
                             {t('spaceWeek.fullscreen')}
                         </button>
                     </div>
@@ -240,7 +240,7 @@ export default function SpaceWeekTab() {
                         ref={gameRef}
                         className={pseudoFullscreen
                             ? 'fixed inset-0 z-[10001] bg-black'
-                            : 'relative w-full rounded-2xl overflow-hidden border border-neutral-800 bg-black shadow-2xl shadow-yellow-600/10 aspect-[3/4] max-h-[78vh] min-h-[420px] sm:aspect-[16/10] sm:max-h-none'}
+                            : 'relative w-full rounded-3xl overflow-hidden border border-white/[0.08] bg-black shadow-[0_30px_80px_-30px_rgba(234,179,8,0.25)] aspect-[3/4] max-h-[78vh] min-h-[420px] sm:aspect-[16/10] sm:max-h-none'}
                     >
                         {gameReady ? (
                             <iframe
@@ -265,7 +265,7 @@ export default function SpaceWeekTab() {
                                 <button
                                     id="game-play-fullscreen-btn"
                                     onClick={toggleFullscreen}
-                                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-yellow-600 hover:bg-yellow-500 text-black text-sm font-black uppercase tracking-wider shadow-lg shadow-yellow-600/30 transition-colors cursor-pointer"
+                                    className="btn-gold px-7 py-3 text-sm"
                                 >
                                     <Maximize size={18} />
                                     {t('spaceWeek.playFullscreen')}

@@ -3,10 +3,7 @@ import { Plus, Loader2, AlertTriangle, Trash2, Pencil, Eye, EyeOff, FileText, Im
 import { api } from './api';
 
 const inputClass =
-    'w-full px-4 py-3 rounded-xl text-sm text-white placeholder-neutral-500 ' +
-    'bg-neutral-950 border border-neutral-700 ' +
-    'focus:border-yellow-600 focus:ring-1 focus:ring-yellow-600 focus:outline-none ' +
-    'transition-all duration-300';
+    'field px-4 py-3 text-sm';
 
 const labelClass =
     'block text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2';
@@ -170,7 +167,7 @@ export default function AdminPostsManager({ showToast }) {
         <div className="grid grid-cols-1 xl:grid-cols-[460px_1fr] gap-8">
             {/* ── Left column: Form ──────────────────────────────── */}
             <div className="space-y-6">
-                <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 md:p-8">
+                <div className="glass-panel rounded-3xl p-6 md:p-8">
                     <div className="flex items-center gap-3 mb-8">
                         <div className="w-10 h-10 rounded-xl bg-yellow-600/15 border border-yellow-600/30 flex items-center justify-center">
                             {isEditing ? <Pencil size={20} className="text-yellow-500" /> : <Plus size={20} className="text-yellow-500" />}
@@ -224,7 +221,7 @@ export default function AdminPostsManager({ showToast }) {
                         <div>
                             <div className="flex items-center justify-between mb-2">
                                 <label className={labelClass} style={{ marginBottom: 0 }}>Cover Image</label>
-                                <div className="flex bg-neutral-900 rounded-lg p-1 border border-neutral-800">
+                                <div className="flex bg-neutral-900 rounded-lg p-1 border border-white/[0.07]">
                                     <button
                                         type="button"
                                         onClick={() => setCoverFormat('landscape')}
@@ -263,7 +260,7 @@ export default function AdminPostsManager({ showToast }) {
                                         className="absolute inset-0 w-full h-full object-cover"
                                     />
                                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-sm">
-                                        <label className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-black text-xs font-bold uppercase tracking-widest rounded-lg cursor-pointer transition-colors">
+                                        <label className="btn-gold px-4 py-2 text-xs tracking-widest">
                                             Replace
                                             <input 
                                                 id="cover-image-upload"
@@ -289,9 +286,7 @@ export default function AdminPostsManager({ showToast }) {
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest
-                                           bg-gradient-to-r from-yellow-700 to-yellow-600 text-black shadow-lg shadow-yellow-600/20
-                                           hover:scale-[1.02] transition-all disabled:opacity-50 disabled:hover:scale-100 flex justify-center items-center gap-2 cursor-pointer"
+                                className="btn-gold flex-1 py-3.5 text-sm tracking-widest"
                             >
                                 {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : (isEditing ? 'Update Post' : 'Create Post')}
                             </button>
@@ -317,18 +312,18 @@ export default function AdminPostsManager({ showToast }) {
                     <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-500">
                         Published Posts
                     </h2>
-                    <span className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider bg-neutral-900 px-3 py-1 rounded-full border border-neutral-800">
+                    <span className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider bg-neutral-900 px-3 py-1 rounded-full border border-white/[0.07]">
                         {posts.length} Total
                     </span>
                 </div>
 
                 {loading ? (
-                    <div className="flex items-center justify-center gap-3 py-16 text-neutral-600 bg-neutral-900/30 rounded-2xl border border-neutral-800/50">
+                    <div className="flex items-center justify-center gap-3 py-16 text-neutral-600 bg-neutral-900/30 rounded-2xl border border-white/[0.07]">
                         <Loader2 size={18} className="animate-spin" />
                         <span className="text-sm font-medium tracking-wide">Loading posts...</span>
                     </div>
                 ) : posts.length === 0 ? (
-                    <div className="text-center py-16 bg-neutral-900/30 border border-dashed border-neutral-800 rounded-2xl">
+                    <div className="text-center py-16 bg-neutral-900/30 border border-dashed border-white/[0.07] rounded-2xl">
                         <FileText size={32} className="text-neutral-700 mx-auto mb-4" />
                         <p className="text-sm text-neutral-400 font-semibold">No posts published yet.</p>
                         <p className="text-xs text-neutral-600 mt-2">Create your first post using the form.</p>
@@ -336,9 +331,9 @@ export default function AdminPostsManager({ showToast }) {
                 ) : (
                     <div className="space-y-4">
                         {posts.map(post => (
-                            <div key={post.id} className={`group bg-neutral-900 border ${post.isVisible ? 'border-neutral-800 hover:border-neutral-700' : 'border-neutral-800/50 opacity-60 hover:opacity-80'} rounded-2xl p-4 flex gap-5 transition-all`}>
+                            <div key={post.id} className={`group bg-neutral-900 border ${post.isVisible ? 'border-white/[0.07] hover:border-neutral-700' : 'border-white/[0.07] opacity-60 hover:opacity-80'} rounded-2xl p-4 flex gap-5 transition`}>
                                 {/* 16:9 Thumbnail in List */}
-                                <div className="w-32 sm:w-40 h-20 sm:h-[90px] shrink-0 rounded-xl overflow-hidden bg-neutral-950 border border-neutral-800 relative">
+                                <div className="w-32 sm:w-40 h-20 sm:h-[90px] shrink-0 rounded-xl overflow-hidden bg-neutral-950 border border-white/[0.07] relative">
                                     {post.coverImage ? (
                                         <img src={post.coverImage} alt={post.title} className="absolute inset-0 w-full h-full object-cover" />
                                     ) : (

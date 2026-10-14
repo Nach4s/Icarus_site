@@ -4,6 +4,7 @@
    ══════════════════════════════════════════════════════════ */
 
 import { useLang } from './LanguageContext.jsx'
+import PageHeading from './PageHeading.jsx'
 
 export default function ContactUs() {
     const { t } = useLang()
@@ -49,23 +50,13 @@ export default function ContactUs() {
         <section className="min-h-[80vh] flex flex-col items-center justify-center px-4 py-20 md:py-28">
 
             {/* ── Section Header ─────────────────────────── */}
-            <div className="text-center mb-16 max-w-2xl mx-auto">
-                <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-yellow-600 mb-4">
-                    {t('contact.getInTouch')}
-                </p>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-[0.1em] text-white mb-5 leading-tight">
-                    {t('contact.title')}{' '}
-                    <span
-                        className="text-transparent bg-clip-text"
-                        style={{ backgroundImage: 'linear-gradient(90deg, #A8863E, #D4B06A, #A8863E)' }}
-                    >
-                        ICARUS
-                    </span>
-                </h1>
-                <p className="text-neutral-400 text-base md:text-lg leading-relaxed">
-                    {t('contact.subtitle')}
-                </p>
-            </div>
+            <PageHeading
+                eyebrow={t('contact.getInTouch')}
+                title={<>{t('contact.title')}{' '}<span translate="no" className="text-gradient-gold">ICARUS</span></>}
+                subtitle={t('contact.subtitle')}
+                align="center"
+                className="max-w-3xl mx-auto"
+            />
 
             {/* ── Contact Cards ──────────────────────────── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
@@ -77,10 +68,9 @@ export default function ContactUs() {
                         rel="noopener noreferrer"
                         className={`
                             group relative overflow-hidden
-                            rounded-2xl border border-neutral-800 bg-neutral-900/60
-                            backdrop-blur-xl p-8
-                            transition-all duration-500 ease-out
-                            hover:scale-[1.02] hover:shadow-2xl
+                            rounded-3xl glass-panel p-8
+                            transition-[transform,border-color,box-shadow] duration-500 ease-out
+                            hover:-translate-y-1 hover:shadow-2xl
                             ${borderGlow} ${glowShadow}
                             cursor-pointer
                         `}
@@ -103,16 +93,16 @@ export default function ContactUs() {
                             <div
                                 className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6
                                             bg-gradient-to-br ${iconGradient}
-                                            shadow-lg group-hover:scale-110 transition-transform duration-300`}
+                                            shadow-lg group-hover:scale-105 transition-transform duration-300`}
                             >
                                 <Icon />
                             </div>
 
                             {/* Label + handle */}
-                            <h2 className="text-2xl font-black uppercase tracking-[0.15em] text-white mb-1.5">
+                            <h2 translate="no" className="font-display text-xl font-bold uppercase tracking-[0.12em] text-white mb-1.5">
                                 {label}
                             </h2>
-                            <p className="text-sm font-bold tracking-widest text-yellow-600/80 mb-4">
+                            <p className="text-sm font-bold tracking-widest text-yellow-400/90 mb-4">
                                 {handle}
                             </p>
 
@@ -135,7 +125,7 @@ export default function ContactUs() {
             </div>
 
             {/* ── Decorative Divider ─────────────────────── */}
-            <div className="mt-20 flex items-center gap-4 opacity-30">
+            <div className="mt-20 flex items-center gap-4 opacity-40" aria-hidden="true">
                 <div className="h-px w-24 bg-gradient-to-r from-transparent to-yellow-600" />
                 <div className="w-2 h-2 rounded-full bg-yellow-600" />
                 <div className="h-px w-24 bg-gradient-to-l from-transparent to-yellow-600" />

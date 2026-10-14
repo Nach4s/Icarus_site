@@ -4,9 +4,10 @@ import { api } from './api';
 import Preloader from './Preloader';
 import PostContent from './PostContent.jsx';
 import { useLang } from './LanguageContext.jsx';
+import { formatPostDate } from './formatDate.js';
 
 export default function NewsPostPage({ onBack }) {
-    const { t } = useLang();
+    const { t, lang } = useLang();
     const [post, setPost] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -58,11 +59,11 @@ export default function NewsPostPage({ onBack }) {
             <div className={`flex items-center gap-4 text-[10px] uppercase font-bold tracking-widest text-neutral-400 mb-3 ${isPortrait ? 'justify-center lg:justify-start' : 'justify-center'}`}>
                 <span className="flex items-center gap-1.5">
                     <Clock size={12} />
-                    {new Date(post.createdAt).toLocaleDateString()}
+                    {formatPostDate(post.createdAt, lang)}
                 </span>
                 {/* Author logic removed as per user request */}
             </div>
-            <h1 className={`font-black uppercase tracking-wide text-white leading-tight mb-6 ${isPortrait ? 'text-3xl md:text-4xl' : 'text-3xl md:text-4xl lg:text-5xl'}`}>
+            <h1 className={`font-display font-extrabold uppercase tracking-tight text-white leading-[1.1] mb-6 [text-wrap:balance] ${isPortrait ? 'text-3xl md:text-4xl' : 'text-3xl md:text-4xl lg:text-5xl'}`}>
                 {post.title}
             </h1>
             {post.excerpt && (

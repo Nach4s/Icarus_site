@@ -49,30 +49,33 @@ export default function ResetPasswordPage() {
         }
     }
 
-    const inputClass = `w-full px-4 py-3 rounded-xl text-sm text-white placeholder-neutral-500
-        bg-neutral-950 border border-neutral-700
-        focus:border-yellow-600 focus:ring-1 focus:ring-yellow-600 focus:outline-none
-        transition-all duration-300`
+    const inputClass = "field px-4 py-3 text-sm"
 
     return (
-        <div className="min-h-screen bg-black text-white flex flex-col font-sans lowercase selection:bg-yellow-600/30">
+        <div className="min-h-screen text-white flex flex-col font-sans lowercase selection:bg-yellow-600/30">
+            <div className="cosmic-bg" aria-hidden="true">
+                <div className="cosmic-bg__photo" />
+                <div className="cosmic-bg__glow" />
+            </div>
             {/* Header branding */}
-            <div className="fixed top-0 inset-x-0 h-16 md:h-24 bg-neutral-950/80 backdrop-blur-md border-b border-neutral-800/60 z-50">
+            <div className="fixed top-0 inset-x-0 h-16 md:h-20 bg-[#07080d]/70 backdrop-blur-2xl border-b border-white/[0.06] z-50">
                 <div className="max-w-7xl mx-auto px-4 md:px-8 h-full flex items-center justify-between">
-                    <div className="flex items-center gap-4 select-none cursor-pointer" onClick={() => window.location.href = '/'}>
+                    <a href="/" className="flex items-center gap-4 select-none group">
                         <img
                             src="/logo_white.png"
-                            alt="ICARUS"
-                            className="h-8 md:h-11 w-auto transition-transform duration-500 group-hover:scale-110"
+                            alt=""
+                            width="44"
+                            height="44"
+                            className="h-8 md:h-10 w-auto transition-transform duration-500 group-hover:scale-110"
                         />
-                        <span className="text-xl md:text-3xl font-black uppercase tracking-[0.2em] text-white">
+                        <span translate="no" className="font-display text-lg md:text-2xl font-extrabold uppercase tracking-[0.18em] text-white">
                             ICARUS
                         </span>
                         <div className="hidden md:block h-8 w-px bg-neutral-700 ml-2" />
                         <span className="hidden md:block text-xs md:text-sm italic text-neutral-500 tracking-wide ml-2">
                             to be is to innovate
                         </span>
-                    </div>
+                    </a>
                 </div>
             </div>
 
@@ -81,12 +84,12 @@ export default function ResetPasswordPage() {
                 {/* Background glow */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-yellow-600/5 rounded-full blur-[100px] pointer-events-none" />
 
-                <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-8 md:p-10 shadow-2xl shadow-black relative z-10" style={{ animation: 'zoomIn 0.3s ease-out' }}>
-                    <div className="w-16 h-16 bg-neutral-950 border border-neutral-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-black/50">
-                        <Lock size={24} className="text-yellow-600" />
+                <div className="w-full max-w-md glass-panel !bg-[#0c0d12]/85 rounded-3xl p-8 md:p-10 relative z-10" style={{ animation: 'zoomIn 0.3s ease-out' }}>
+                    <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/25 rounded-full flex items-center justify-center mx-auto mb-6" aria-hidden="true">
+                        <Lock size={24} className="text-yellow-400" />
                     </div>
 
-                    <h2 className="text-2xl font-black uppercase tracking-widest text-center mb-2">{t('reset.title')}</h2>
+                    <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-center mb-2">{t('reset.title')}</h2>
                     <p className="text-sm text-neutral-500 text-center uppercase tracking-wider mb-8">
                         {t('reset.subtitle')}
                     </p>
@@ -102,9 +105,7 @@ export default function ResetPasswordPage() {
                             </p>
                             <button
                                 onClick={() => window.location.href = '/'}
-                                className="w-full py-4 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer flex items-center justify-center gap-3
-                                           bg-gradient-to-r from-yellow-700 to-yellow-600 text-black shadow-lg shadow-yellow-600/20
-                                           hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30 transition-all duration-300"
+                                className="btn-gold w-full py-4 text-sm tracking-[0.15em] gap-3"
                             >
                                 {t('reset.returnToOrbit')} <ArrowRight size={16} />
                             </button>
@@ -132,6 +133,7 @@ export default function ResetPasswordPage() {
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
                                         className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors cursor-pointer"
                                     >
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -156,10 +158,7 @@ export default function ResetPasswordPage() {
                             <button
                                 type="submit"
                                 disabled={loading || !token}
-                                className="mt-4 w-full py-4 rounded-xl text-sm font-bold uppercase tracking-[0.15em] cursor-pointer
-                                           bg-gradient-to-r from-yellow-700 to-yellow-600 text-black shadow-lg shadow-yellow-600/20
-                                           hover:scale-[1.02] hover:shadow-xl hover:shadow-yellow-600/30 transition-all duration-300
-                                           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+                                className="btn-gold mt-4 w-full py-4 text-sm tracking-[0.15em]"
                             >
                                 {loading && <Loader2 size={16} className="animate-spin" />}
                                 {loading ? t('reset.updating') : t('reset.resetButton')}
